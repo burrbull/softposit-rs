@@ -5,7 +5,7 @@ mod math;
 mod ops;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct P16E1(u16);
+pub struct P16E1(i16);
 
 impl P16E1 {
     #[inline]

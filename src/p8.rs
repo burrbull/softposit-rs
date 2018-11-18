@@ -5,7 +5,7 @@ mod math;
 mod ops;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct P8E0(u8);
+pub struct P8E0(i8);
 
 impl P8E0 {
     #[inline]

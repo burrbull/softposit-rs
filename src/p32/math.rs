@@ -61,7 +61,7 @@ fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2
     let (k_b, tmp) = P32E2::separate_bits_tmp(ui_b);
     k_a += k_b;
     exp_a += (tmp >> 29) as i32;
-    let mut frac64_z = ((frac_a << 1) as u64) * (((tmp << 2) | 0x8000_0000) as u64);
+    let mut frac64_z = (frac_a as u64) * (((tmp << 2) | 0x8000_0000) as u64);
 
     if exp_a > 3 {
         k_a += 1;

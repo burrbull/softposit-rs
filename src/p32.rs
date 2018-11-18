@@ -5,7 +5,7 @@ mod math;
 mod ops;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct P32E2(u32);
+pub struct P32E2(i32);
 
 impl P32E2 {
     #[inline]
