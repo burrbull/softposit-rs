@@ -73,7 +73,6 @@ impl From<P16E1> for i32 {
     #[inline]
     fn from(p_a: P16E1) -> Self {
         let mut i_z: i32;
-        let mut scale = 0_u16;
 
         let mut ui_a = p_a.to_bits(); // Copy of the input.
                                       //NaR
@@ -96,18 +95,9 @@ impl From<P16E1> for i32 {
             // 3/2 <= x <= 5/2 rounds to 2.
             i_z = 2;
         } else {
-            // Decode the posit, left-justifying as we go.
-            ui_a -= 0x4000; // Strip off first regime bit (which is a 1).
-            while (0x2000 & ui_a) != 0 {
-                // Increment scale by 2 for each regime sign bit.
-                scale += 2; // Regime sign bit is always 1 in this range.
-                ui_a = (ui_a - 0x2000) << 1; // Remove the bit; line up the next regime bit.
-            }
-            ui_a <<= 1; // Skip over termination bit, which is 0.
-            if (0x2000 & ui_a) != 0 {
-                scale += 1; // If exponent is 1, increment the scale.
-            }
-            i_z = ((ui_a | 0x2000) as i32) << 17; // Left-justify fraction in 32-bit result (one left bit padding)
+            let (scale, bits) = P16E1::calculate_scale(ui_a);
+
+            i_z = ((bits | 0x2000) as i32) << 17; // Left-justify fraction in 32-bit result (one left bit padding)
             let mut mask: i32 = 0x4000_0000 >> scale; // Point to the last bit of the integer part.
 
             let bit_last = i_z & mask; // Extract the bit, without shifting it.
@@ -167,7 +157,6 @@ fn convert_u64_to_p16bits(a: u64) -> u16 {
 impl From<P16E1> for i64 {
     #[inline]
     fn from(p_a: P16E1) -> Self {
-        let mut scale = 0_u16;
         let mut ui_a = p_a.to_bits();
 
         // NaR
@@ -187,17 +176,9 @@ impl From<P16E1> for i64 {
         } else if ui_a <= 0x5400 {
             2
         } else {
-            ui_a -= 0x4000;
+            let (scale, bits) = P16E1::calculate_scale(ui_a);
 
-            while (0x2000 & ui_a) != 0 {
-                scale += 2;
-                ui_a = (ui_a - 0x2000) << 1;
-            }
-            ui_a <<= 1;
-            if (0x2000 & ui_a) != 0 {
-                scale += 1;
-            }
-            let mut i_z = ((ui_a as i64) | 0x2000) << 49;
+            let mut i_z = ((bits as i64) | 0x2000) << 49;
 
             let mut mask = 0x4000_0000_0000_0000_i64 >> scale;
 
@@ -225,10 +206,8 @@ impl From<P16E1> for i64 {
 impl From<P16E1> for u32 {
     #[inline]
     fn from(p_a: P16E1) -> Self {
-        let mut scale = 0_u16;
-
-        let mut ui_a = p_a.to_bits(); // Copy of the input.
-                                      //NaR
+        let ui_a = p_a.to_bits(); // Copy of the input.
+                                  //NaR
         if ui_a == 0x8000 {
             return 0x8000_0000;
         } else if ui_a > 0x8000 {
@@ -244,18 +223,9 @@ impl From<P16E1> for u32 {
             // 3/2 <= x <= 5/2 rounds to 2.
             2
         } else {
-            // Decode the posit, left-justifying as we go.
-            ui_a -= 0x4000; // Strip off first regime bit (which is a 1).
-            while (0x2000 & ui_a) != 0 {
-                // Increment scale by 2 for each regime sign bit.
-                scale += 2; // Regime sign bit is always 1 in this range.
-                ui_a = (ui_a - 0x2000) << 1; // Remove the bit; line up the next regime bit.
-            }
-            ui_a <<= 1; // Skip over termination bit, which is 0.
-            if (0x2000 & ui_a) != 0 {
-                scale += 1; // If exponent is 1, increment the scale.
-            }
-            let mut i_z = ((ui_a | 0x2000) as u32) << 17; // Left-justify fraction in 32-bit result (one left bit padding)
+            let (scale, bits) = P16E1::calculate_scale(ui_a);
+
+            let mut i_z = ((bits | 0x2000) as u32) << 17; // Left-justify fraction in 32-bit result (one left bit padding)
             let mut mask = 0x4000_0000_u32 >> scale; // Point to the last bit of the integer part.
 
             let bit_last = (i_z & mask) != 0; // Extract the bit, without shifting it.
@@ -281,9 +251,7 @@ impl From<P16E1> for u32 {
 impl From<P16E1> for u64 {
     #[inline]
     fn from(p_a: P16E1) -> Self {
-        let mut scale = 0_u16;
-
-        let mut ui_a = p_a.to_bits();
+        let ui_a = p_a.to_bits();
         //NaR
         if ui_a == 0x8000 {
             return 0x8000_0000_0000_0000;
@@ -300,16 +268,9 @@ impl From<P16E1> for u64 {
         } else if ui_a <= 0x5400 {
             2
         } else {
-            ui_a -= 0x4000;
-            while (0x2000 & ui_a) != 0 {
-                scale += 2;
-                ui_a = (ui_a - 0x2000) << 1;
-            }
-            ui_a <<= 1;
-            if (0x2000 & ui_a) != 0 {
-                scale += 1;
-            }
-            let mut i_z = ((ui_a as u64) | 0x2000) << 49;
+            let (scale, bits) = P16E1::calculate_scale(ui_a);
+
+            let mut i_z = ((bits as u64) | 0x2000) << 49;
 
             let mut mask = 0x4000_0000_0000_0000_u64 >> scale;
 

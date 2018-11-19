@@ -29,6 +29,11 @@ impl P8E0 {
         Self::from_bits(0x7F)
     }
     #[inline]
+    pub fn epsilon() -> Self {
+        // 3.125e-2
+        Self::from_bits(0x_2)
+    }
+    #[inline]
     pub fn from_bits(v: u8) -> Self {
         unsafe { mem::transmute(v) }
     }
@@ -83,6 +88,20 @@ impl P8E0 {
             tmp &= 0x7F;
         }
         (k, tmp)
+    }
+
+    #[inline]
+    fn calculate_scale(mut bits: u8) -> (u8, u8) {
+        let mut scale = 0_u8;
+        // Decode the posit, left-justifying as we go.
+        bits -= 0x40; // Strip off first regime bit (which is a 1).
+        while (0x20 & bits) != 0 {
+            // Increment scale one for each regime sign bit.
+            scale += 1; // Regime sign bit is always 1 in this range.
+            bits = (bits - 0x20) << 1; // Remove the bit; line up the next regime bit.
+        }
+        bits <<= 1; // Skip over termination bit, which is 0.
+        (scale, bits)
     }
 }
 

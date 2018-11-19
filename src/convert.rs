@@ -279,7 +279,9 @@ impl From<P32E2> for P8E0 {
         }
 
         let sign = P32E2::sign_ui(ui_a);
-        if sign { ui_a = ui_a.wrapping_neg(); }
+        if sign {
+            ui_a = ui_a.wrapping_neg();
+        }
 
         let u_z = if ui_a > 0x6600_0000 {
             0x7F

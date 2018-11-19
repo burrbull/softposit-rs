@@ -29,6 +29,11 @@ impl P32E2 {
         Self::from_bits(0x7FFF_FFFF)
     }
     #[inline]
+    pub fn epsilon() -> Self {
+        // 7.450580596923828e-9
+        Self::from_bits(0x_a0_0000)
+    }
+    #[inline]
     pub fn from_bits(v: u32) -> Self {
         unsafe { mem::transmute(v) }
     }
@@ -87,6 +92,38 @@ impl P32E2 {
             tmp &= 0x7FFF_FFFF;
         }
         (k, tmp)
+    }
+
+    /* // Slower
+    #[inline]
+    pub(crate) fn separate_bits_tmp(bits: u32) -> (i16, u32) {
+        let tmp = bits << 1;
+        let lz = tmp.leading_zeros() as i16;
+        if lz == 0 {
+            let lo = (!tmp).leading_zeros() as i16;
+            (lo - 1, tmp << lo)
+        } else {
+            (-lz, (tmp << lz) & 0x7FFF_FFFF)
+        }
+    }
+    */
+
+    #[inline]
+    fn calculate_scale(mut bits: u32) -> (u32, u32) {
+        let mut scale = 0_u32;
+        bits -= 0x4000_0000;
+        while (0x2000_0000 & bits) != 0 {
+            scale += 4;
+            bits = (bits - 0x2000_0000) << 1;
+        }
+        bits <<= 1; // Skip over termination bit, which is 0.
+        if (0x2000_0000 & bits) != 0 {
+            scale += 2; // If first exponent bit is 1, increment the scale.
+        }
+        if (0x1000_0000 & bits) != 0 {
+            scale += 1;
+        }
+        (scale, bits)
     }
 }
 

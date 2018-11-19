@@ -237,7 +237,6 @@ impl From<P8E0> for i32 {
     #[inline]
     fn from(p_a: P8E0) -> Self {
         let mut i_z: i32;
-        let mut scale = 0_u8;
 
         let mut ui_a = p_a.to_bits();
 
@@ -257,16 +256,9 @@ impl From<P8E0> for i32 {
             // 1/2 < x < 3/2 rounds to 1.
             i_z = 1;
         } else {
-            // Decode the posit, left-justifying as we go.
-            ui_a -= 0x40; // Strip off first regime bit (which is a 1).
-            while (0x20 & ui_a) != 0 {
-                // Increment scale one for each regime sign bit.
-                scale += 1; // Regime sign bit is always 1 in this range.
-                ui_a = (ui_a - 0x20) << 1; // Remove the bit; line up the next regime bit.
-            }
-            ui_a <<= 1; // Skip over termination bit, which is 0.
+            let (scale, bits) = P8E0::calculate_scale(ui_a);
 
-            i_z = ((ui_a | 0x40) as i32) << 24; // Left-justify fraction in 32-bit result (one left bit padding)
+            i_z = ((bits | 0x40) as i32) << 24; // Left-justify fraction in 32-bit result (one left bit padding)
             let mut mask = 0x4000_0000_i32 >> scale; // Point to the last bit of the integer part.
 
             let bit_last = (i_z & mask) != 0; // Extract the bit, without shifting it.
@@ -298,7 +290,6 @@ impl From<P8E0> for i64 {
     #[inline]
     fn from(p_a: P8E0) -> Self {
         let mut i_z: i64;
-        let mut scale = 0_u8;
 
         let mut ui_a = p_a.to_bits();
 
@@ -319,17 +310,9 @@ impl From<P8E0> for i64 {
             // 1/2 < x < 3/2 rounds to 1.
             i_z = 1;
         } else {
-            // Decode the posit, left-justifying as we go.
+            let (scale, bits) = P8E0::calculate_scale(ui_a);
 
-            ui_a -= 0x40; // Strip off first regime bit (which is a 1).
-            while (0x20 & ui_a) != 0 {
-                // Increment scale by 1 for each regime sign bit.
-                scale += 1; // Regime sign bit is always 1 in this range.
-                ui_a = (ui_a - 0x20) << 1; // Remove the bit; line up the next regime bit.
-            }
-            ui_a <<= 1; // Skip over termination bit, which is 0.
-
-            i_z = (((ui_a as u64) | 0x40) << 55) as i64; // Left-justify fraction in 32-bit result (one left bit padding)
+            i_z = (((bits as u64) | 0x40) << 55) as i64; // Left-justify fraction in 32-bit result (one left bit padding)
 
             let mut mask = 0x2000_0000_0000_0000_i64 >> scale; // Point to the last bit of the integer part.
 
@@ -361,9 +344,8 @@ impl From<P8E0> for u32 {
     #[inline]
     fn from(p_a: P8E0) -> Self {
         let mut i_z: u32;
-        let mut scale = 0_u8;
 
-        let mut ui_a = p_a.to_bits();
+        let ui_a = p_a.to_bits();
 
         //NaR
         if ui_a == 0x80 {
@@ -378,16 +360,9 @@ impl From<P8E0> for u32 {
             // 1/2 < x < 3/2 rounds to 1.
             i_z = 1;
         } else {
-            // Decode the posit, left-justifying as we go.
-            ui_a -= 0x40; // Strip off first regime bit (which is a 1).
-            while (0x20 & ui_a) != 0 {
-                // Increment scale by 1 for each regime sign bit.
-                scale += 1; // Regime sign bit is always 1 in this range.
-                ui_a = (ui_a - 0x20) << 1; // Remove the bit; line up the next regime bit.
-            }
-            ui_a <<= 1; // Skip over termination bit, which is 0.
+            let (scale, bits) = P8E0::calculate_scale(ui_a);
 
-            i_z = ((ui_a | 0x40) as u32) << 24; // Left-justify fraction in 32-bit result (one left bit padding)
+            i_z = ((bits | 0x40) as u32) << 24; // Left-justify fraction in 32-bit result (one left bit padding)
 
             let mut mask = 0x4000_0000_u32 >> scale; // Point to the last bit of the integer part.
 
@@ -416,9 +391,8 @@ impl From<P8E0> for u64 {
     #[inline]
     fn from(p_a: P8E0) -> Self {
         let mut i_z: u64;
-        let mut scale = 0_u8;
 
-        let mut ui_a = p_a.to_bits();
+        let ui_a = p_a.to_bits();
         //NaR
         if ui_a == 0x80 {
             return 0x8000_0000_0000_0000;
@@ -432,17 +406,9 @@ impl From<P8E0> for u64 {
             // 1/2 < x < 3/2 rounds to 1.
             i_z = 1;
         } else {
-            // Decode the posit, left-justifying as we go.
+            let (scale, bits) = P8E0::calculate_scale(ui_a);
 
-            ui_a -= 0x40; // Strip off first regime bit (which is a 1).
-            while (0x20 & ui_a) != 0 {
-                // Increment scale by 1 for each regime sign bit.
-                scale += 1; // Regime sign bit is always 1 in this range.
-                ui_a = (ui_a - 0x20) << 1; // Remove the bit; line up the next regime bit.
-            }
-            ui_a <<= 1; // Skip over termination bit, which is 0.
-
-            i_z = ((ui_a as u64) | 0x40) << 55; // Left-justify fraction in 32-bit result (one left bit padding)
+            i_z = ((bits as u64) | 0x40) << 55; // Left-justify fraction in 32-bit result (one left bit padding)
 
             let mut mask = 0x2000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
 

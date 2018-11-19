@@ -29,6 +29,11 @@ impl P16E1 {
         Self::from_bits(0x7FFF)
     }
     #[inline]
+    pub fn epsilon() -> Self {
+        // 2.44140625e-4
+        Self::from_bits(0x_100)
+    }
+    #[inline]
     pub fn from_bits(v: u16) -> Self {
         unsafe { mem::transmute(v) }
     }
@@ -82,6 +87,23 @@ impl P16E1 {
             tmp &= 0x7FFF;
         }
         (k, tmp)
+    }
+
+    #[inline]
+    fn calculate_scale(mut bits: u16) -> (u16, u16) {
+        let mut scale = 0_u16;
+        // Decode the posit, left-justifying as we go.
+        bits -= 0x4000; // Strip off first regime bit (which is a 1).
+        while (0x2000 & bits) != 0 {
+            // Increment scale by 2 for each regime sign bit.
+            scale += 2; // Regime sign bit is always 1 in this range.
+            bits = (bits - 0x2000) << 1; // Remove the bit; line up the next regime bit.
+        }
+        bits <<= 1; // Skip over termination bit, which is 0.
+        if (0x2000 & bits) != 0 {
+            scale += 1; // If exponent is 1, increment the scale.
+        }
+        (scale, bits)
     }
 }
 

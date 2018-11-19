@@ -314,8 +314,6 @@ impl From<P32E2> for f64 {
 impl From<P32E2> for i32 {
     #[inline]
     fn from(p_a: P32E2) -> Self {
-        let mut scale = 0_u32;
-
         if p_a == P32E2::infinity() {
             return i32::min_value();
         }
@@ -337,19 +335,9 @@ impl From<P32E2> for i32 {
             //overflow so return max integer value
             0x7FFF_FFFF
         } else {
-            ui_a -= 0x4000_0000;
-            while (0x2000_0000 & ui_a) != 0 {
-                scale += 4;
-                ui_a = (ui_a - 0x2000_0000) << 1;
-            }
-            ui_a <<= 1; // Skip over termination bit, which is 0.
-            if (0x2000_0000 & ui_a) != 0 {
-                scale += 2; // If first exponent bit is 1, increment the scale.
-            }
-            if (0x1000_0000 & ui_a) != 0 {
-                scale += 1;
-            }
-            let mut i_z64 = (((ui_a | 0x1000_0000) & 0x1FFF_FFFF) as u64) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
+            let (scale, bits) = P32E2::calculate_scale(ui_a);
+
+            let mut i_z64 = (((bits | 0x1000_0000) & 0x1FFF_FFFF) as u64) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
             let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
 
             let bit_last = i_z64 & mask; // Extract the bit, without shifting it.
@@ -381,13 +369,11 @@ impl From<P32E2> for i32 {
 impl From<P32E2> for u32 {
     #[inline]
     fn from(p_a: P32E2) -> Self {
-        let mut scale = 0_u32;
-
         if p_a == P32E2::infinity() {
             return 0x8000_0000; // Error: Should be u32::max_value()
         }
 
-        let mut ui_a = p_a.to_bits();
+        let ui_a = p_a.to_bits();
 
         //negative
         if ui_a > 0x8000_0000 {
@@ -403,19 +389,9 @@ impl From<P32E2> for u32 {
             //overflow so return max integer value
             0x7FFF_FFFF
         } else {
-            ui_a -= 0x4000_0000;
-            while (0x2000_0000 & ui_a) != 0 {
-                scale += 4;
-                ui_a = (ui_a - 0x2000_0000) << 1;
-            }
-            ui_a <<= 1; // Skip over termination bit, which is 0.
-            if (0x2000_0000 & ui_a) != 0 {
-                scale += 2; // If first exponent bit is 1, increment the scale.
-            }
-            if (0x1000_0000 & ui_a) != 0 {
-                scale += 1;
-            }
-            let mut i_z64 = (((ui_a | 0x1000_0000) & 0x1FFF_FFFF) as u64) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
+            let (scale, bits) = P32E2::calculate_scale(ui_a);
+
+            let mut i_z64 = (((bits | 0x1000_0000) & 0x1FFF_FFFF) as u64) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
             let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
 
             let bit_last = i_z64 & mask; // Extract the bit, without shifting it.
@@ -441,8 +417,6 @@ impl From<P32E2> for u32 {
 impl From<P32E2> for i64 {
     #[inline]
     fn from(p_a: P32E2) -> Self {
-        let mut scale = 0_u32;
-
         let mut ui_a = p_a.to_bits();
 
         if ui_a == 0x8000_0000 {
@@ -467,19 +441,9 @@ impl From<P32E2> for i64 {
         } else if ui_a > 0x7FFF_AFFF {
             0x7FFF_FFFF_FFFF_FFFF
         } else {
-            ui_a -= 0x4000_0000;
-            while (0x2000_0000 & ui_a) != 0 {
-                scale += 4;
-                ui_a = (ui_a - 0x2000_0000) << 1;
-            }
-            ui_a <<= 1; // Skip over termination bit, which is 0.
-            if (0x2000_0000 & ui_a) != 0 {
-                scale += 2; // If first exponent bit is 1, increment the scale.
-            }
-            if (0x1000_0000 & ui_a) != 0 {
-                scale += 1;
-            }
-            let mut i_z = (((ui_a | 0x1000_0000) & 0x1FFF_FFFF) as u64) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
+            let (scale, bits) = P32E2::calculate_scale(ui_a);
+
+            let mut i_z = (((bits | 0x1000_0000) & 0x1FFF_FFFF) as u64) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
 
             if scale < 62 {
                 let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
@@ -516,9 +480,7 @@ impl From<P32E2> for i64 {
 impl From<P32E2> for u64 {
     #[inline]
     fn from(p_a: P32E2) -> Self {
-        let mut scale = 0_u32;
-
-        let mut ui_a = p_a.to_bits();
+        let ui_a = p_a.to_bits();
 
         //NaR
         if ui_a == 0x8000_0000 {
@@ -533,19 +495,9 @@ impl From<P32E2> for u64 {
         } else if ui_a > 0x7FFF_BFFF {
             0xFFFF_FFFF_FFFF_FFFF
         } else {
-            ui_a -= 0x4000_0000;
-            while (0x2000_0000 & ui_a) != 0 {
-                scale += 4;
-                ui_a = (ui_a - 0x2000_0000) << 1;
-            }
-            ui_a <<= 1; // Skip over termination bit, which is 0.
-            if (0x2000_0000 & ui_a) != 0 {
-                scale += 2; // If first exponent bit is 1, increment the scale.
-            }
-            if (0x1000_0000 & ui_a) != 0 {
-                scale += 1;
-            }
-            let mut i_z: u64 = (((ui_a | 0x1000_0000) & 0x1FFF_FFFF) as u64) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
+            let (scale, bits) = P32E2::calculate_scale(ui_a);
+
+            let mut i_z: u64 = (((bits | 0x1000_0000) & 0x1FFF_FFFF) as u64) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
 
             if scale < 62 {
                 let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
