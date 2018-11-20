@@ -68,6 +68,12 @@ fn convert_fraction_p8(
     frac
 }
 
+impl From<f32> for P8E0 {
+    fn from(float: f32) -> Self {
+        P8E0::from(float as f64)
+    }
+}
+
 impl From<f64> for P8E0 {
     fn from(mut float: f64) -> Self {
         let mut reg: u8;
@@ -75,15 +81,15 @@ impl From<f64> for P8E0 {
         let mut bits_more = false;
 
         if float == 0. {
-            return P8E0::new();
+            return P8E0::new(0);
         } else if !float.is_finite() {
-            return P8E0::infinity();
+            return INFINITY;
         } else if float >= 64. {
             //maxpos
-            return P8E0::max_value();
+            return MAX;
         } else if float <= -64. {
             // -maxpos
-            return P8E0::min_value();
+            return MIN;
         }
 
         let sign = float < 0.;
@@ -173,6 +179,13 @@ impl From<f64> for P8E0 {
             0x80
         };
         P8E0::from_bits(u_z)
+    }
+}
+
+impl From<P8E0> for f32 {
+    #[inline]
+    fn from(a: P8E0) -> Self {
+        f64::from(a) as f32
     }
 }
 

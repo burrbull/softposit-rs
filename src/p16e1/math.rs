@@ -31,7 +31,7 @@ fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1
 
     //NaR
     if (ui_a == 0x8000) || (ui_b == 0x8000) || (ui_c == 0x8000) {
-        return P16E1::infinity();
+        return INFINITY;
     } else if (ui_a == 0) || (ui_b == 0) {
         return match op {
             MulAddType::SubC => P16E1::from_bits(ui_c.wrapping_neg()),
@@ -131,7 +131,7 @@ fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1
         } else {
             if (frac32_c == frac32_z) && (sign_z != sign_c) {
                 //check if same number
-                return P16E1::new();
+                return P16E1::new(0);
             } else if sign_z == sign_c {
                 frac32_z += frac32_c;
             } else if frac32_z < frac32_c {

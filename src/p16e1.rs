@@ -1,5 +1,6 @@
 use core::mem;
 
+pub mod consts;
 mod convert;
 mod math;
 mod ops;
@@ -7,31 +8,28 @@ mod ops;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct P16E1(i16);
 
+/// Machine epsilon (2.44140625e-4).
+pub const EPSILON: P16E1 = P16E1::new(0x_100);
+
+/// Smallest finite value (-268435456).
+pub const MIN: P16E1 = P16E1::new(-0x_7FFF);
+
+/// Smallest positive normal value (3.725290298_e-9).
+pub const MIN_POSITIVE: P16E1 = P16E1::new(0x_1);
+
+/// Largest finite value (268435456).
+pub const MAX: P16E1 = P16E1::new(0x_7FFF);
+
+/// Not a Number (NaN).
+pub const NAN: P16E1 = P16E1::new(-0x_8000);
+
+/// Infinity (∞).
+pub const INFINITY: P16E1 = P16E1::new(-0x_8000);
+
 impl P16E1 {
     #[inline]
-    pub fn new() -> Self {
-        Self::from_bits(0)
-    }
-    #[inline]
-    pub fn infinity() -> Self {
-        Self::from_bits(0x8000)
-    }
-    #[inline]
-    pub fn nan() -> Self {
-        Self::from_bits(0x8000)
-    }
-    #[inline]
-    pub fn min_value() -> Self {
-        Self::from_bits(0x8001)
-    }
-    #[inline]
-    pub fn max_value() -> Self {
-        Self::from_bits(0x7FFF)
-    }
-    #[inline]
-    pub fn epsilon() -> Self {
-        // 2.44140625e-4
-        Self::from_bits(0x_100)
+    pub const fn new(i: i16) -> Self {
+        P16E1(i)
     }
     #[inline]
     pub fn from_bits(v: u16) -> Self {
@@ -45,6 +43,44 @@ impl P16E1 {
     pub fn abs(self) -> Self {
         let i = self.to_bits() as i16;
         Self::from_bits((if i < 0 { -i } else { i }) as u16)
+    }
+    #[inline]
+    pub fn is_nan(self) -> bool {
+        self == NAN
+    }
+    #[inline]
+    pub fn is_infinite(self) -> bool {
+        self == INFINITY
+    }
+    #[inline]
+    pub fn is_finite(self) -> bool {
+        !self.is_nan()
+    }
+    #[inline]
+    pub fn to_degrees(self) -> P16E1 {
+        const PIS_IN_180: P16E1 = P16E1::new(0x_7729);
+        self * PIS_IN_180
+    }
+    #[inline]
+    pub fn to_radians(self) -> P16E1 {
+        const PIS_O_180: P16E1 = P16E1::new(0x_0878);
+        self * PIS_O_180
+    }
+    #[inline]
+    pub fn max(self, other: Self) -> Self {
+        if self.is_nan() || (self < other) {
+            other
+        } else {
+            self
+        }
+    }
+    #[inline]
+    pub fn min(self, other: Self) -> Self {
+        if other.is_nan() || (self < other) {
+            self
+        } else {
+            other
+        }
     }
 }
 

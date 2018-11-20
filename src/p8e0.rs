@@ -7,31 +7,28 @@ mod ops;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct P8E0(i8);
 
+/// Machine epsilon (3.125e-2).
+pub const EPSILON: P8E0 = P8E0::new(0x_2);
+
+/// Smallest finite value (-64).
+pub const MIN: P8E0 = P8E0::new(-0x_7F);
+
+/// Smallest positive normal value (0.015625).
+pub const MIN_POSITIVE: P8E0 = P8E0::new(0x_1);
+
+/// Largest finite value (64).
+pub const MAX: P8E0 = P8E0::new(0x_7F);
+
+/// Not a Number (NaN).
+pub const NAN: P8E0 = P8E0::new(-0x_80);
+
+/// Infinity (∞).
+pub const INFINITY: P8E0 = P8E0::new(-0x_80);
+
 impl P8E0 {
     #[inline]
-    pub fn new() -> Self {
-        Self::from_bits(0)
-    }
-    #[inline]
-    pub fn infinity() -> Self {
-        Self::from_bits(0x80)
-    }
-    #[inline]
-    pub fn nan() -> Self {
-        Self::from_bits(0x80)
-    }
-    #[inline]
-    pub fn min_value() -> Self {
-        Self::from_bits(0x81)
-    }
-    #[inline]
-    pub fn max_value() -> Self {
-        Self::from_bits(0x7F)
-    }
-    #[inline]
-    pub fn epsilon() -> Self {
-        // 3.125e-2
-        Self::from_bits(0x_2)
+    pub const fn new(i: i8) -> Self {
+        P8E0(i)
     }
     #[inline]
     pub fn from_bits(v: u8) -> Self {
@@ -45,6 +42,34 @@ impl P8E0 {
     pub fn abs(self) -> Self {
         let i = self.to_bits() as i8;
         Self::from_bits((if i < 0 { -i } else { i }) as u8)
+    }
+    #[inline]
+    pub fn is_nan(self) -> bool {
+        self == NAN
+    }
+    #[inline]
+    pub fn is_infinite(self) -> bool {
+        self == INFINITY
+    }
+    #[inline]
+    pub fn is_finite(self) -> bool {
+        !self.is_nan()
+    }
+    #[inline]
+    pub fn max(self, other: Self) -> Self {
+        if self.is_nan() || (self < other) {
+            other
+        } else {
+            self
+        }
+    }
+    #[inline]
+    pub fn min(self, other: Self) -> Self {
+        if other.is_nan() || (self < other) {
+            self
+        } else {
+            other
+        }
     }
 }
 

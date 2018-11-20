@@ -81,15 +81,15 @@ impl From<f64> for P32E2 {
         let mut bits_more = false;
 
         if float == 0. {
-            return P32E2::new();
+            return P32E2::new(0);
         } else if !float.is_finite() {
-            return P32E2::infinity();
+            return INFINITY;
         } else if float >= 1.329_227_995_784_916_e36 {
             //maxpos
-            return P32E2::max_value();
+            return MAX;
         } else if float <= -1.329_227_995_784_916_e36 {
             // -maxpos
-            return P32E2::min_value();
+            return MIN;
         }
 
         let sign = float < 0.;
@@ -314,7 +314,7 @@ impl From<P32E2> for f64 {
 impl From<P32E2> for i32 {
     #[inline]
     fn from(p_a: P32E2) -> Self {
-        if p_a == P32E2::infinity() {
+        if p_a.is_infinite() {
             return i32::min_value();
         }
 
@@ -369,7 +369,7 @@ impl From<P32E2> for i32 {
 impl From<P32E2> for u32 {
     #[inline]
     fn from(p_a: P32E2) -> Self {
-        if p_a == P32E2::infinity() {
+        if p_a.is_infinite() {
             return 0x8000_0000; // Error: Should be u32::max_value()
         }
 

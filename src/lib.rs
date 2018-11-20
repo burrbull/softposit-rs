@@ -1,15 +1,15 @@
 #![no_std]
 
-mod p8;
-pub use self::p8::P8E0;
+pub mod p8e0;
+pub use self::p8e0::P8E0;
 pub type P8 = P8E0;
 
-mod p16;
-pub use self::p16::P16E1;
+pub mod p16e1;
+pub use self::p16e1::P16E1;
 pub type P16 = P16E1;
 
-pub mod p32;
-pub use self::p32::P32E2;
+pub mod p32e2;
+pub use self::p32e2::P32E2;
 pub type P32 = P32E2;
 
 mod convert;

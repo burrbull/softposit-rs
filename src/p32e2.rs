@@ -1,5 +1,6 @@
 use core::mem;
 
+pub mod consts;
 mod convert;
 mod math;
 mod ops;
@@ -7,31 +8,28 @@ mod ops;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct P32E2(i32);
 
+/// Machine epsilon (7.450580596923828e-9).
+pub const EPSILON: P32E2 = P32E2::new(0x_a0_0000);
+
+/// Smallest finite value (-1.329227996_e36).
+pub const MIN: P32E2 = P32E2::new(-0x_7FFF_FFFF);
+
+/// Smallest positive normal value (7.523163845_e-37).
+pub const MIN_POSITIVE: P32E2 = P32E2::new(0x_1);
+
+/// Largest finite value (1.329227996_e36).
+pub const MAX: P32E2 = P32E2::new(0x_7FFF_FFFF);
+
+/// Not a Number (NaN).
+pub const NAN: P32E2 = P32E2::new(-0x_8000_0000);
+
+/// Infinity (∞).
+pub const INFINITY: P32E2 = P32E2::new(-0x_8000_0000);
+
 impl P32E2 {
     #[inline]
-    pub fn new() -> Self {
-        Self::from_bits(0)
-    }
-    #[inline]
-    pub fn infinity() -> Self {
-        Self::from_bits(0x8000_0000)
-    }
-    #[inline]
-    pub fn nan() -> Self {
-        Self::from_bits(0x8000_0000)
-    }
-    #[inline]
-    pub fn min_value() -> Self {
-        Self::from_bits(0x8000_0001)
-    }
-    #[inline]
-    pub fn max_value() -> Self {
-        Self::from_bits(0x7FFF_FFFF)
-    }
-    #[inline]
-    pub fn epsilon() -> Self {
-        // 7.450580596923828e-9
-        Self::from_bits(0x_a0_0000)
+    pub const fn new(i: i32) -> Self {
+        P32E2(i)
     }
     #[inline]
     pub fn from_bits(v: u32) -> Self {
@@ -45,6 +43,44 @@ impl P32E2 {
     pub fn abs(self) -> Self {
         let i = self.to_bits() as i32;
         Self::from_bits((if i < 0 { -i } else { i }) as u32)
+    }
+    #[inline]
+    pub fn is_nan(self) -> bool {
+        self == NAN
+    }
+    #[inline]
+    pub fn is_infinite(self) -> bool {
+        self == INFINITY
+    }
+    #[inline]
+    pub fn is_finite(self) -> bool {
+        !self.is_nan()
+    }
+    #[inline]
+    pub fn to_degrees(self) -> P32E2 {
+        const PIS_IN_180: P32E2 = P32E2::new(0x_6729_7707);
+        self * PIS_IN_180
+    }
+    #[inline]
+    pub fn to_radians(self) -> P32E2 {
+        let value: P32E2 = consts::PI;
+        self * (value / P32E2::new(0x_6da0_0000))
+    }
+    #[inline]
+    pub fn max(self, other: Self) -> Self {
+        if self.is_nan() || (self < other) {
+            other
+        } else {
+            self
+        }
+    }
+    #[inline]
+    pub fn min(self, other: Self) -> Self {
+        if other.is_nan() || (self < other) {
+            self
+        } else {
+            other
+        }
     }
 }
 

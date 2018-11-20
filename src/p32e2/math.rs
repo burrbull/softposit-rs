@@ -27,7 +27,7 @@ fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2
     let mut k_z = 0_i16;
     let mut exp_z: i32;
     let mut frac_z: u32 = 0; // possibly uninitialized
-    //NaR
+                             //NaR
     if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) || (ui_c == 0x8000_0000) {
         return P32E2::from_bits(0x8000_0000);
     } else if (ui_a == 0) || (ui_b == 0) {

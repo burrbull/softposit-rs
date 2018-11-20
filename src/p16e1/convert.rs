@@ -370,15 +370,15 @@ impl From<f64> for P16E1 {
         let mut exp = 0_i8;
 
         if float == 0. {
-            return P16E1::new();
+            return P16E1::new(0);
         } else if !float.is_finite() {
-            return P16E1::infinity();
+            return INFINITY;
         } else if float >= 268_435_456. {
             //maxpos
-            return P16E1::max_value();
+            return MAX;
         } else if float <= -268_435_456. {
             // -maxpos
-            return P16E1::min_value();
+            return MIN;
         }
 
         let sign = float < 0.;
@@ -507,6 +507,13 @@ impl From<f64> for P16E1 {
             0x8000
         };
         P16E1::from_bits(u_z)
+    }
+}
+
+impl From<P16E1> for f32 {
+    #[inline]
+    fn from(a: P16E1) -> Self {
+        f64::from(a) as f32
     }
 }
 
