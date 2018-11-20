@@ -85,7 +85,7 @@ fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1
         let k_c = k_c as i16;
         let mut frac32_c = (frac_c as u32) << 16;
 
-        let shift_right: i16 = ((k_a - k_c) << 1) + ((exp_a - exp_c) as i16); //actually this is the scale
+        let mut shift_right: i16 = ((k_a - k_c) << 1) + ((exp_a - exp_c) as i16); //actually this is the scale
 
         exp_z = if shift_right < 0 {
             // |ui_c| > |Prod Z|

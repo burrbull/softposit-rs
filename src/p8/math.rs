@@ -136,7 +136,7 @@ fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
     if ui_c != 0 {
         let (k_c, frac_c) = P8E0::separate_bits(ui_c);
         let mut frac16_c = (frac_c as u16) << 7;
-        let shift_right = k_a - k_c;
+        let mut shift_right = k_a - k_c;
 
         if shift_right < 0 {
             // |ui_c| > |Prod|

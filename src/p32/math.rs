@@ -79,7 +79,7 @@ fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2
     if ui_c != 0 {
         let (k_c, exp_c, frac_c) = P32E2::separate_bits(ui_c);
         let mut frac64_c = (frac_c as u64) << 32;
-        let shift_right = ((k_a - k_c) << 2) + (exp_a - exp_c) as i16;
+        let mut shift_right = ((k_a - k_c) << 2) + (exp_a - exp_c) as i16;
 
         exp_z = if shift_right < 0 {
             // |ui_c| > |Prod|
