@@ -27,8 +27,6 @@ fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2
     let mut k_z = 0_i16;
     let mut exp_z: i32;
     let mut frac_z: u32 = 0; // possibly uninitialized
-    let reg_a: u32 = 0; // possibly uninitialized
-
     //NaR
     if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) || (ui_c == 0x8000_0000) {
         return P32E2::from_bits(0x8000_0000);
@@ -189,7 +187,7 @@ fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2
             //remove hidden bits
             frac64_z &= 0x3FFF_FFFF_FFFF_FFFF;
             frac_z = (frac64_z >> (reg_z + 34)) as u32; //frac32Z>>16;
-            bit_n_plus_one |= (0x2_0000_0000 & (frac64_z >> reg_a)) != 0;
+            bit_n_plus_one |= (0x2_0000_0000 & (frac64_z >> reg_z)) != 0;
             exp_z <<= 28 - reg_z;
         } else {
             if reg_z == 30 {
