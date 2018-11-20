@@ -143,6 +143,7 @@ fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
             if shift_right <= -15 {
                 bits_more = true;
                 frac16_z = 0;
+                shift_right = 0;
             } else if (frac16_z << (16 + shift_right)/*&0xFFFF*/) != 0 {
                 bits_more = true;
             }
@@ -163,6 +164,7 @@ fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
             if shift_right >= 15 {
                 bits_more = true;
                 frac16_c = 0;
+                shift_right = 0;
             } else if (frac16_c << (16 - shift_right)/*&0xFFFF*/) != 0 {
                 bits_more = true;
             }

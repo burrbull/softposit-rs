@@ -92,6 +92,7 @@ fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1
             if shift_right <= -31 {
                 bits_more = true;
                 frac32_z = 0;
+                shift_right = 0;
             } else if (frac32_z << (32 + shift_right)/*&0xFFFF_FFFF*/) != 0 {
                 bits_more = true;
             }
@@ -113,6 +114,7 @@ fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1
             if shift_right >= 31 {
                 bits_more = true;
                 frac32_c = 0;
+                shift_right = 0;
             } else if (frac32_c << (32 - shift_right)) != 0 {
                 bits_more = true;
             }
