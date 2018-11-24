@@ -1,7 +1,7 @@
 use super::*;
+use crate::WithSign;
 use core::convert::From;
 use core::f64;
-use crate::WithSign;
 
 fn check_extra_p32_two_bits(
     mut float: f64,
@@ -235,7 +235,7 @@ impl From<f64> for P32E2 {
     }
 }
 
-#[cfg(feature="float_convert")]
+#[cfg(feature = "float_convert")]
 impl From<P32E2> for f32 {
     #[inline]
     fn from(a: P32E2) -> Self {
@@ -243,7 +243,7 @@ impl From<P32E2> for f32 {
     }
 }
 
-#[cfg(feature="float_convert")]
+#[cfg(feature = "float_convert")]
 impl From<P32E2> for f64 {
     #[inline]
     fn from(a: P32E2) -> Self {

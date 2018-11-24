@@ -1,12 +1,40 @@
 use super::*;
-use core::ops::{Add, Div, Mul, Neg, Sub};
 use crate::WithSign;
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 impl Neg for P16E1 {
     type Output = Self;
     #[inline]
     fn neg(self) -> Self {
         Self::from_bits(self.to_bits().wrapping_neg())
+    }
+}
+
+impl AddAssign for P16E1 {
+    #[inline]
+    fn add_assign(&mut self, other: Self) {
+        *self = *self + other
+    }
+}
+
+impl SubAssign for P16E1 {
+    #[inline]
+    fn sub_assign(&mut self, other: Self) {
+        *self = *self - other
+    }
+}
+
+impl MulAssign for P16E1 {
+    #[inline]
+    fn mul_assign(&mut self, other: Self) {
+        *self = *self * other
+    }
+}
+
+impl DivAssign for P16E1 {
+    #[inline]
+    fn div_assign(&mut self, other: Self) {
+        *self = *self / other
     }
 }
 

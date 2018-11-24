@@ -1,6 +1,6 @@
-use core::convert::From;
 use crate::WithSign;
 use crate::{P16E1, P32E2, P8E0};
+use core::convert::From;
 
 impl From<P8E0> for P16E1 {
     #[inline]

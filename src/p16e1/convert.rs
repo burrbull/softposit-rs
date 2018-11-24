@@ -1,7 +1,7 @@
 use super::*;
+use crate::WithSign;
 use core::convert::From;
 use core::f64;
-use crate::WithSign;
 
 impl From<i32> for P16E1 {
     #[inline]
@@ -510,7 +510,7 @@ impl From<f64> for P16E1 {
     }
 }
 
-#[cfg(feature="float_convert")]
+#[cfg(feature = "float_convert")]
 impl From<P16E1> for f32 {
     #[inline]
     fn from(a: P16E1) -> Self {
@@ -518,7 +518,7 @@ impl From<P16E1> for f32 {
     }
 }
 
-#[cfg(feature="float_convert")]
+#[cfg(feature = "float_convert")]
 impl From<P16E1> for f64 {
     #[inline]
     fn from(a: P16E1) -> Self {
