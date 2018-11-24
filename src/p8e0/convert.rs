@@ -182,6 +182,7 @@ impl From<f64> for P8E0 {
     }
 }
 
+#[cfg(feature="float_convert")]
 impl From<P8E0> for f32 {
     #[inline]
     fn from(a: P8E0) -> Self {
@@ -189,6 +190,7 @@ impl From<P8E0> for f32 {
     }
 }
 
+#[cfg(feature="float_convert")]
 impl From<P8E0> for f64 {
     #[inline]
     fn from(a: P8E0) -> Self {

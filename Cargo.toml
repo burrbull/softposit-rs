@@ -6,3 +6,8 @@ edition = "2018"
 
 [dependencies.libm]
 version = "0.1.2"
+optional = true
+
+[features]
+default = ["float_convert"]
+float_convert = ["libm"]

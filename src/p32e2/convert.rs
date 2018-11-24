@@ -235,6 +235,7 @@ impl From<f64> for P32E2 {
     }
 }
 
+#[cfg(feature="float_convert")]
 impl From<P32E2> for f32 {
     #[inline]
     fn from(a: P32E2) -> Self {
@@ -242,6 +243,7 @@ impl From<P32E2> for f32 {
     }
 }
 
+#[cfg(feature="float_convert")]
 impl From<P32E2> for f64 {
     #[inline]
     fn from(a: P32E2) -> Self {
@@ -294,15 +296,11 @@ impl From<P32E2> for f64 {
             1.
         } else {
             libm::pow(2., (28 - reg) as f64)
-            //    (2_f64).powf((28 - reg) as f64)
         };
 
         let d32 = libm::pow(16., k as f64)
             * libm::pow(2., exp as f64)
             * (1. + ((frac as f64) / fraction_max));
-        //let d32 = (16_f64).powf(k as f64)
-        //    * (2_f64).powf(exp as f64)
-        //    * (1. + ((frac as f64) / fraction_max));
         if sign {
             -d32
         } else {

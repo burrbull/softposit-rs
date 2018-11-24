@@ -382,7 +382,7 @@ fn sub_mags_p32(mut ui_a: u32, mut ui_b: u32) -> P32E2 {
 
     if ui_a == ui_b {
         //essential, if not need special handling
-        P32E2::from_bits(0);
+        return P32E2::from_bits(0);
     }
     if (ui_a as i32) < (ui_b as i32) {
         ui_a ^= ui_b;
