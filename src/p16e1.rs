@@ -147,12 +147,18 @@ impl P16E1 {
         let reg;
         if k < 0 {
             reg = (-k) as u8;
-            (0x4000_u16 >> reg, false, reg)
-        } else if k < 14 {
-            reg = (k + 1) as u8;
-            (0x7FFF - (0x7FFF >> reg), true, reg)
+            (if reg > 15 { 0 } else { 0x4000_u16 >> reg }, false, reg)
         } else {
-            (0x7FFF, true, 15)
+            reg = (k + 1) as u8;
+            (
+                if reg > 15 {
+                    0x7FFF
+                } else {
+                    0x7FFF - (0x7FFF >> reg)
+                },
+                true,
+                reg,
+            )
         }
     }
 }

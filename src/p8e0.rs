@@ -134,12 +134,10 @@ impl P8E0 {
         let reg;
         if k < 0 {
             reg = (-k) as u8;
-            (0x40 >> reg, false, reg)
-        } else if k < 6 {
-            reg = (k + 1) as u8;
-            (0x7F - (0x7F >> reg), true, reg)
+            (if reg > 7 { 0 } else { 0x40 >> reg }, false, reg)
         } else {
-            (0x7F, true, 7)
+            reg = (k + 1) as u8;
+            (if reg > 7 { 0x7F } else { 0x7F - (0x7F >> reg) }, true, reg)
         }
     }
 }

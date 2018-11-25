@@ -167,12 +167,22 @@ impl P32E2 {
         let reg;
         if k < 0 {
             reg = (-k) as u8;
-            (0x4000_0000_u32 >> reg, false, reg)
-        } else if k < 30 {
-            reg = (k + 1) as u8;
-            (0x7FFF_FFFF - (0x7FFF_FFFF >> reg), true, reg)
+            (
+                if reg > 31 { 0 } else { 0x4000_0000_u32 >> reg },
+                false,
+                reg,
+            )
         } else {
-            (0x7FFF_FFFF, true, 31)
+            reg = (k + 1) as u8;
+            (
+                if reg > 31 {
+                    0x7FFF_FFFF
+                } else {
+                    0x7FFF_FFFF - (0x7FFF_FFFF >> reg)
+                },
+                true,
+                reg,
+            )
         }
     }
 }
