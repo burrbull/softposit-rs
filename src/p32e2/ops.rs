@@ -150,7 +150,7 @@ impl Div for P32E2 {
             //remove carry and rcarry bits and shift to correct position
             frac64_z &= 0x3FFF_FFFF;
 
-            frac_a = (frac64_z as u32) >> (reg_a + 2);
+            frac_a = (frac64_z >> (reg_a + 2)) as u32;
 
             let mut bit_n_plus_one = false;
             let mut bits_more = false;
