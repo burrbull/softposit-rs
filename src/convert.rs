@@ -181,7 +181,7 @@ impl From<P32E2> for P16E1 {
             let (k_a, tmp) = P32E2::separate_bits_tmp(ui_a);
 
             //exp and frac
-            let mut reg_a: i16;
+            let mut reg_a: i8;
             let mut exp_frac32_a = tmp << 1;
             let regime = if k_a < 0 {
                 reg_a = (-k_a) << 1;

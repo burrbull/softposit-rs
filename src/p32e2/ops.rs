@@ -89,11 +89,8 @@ impl Sub for P32E2 {
 impl Div for P32E2 {
     type Output = Self;
     #[inline]
-    #[allow(unused_assignments)]
     fn div(self, other: Self) -> Self {
         let mut u_z: u32;
-        let mut bit_n_plus_one = false;
-        let mut bits_more = false;
 
         let mut ui_a = self.to_bits();
         let mut ui_b = other.to_bits();
@@ -144,14 +141,7 @@ impl Div for P32E2 {
             }
         }
 
-        let reg_a: u16;
-        let (reg_sa, regime) = if k_a < 0 {
-            reg_a = (-k_a) as u16;
-            (false, 0x4000_0000_u32 >> reg_a)
-        } else {
-            reg_a = (k_a + 1) as u16;
-            (true, 0x7FFF_FFFF - (0x7FFF_FFFF >> reg_a))
-        };
+        let (regime, reg_sa, reg_a) = P32E2::calculate_regime(k_a);
 
         if reg_a > 30 {
             //max or min pos. exp and frac does not matter.
@@ -162,6 +152,8 @@ impl Div for P32E2 {
 
             frac_a = (frac64_z as u32) >> (reg_a + 2);
 
+            let mut bit_n_plus_one = false;
+            let mut bits_more = false;
             if reg_a <= 28 {
                 bit_n_plus_one = ((frac64_z >> (reg_a + 1)) & 0x1) != 0;
                 exp_a <<= 28 - reg_a;
@@ -199,11 +191,7 @@ impl Div for P32E2 {
 impl Mul for P32E2 {
     type Output = Self;
     #[inline]
-    #[allow(unused_assignments)]
     fn mul(self, other: Self) -> Self {
-        let mut bit_n_plus_one = false;
-        let mut bits_more = false;
-
         let mut ui_a = self.to_bits();
         let mut ui_b = other.to_bits();
 
@@ -246,14 +234,7 @@ impl Mul for P32E2 {
             }
             frac64_z >>= 1;
         }
-        let reg_a: u16;
-        let (reg_sa, regime) = if k_a < 0 {
-            reg_a = (-k_a) as u16;
-            (false, 0x4000_0000_u32 >> reg_a)
-        } else {
-            reg_a = (k_a + 1) as u16;
-            (true, 0x7FFF_FFFF - (0x7FFF_FFFF >> reg_a))
-        };
+        let (regime, reg_sa, reg_a) = P32E2::calculate_regime(k_a);
 
         let u_z = if reg_a > 30 {
             //max or min pos. exp and frac does not matter.
@@ -267,13 +248,13 @@ impl Mul for P32E2 {
             frac64_z = (frac64_z & 0xFFF_FFFF_FFFF_FFFF) >> reg_a;
             frac_a = (frac64_z >> 32) as u32;
 
+            let mut bit_n_plus_one = false;
             if reg_a <= 28 {
-                bit_n_plus_one |= (0x8000_0000 & frac64_z) != 0;
+                bit_n_plus_one = (0x8000_0000 & frac64_z) != 0;
                 exp_a <<= 28 - reg_a;
             } else {
                 if reg_a == 30 {
                     bit_n_plus_one = (exp_a & 0x2) != 0;
-                    bits_more = (exp_a & 0x1) != 0;
                     exp_a = 0;
                 } else if reg_a == 29 {
                     bit_n_plus_one = (exp_a & 0x1) != 0;
@@ -281,14 +262,13 @@ impl Mul for P32E2 {
                 }
                 if frac_a > 0 {
                     frac_a = 0;
-                    bits_more = true;
                 }
             }
             //sign is always zero
             let mut u_z = P32E2::pack_to_ui(regime, exp_a as u32, frac_a);
             //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
             if bit_n_plus_one {
-                bits_more = (0x7FFF_FFFF & frac64_z) != 0;
+                let bits_more = (0x7FFF_FFFF & frac64_z) != 0;
                 u_z += (u_z & 1) | (bits_more as u32);
             }
             u_z
@@ -298,13 +278,8 @@ impl Mul for P32E2 {
     }
 }
 
-#[allow(unused_assignments)]
 #[inline]
 fn add_mags_p32(mut ui_a: u32, mut ui_b: u32) -> P32E2 {
-    let mut u_z: u32;
-    let mut bit_n_plus_one = false;
-    let mut bits_more = false;
-
     let sign = P32E2::sign_ui(ui_a);
     if sign {
         ui_a = ui_a.wrapping_neg();
@@ -334,7 +309,7 @@ fn add_mags_p32(mut ui_a: u32, mut ui_b: u32) -> P32E2 {
         frac64_b = 0;
     } else {
         frac64_b >>= shift_right;
-    } //frac64_b >>= shift_right
+    }
 
     frac64_a += frac64_b;
 
@@ -347,31 +322,28 @@ fn add_mags_p32(mut ui_a: u32, mut ui_b: u32) -> P32E2 {
         }
         frac64_a >>= 1;
     }
-    let reg_a: u16;
-    let (reg_sa, regime) = if k_a < 0 {
-        reg_a = (-k_a) as u16;
-        (false, 0x4000_0000_u32 >> reg_a)
-    } else {
-        reg_a = (k_a + 1) as u16;
-        (true, 0x7FFF_FFFF - (0x7FFF_FFFF >> reg_a))
-    };
+    let (regime, reg_sa, reg_a) = P32E2::calculate_regime(k_a);
 
-    if reg_a > 30 {
+    let u_z = if reg_a > 30 {
         //max or min pos. exp and frac does not matter.
-        u_z = if reg_sa { 0x7FFF_FFFF } else { 0x1 };
+        if reg_sa {
+            0x7FFF_FFFF
+        } else {
+            0x1
+        }
     } else {
         //remove hidden bits
         frac64_a = (frac64_a & 0x3FFF_FFFF_FFFF_FFFF) >> (reg_a + 2); // 2 bits exp
 
         let mut frac_a = (frac64_a >> 32) as u32;
 
+        let mut bit_n_plus_one = false;
         if reg_a <= 28 {
-            bit_n_plus_one |= (0x8000_0000 & frac64_a) != 0;
+            bit_n_plus_one = (0x8000_0000 & frac64_a) != 0;
             exp_a <<= 28 - reg_a;
         } else {
             if reg_a == 30 {
                 bit_n_plus_one = (exp_a & 0x2) != 0;
-                bits_more = (exp_a & 0x1) != 0;
                 exp_a = 0;
             } else if reg_a == 29 {
                 bit_n_plus_one = (exp_a & 0x1) != 0;
@@ -379,28 +351,23 @@ fn add_mags_p32(mut ui_a: u32, mut ui_b: u32) -> P32E2 {
             }
             if frac_a > 0 {
                 frac_a = 0;
-                bits_more = true;
             }
         }
 
-        u_z = P32E2::pack_to_ui(regime, exp_a as u32, frac_a);
+        let mut u_z = P32E2::pack_to_ui(regime, exp_a as u32, frac_a);
         //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
         if bit_n_plus_one {
-            bits_more = (0x7FFF_FFFF & frac64_a) != 0;
+            let bits_more = (0x7FFF_FFFF & frac64_a) != 0;
             u_z += (u_z & 1) | (bits_more as u32);
         }
-    }
+        u_z
+    };
 
     P32E2::from_bits(u_z.with_sign(sign))
 }
 
-#[allow(unused_assignments)]
 #[inline]
 fn sub_mags_p32(mut ui_a: u32, mut ui_b: u32) -> P32E2 {
-    let mut u_z: u32;
-    let mut bit_n_plus_one = false;
-    let mut bits_more = false;
-
     let mut sign = P32E2::sign_ui(ui_a);
     if sign {
         ui_a = ui_a.wrapping_neg();
@@ -454,31 +421,28 @@ fn sub_mags_p32(mut ui_a: u32, mut ui_b: u32) -> P32E2 {
         ecarry = (0x4000_0000_0000_0000 & frac64_a) != 0;
     }
 
-    let reg_a: u16;
-    let (reg_sa, regime) = if k_a < 0 {
-        reg_a = (-k_a) as u16;
-        (false, 0x4000_0000_u32 >> reg_a)
-    } else {
-        reg_a = (k_a + 1) as u16;
-        (true, 0x7FFF_FFFF - (0x7FFF_FFFF >> reg_a))
-    };
+    let (regime, reg_sa, reg_a) = P32E2::calculate_regime(k_a);
 
-    if reg_a > 30 {
+    let u_z = if reg_a > 30 {
         //max or min pos. exp and frac does not matter.
-        u_z = if reg_sa { 0x7FFF_FFFF } else { 0x1 };
+        if reg_sa {
+            0x7FFF_FFFF
+        } else {
+            0x1
+        }
     } else {
         //remove hidden bits
         frac64_a = (frac64_a & 0x3FFF_FFFF_FFFF_FFFF) >> (reg_a + 2); // 2 bits exp
 
         let mut frac_a = (frac64_a >> 32) as u32;
 
+        let mut bit_n_plus_one = false;
         if reg_a <= 28 {
-            bit_n_plus_one |= (0x8000_0000 & frac64_a) != 0;
+            bit_n_plus_one = (0x8000_0000 & frac64_a) != 0;
             exp_a <<= 28 - reg_a;
         } else {
             if reg_a == 30 {
                 bit_n_plus_one = (exp_a & 0x2) != 0;
-                bits_more = (exp_a & 0x1) != 0;
                 exp_a = 0;
             } else if reg_a == 29 {
                 bit_n_plus_one = (exp_a & 0x1) != 0;
@@ -486,17 +450,17 @@ fn sub_mags_p32(mut ui_a: u32, mut ui_b: u32) -> P32E2 {
             }
             if frac_a > 0 {
                 frac_a = 0;
-                bits_more = true;
             }
         }
 
-        u_z = P32E2::pack_to_ui(regime, exp_a as u32, frac_a);
+        let mut u_z = P32E2::pack_to_ui(regime, exp_a as u32, frac_a);
         //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
         if bit_n_plus_one {
-            bits_more = (0x7FFF_FFFF & frac64_a) != 0;
+            let bits_more = (0x7FFF_FFFF & frac64_a) != 0;
             u_z += (u_z & 1) | (bits_more as u32);
         }
-    }
+        u_z
+    };
 
     P32E2::from_bits(u_z.with_sign(sign))
 }

@@ -90,11 +90,7 @@ impl Sub for P8E0 {
 impl Div for P8E0 {
     type Output = Self;
     #[inline]
-    #[allow(unused_assignments)]
     fn div(self, other: Self) -> Self {
-        let mut bit_n_plus_one = false;
-        let mut bits_more = false;
-
         let mut ui_a = self.to_bits();
         let ui_b = other.to_bits();
 
@@ -132,14 +128,8 @@ impl Div for P8E0 {
             }
         }
 
-        let reg_a: u8;
-        let (reg_sa, regime) = if k_a < 0 {
-            reg_a = (-k_a) as u8 /*& 0xFF*/;
-            (false, 0x40 >> reg_a)
-        } else {
-            reg_a = (k_a + 1) as u8;
-            (true, 0x7F - (0x7F >> reg_a))
-        };
+        let (regime, reg_sa, reg_a) = P8E0::calculate_regime(k_a);
+
         let u_z = if reg_a > 6 {
             //max or min pos. exp and frac does not matter.
             if reg_sa {
@@ -152,15 +142,16 @@ impl Div for P8E0 {
             frac16_z &= 0x7F;
             let frac_a = (frac16_z >> (reg_a + 1)) as u8;
 
-            bit_n_plus_one = (0x1 & (frac16_z >> reg_a)) != 0;
+            let bit_n_plus_one = (0x1 & (frac16_z >> reg_a)) != 0;
             let mut u_z = P8E0::pack_to_ui(regime, frac_a);
 
             //u_z = (uint16_t) (regime) + ((uint16_t) (exp_a)<< (13-reg_a)) + ((uint16_t)(frac_a));
             if bit_n_plus_one {
-                bits_more = (((1 << reg_a) - 1) & frac16_z) != 0;
-                if rem != 0 {
-                    bits_more = true;
-                }
+                let bits_more = if rem != 0 {
+                    true
+                } else {
+                    (((1 << reg_a) - 1) & frac16_z) != 0
+                };
                 //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
                 u_z += (u_z & 1) | (bits_more as u8);
             }
@@ -174,11 +165,7 @@ impl Div for P8E0 {
 impl Mul for P8E0 {
     type Output = Self;
     #[inline]
-    #[allow(unused_assignments)]
     fn mul(self, other: Self) -> Self {
-        let mut bit_n_plus_one = false;
-        let mut bits_more = false;
-
         let mut ui_a = self.to_bits();
         let ui_b = other.to_bits();
 
@@ -212,14 +199,7 @@ impl Mul for P8E0 {
             frac16_z >>= 1;
         }
 
-        let reg_a: u8;
-        let (reg_sa, regime) = if k_a < 0 {
-            reg_a = (-k_a) as u8;
-            (false, 0x40 >> reg_a)
-        } else {
-            reg_a = (k_a + 1) as u8;
-            (true, 0x7F - (0x7F >> reg_a))
-        };
+        let (regime, reg_sa, reg_a) = P8E0::calculate_regime(k_a);
 
         let u_z = if reg_a > 6 {
             //max or min pos. exp and frac does not matter.
@@ -232,12 +212,12 @@ impl Mul for P8E0 {
             //remove carry and rcarry bits and shift to correct position
             frac16_z = (frac16_z & 0x3FFF) >> reg_a;
             let frac_a = (frac16_z >> 8) as u8;
-            bit_n_plus_one = (0x80 & frac16_z) != 0;
+            let bit_n_plus_one = (0x80 & frac16_z) != 0;
             let mut u_z = P8E0::pack_to_ui(regime, frac_a);
 
             //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
             if bit_n_plus_one {
-                bits_more = (0x7F & frac16_z) != 0;
+                let bits_more = (0x7F & frac16_z) != 0;
                 u_z += (u_z & 1) | (bits_more as u8);
             }
             u_z
@@ -247,12 +227,8 @@ impl Mul for P8E0 {
     }
 }
 
-#[allow(unused_assignments)]
 #[inline]
 fn add_mags_p8(mut ui_a: u8, mut ui_b: u8) -> P8E0 {
-    let mut bit_n_plus_one = false;
-    let mut bits_more = false;
-
     let sign = P8E0::sign_ui(ui_a);
     if sign {
         ui_a = ui_a.wrapping_neg();
@@ -286,14 +262,7 @@ fn add_mags_p8(mut ui_a: u8, mut ui_b: u8) -> P8E0 {
         frac16_a >>= 1;
     }
 
-    let reg_a: u8;
-    let (reg_sa, regime) = if k_a < 0 {
-        reg_a = (-k_a) as u8;
-        (false, 0x40 >> reg_a)
-    } else {
-        reg_a = (k_a + 1) as u8;
-        (true, 0x7F - (0x7F >> reg_a))
-    };
+    let (regime, reg_sa, reg_a) = P8E0::calculate_regime(k_a);
 
     let u_z = if reg_a > 6 {
         //max or min pos. exp and frac does not matter.
@@ -305,12 +274,12 @@ fn add_mags_p8(mut ui_a: u8, mut ui_b: u8) -> P8E0 {
     } else {
         frac16_a = (frac16_a & 0x3FFF) >> reg_a;
         let frac_a = (frac16_a >> 8) as u8;
-        bit_n_plus_one = (0x80 & frac16_a) != 0;
+        let bit_n_plus_one = (0x80 & frac16_a) != 0;
         let mut u_z = P8E0::pack_to_ui(regime, frac_a);
 
         //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
         if bit_n_plus_one {
-            bits_more = (0x7F & frac16_a) != 0;
+            let bits_more = (0x7F & frac16_a) != 0;
             u_z += (u_z & 1) | (bits_more as u8);
         }
         u_z
@@ -318,12 +287,8 @@ fn add_mags_p8(mut ui_a: u8, mut ui_b: u8) -> P8E0 {
     P8E0::from_bits(u_z.with_sign(sign))
 }
 
-#[allow(unused_assignments)]
 #[inline]
 fn sub_mags_p8(mut ui_a: u8, mut ui_b: u8) -> P8E0 {
-    let mut bit_n_plus_one = false;
-    let mut bits_more = false;
-
     //Both ui_a and ui_b are actually the same signs if ui_b inherits sign of sub
     //Make both positive
     let mut sign = P8E0::sign_ui(ui_a);
@@ -368,14 +333,7 @@ fn sub_mags_p8(mut ui_a: u8, mut ui_b: u8) -> P8E0 {
         frac16_a <<= 1;
     }
 
-    let reg_a: u8;
-    let (reg_sa, regime) = if k_a < 0 {
-        reg_a = (-k_a) as u8;
-        (false, 0x40 >> reg_a)
-    } else {
-        reg_a = (k_a + 1) as u8;
-        (true, 0x7F - (0x7F >> reg_a))
-    };
+    let (regime, reg_sa, reg_a) = P8E0::calculate_regime(k_a);
 
     let u_z = if reg_a > 6 {
         //max or min pos. exp and frac does not matter.
@@ -387,11 +345,11 @@ fn sub_mags_p8(mut ui_a: u8, mut ui_b: u8) -> P8E0 {
     } else {
         frac16_a = (frac16_a & 0x3FFF) >> reg_a;
         let frac_a = (frac16_a >> 8) as u8;
-        bit_n_plus_one = (0x80 & frac16_a) != 0;
+        let bit_n_plus_one = (0x80 & frac16_a) != 0;
         let mut u_z = P8E0::pack_to_ui(regime, frac_a);
 
         if bit_n_plus_one {
-            bits_more = (0x7F & frac16_a) != 0;
+            let bits_more = (0x7F & frac16_a) != 0;
             u_z += (u_z & 1) | (bits_more as u8);
         }
         u_z

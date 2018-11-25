@@ -90,11 +90,8 @@ fn sqrt(p_a: P8E0) -> P8E0 {
 //softposit_mulAdd_subC => (ui_a*ui_b)-ui_c
 //softposit_mulAdd_subProd => ui_c - (ui_a*ui_b)
 //Default is always op==0
-#[allow(unused_assignments)]
 fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
-    let mut bit_n_plus_one = false;
     let mut bits_more = false;
-    let mut k_z = 0_i8;
 
     //NaR
     if (ui_a == 0x80) || (ui_b == 0x80) || (ui_c == 0x80) {
@@ -133,6 +130,7 @@ fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
         frac16_z >>= 1;
     }
 
+    let mut k_z: i8;
     if ui_c != 0 {
         let (k_c, frac_c) = P8E0::separate_bits(ui_c);
         let mut frac16_c = (frac_c as u16) << 7;
@@ -209,14 +207,7 @@ fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
         k_z = k_a;
     }
 
-    let reg_z: u8;
-    let (reg_sz, regime) = if k_z < 0 {
-        reg_z = (-k_z) as u8;
-        (false, 0x40 >> reg_z)
-    } else {
-        reg_z = (k_z + 1) as u8;
-        (true, 0x7F - (0x7F >> reg_z))
-    };
+    let (regime, reg_sz, reg_z) = P8E0::calculate_regime(k_z);
 
     let u_z = if reg_z > 6 {
         //max or min pos. exp and frac does not matter.
@@ -231,7 +222,7 @@ fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
 
         let frac_z = ((frac16_z >> reg_z) >> 8) as u8;
 
-        bit_n_plus_one = ((frac16_z >> reg_z) & 0x80) != 0;
+        let bit_n_plus_one = ((frac16_z >> reg_z) & 0x80) != 0;
         let mut u_z = P8E0::pack_to_ui(regime, frac_z);
 
         if bit_n_plus_one {

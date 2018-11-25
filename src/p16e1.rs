@@ -96,7 +96,7 @@ impl P16E1 {
     }
 
     #[inline]
-    fn pack_to_ui(regime: u16, reg_a: u16, exp_a: u16, frac_a: u16) -> u16 {
+    fn pack_to_ui(regime: u16, reg_a: u8, exp_a: u16, frac_a: u16) -> u16 {
         regime + (exp_a << (13 - reg_a)) + frac_a
     }
 
@@ -107,7 +107,7 @@ impl P16E1 {
     }
     #[inline]
     pub(crate) fn separate_bits_tmp(bits: u16) -> (i8, u16) {
-        let mut k = 0_i8;
+        let mut k = 0;
         let mut tmp = bits << 2;
         if Self::sign_reg_ui(bits) {
             while (tmp >> 15) != 0 {
@@ -140,6 +140,20 @@ impl P16E1 {
             scale += 1; // If exponent is 1, increment the scale.
         }
         (scale, bits)
+    }
+
+    #[inline]
+    fn calculate_regime(k: i8) -> (u16, bool, u8) {
+        let reg;
+        if k < 0 {
+            reg = (-k) as u8;
+            (0x4000_u16 >> reg, false, reg)
+        } else if k < 14 {
+            reg = (k + 1) as u8;
+            (0x7FFF - (0x7FFF >> reg), true, reg)
+        } else {
+            (0x7FFF, true, 15)
+        }
     }
 }
 

@@ -101,7 +101,7 @@ impl P32E2 {
     }
 
     #[inline]
-    pub(crate) fn separate_bits(bits: u32) -> (i16, i32, u32) {
+    pub(crate) fn separate_bits(bits: u32) -> (i8, i32, u32) {
         let (k, tmp) = Self::separate_bits_tmp(bits);
         (
             k,
@@ -111,8 +111,8 @@ impl P32E2 {
     }
 
     #[inline]
-    pub(crate) fn separate_bits_tmp(bits: u32) -> (i16, u32) {
-        let mut k = 0_i16;
+    pub(crate) fn separate_bits_tmp(bits: u32) -> (i8, u32) {
+        let mut k = 0;
         let mut tmp = bits << 2;
         if Self::sign_reg_ui(bits) {
             while (tmp >> 31) != 0 {
@@ -160,6 +160,20 @@ impl P32E2 {
             scale += 1;
         }
         (scale, bits)
+    }
+
+    #[inline]
+    fn calculate_regime(k: i8) -> (u32, bool, u8) {
+        let reg;
+        if k < 0 {
+            reg = (-k) as u8;
+            (0x4000_0000_u32 >> reg, false, reg)
+        } else if k < 30 {
+            reg = (k + 1) as u8;
+            (0x7FFF_FFFF - (0x7FFF_FFFF >> reg), true, reg)
+        } else {
+            (0x7FFF_FFFF, true, 31)
+        }
     }
 }
 

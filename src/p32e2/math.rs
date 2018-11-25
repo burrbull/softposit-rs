@@ -19,15 +19,9 @@ impl P32E2 {
     }
 }
 
-#[allow(unused_assignments)]
 fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2 {
-    let mut u_z: u32;
-    let mut bit_n_plus_one = false;
     let mut bits_more = false;
-    let mut k_z = 0_i16;
-    let mut exp_z: i32;
-    let mut frac_z: u32 = 0; // possibly uninitialized
-                             //NaR
+    //NaR
     if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) || (ui_c == 0x8000_0000) {
         return P32E2::from_bits(0x8000_0000);
     } else if (ui_a == 0) || (ui_b == 0) {
@@ -76,10 +70,12 @@ fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2
         frac64_z >>= 1;
     }
 
+    let mut k_z;
+    let mut exp_z: i32;
     if ui_c != 0 {
         let (k_c, exp_c, frac_c) = P32E2::separate_bits(ui_c);
         let mut frac64_c = (frac_c as u64) << 32;
-        let mut shift_right = ((k_a - k_c) << 2) + (exp_a - exp_c) as i16;
+        let mut shift_right = (((k_a - k_c) as i16) << 2) + (exp_a - exp_c) as i16;
 
         exp_z = if shift_right < 0 {
             // |ui_c| > |Prod|
@@ -168,28 +164,24 @@ fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2
         k_z = k_a;
         exp_z = exp_a;
     }
-    let reg_z: u32;
-    let (reg_sz, regime) = if k_z < 0 {
-        reg_z = (-k_z) as u32;
-        (false, 0x4000_0000 >> reg_z)
-    } else {
-        reg_z = (k_z + 1) as u32;
-        (true, 0x7FFF_FFFF - (0x7FFF_FFFF >> reg_z))
-    };
 
-    if reg_z > 30 {
+    let (regime, reg_sz, reg_z) = P32E2::calculate_regime(k_z);
+
+    let u_z = if reg_z > 30 {
         //max or min pos. exp and frac does not matter.
         if reg_sz {
-            u_z = 0x7FFF_FFFF;
+            0x7FFF_FFFF
         } else {
-            u_z = 0x1;
+            0x1
         }
     } else {
+        let mut bit_n_plus_one = false;
+        let mut frac_z: u32 = 0; // possibly uninitialized
         if reg_z <= 28 {
             //remove hidden bits
             frac64_z &= 0x3FFF_FFFF_FFFF_FFFF;
             frac_z = (frac64_z >> (reg_z + 34)) as u32; //frac32Z>>16;
-            bit_n_plus_one |= (0x2_0000_0000 & (frac64_z >> reg_z)) != 0;
+            bit_n_plus_one = (0x2_0000_0000 & (frac64_z >> reg_z)) != 0;
             exp_z <<= 28 - reg_z;
         } else {
             if reg_z == 30 {
@@ -205,7 +197,7 @@ fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2
                 bits_more = true;
             }
         }
-        u_z = P32E2::pack_to_ui(regime, exp_z as u32, frac_z);
+        let mut u_z = P32E2::pack_to_ui(regime, exp_z as u32, frac_z);
 
         if bit_n_plus_one {
             if (frac64_z << (32 - reg_z)) != 0
@@ -215,7 +207,8 @@ fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2
             }
             u_z += (u_z & 1) | (bits_more as u32);
         }
-    }
+        u_z
+    };
     P32E2::from_bits(u_z.with_sign(sign_z))
 }
 

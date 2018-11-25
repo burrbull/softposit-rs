@@ -38,11 +38,8 @@ impl DivAssign for P16E1 {
     }
 }
 
-#[allow(unused_assignments)]
 #[inline]
 pub fn sub_mags_p16(mut ui_a: u16, mut ui_b: u16) -> P16E1 {
-    let mut bits_more = false;
-
     //Both ui_a and ui_b are actually the same signs if ui_b inherits sign of sub
     //Make both positive
     let mut sign = P16E1::sign_ui(ui_a);
@@ -101,14 +98,7 @@ pub fn sub_mags_p16(mut ui_a: u16, mut ui_b: u16) -> P16E1 {
         frac32_a <<= 1;
     }
 
-    let reg_a: u16;
-    let (reg_sa, regime) = if k_a < 0 {
-        reg_a = (-k_a) as u16;
-        (false, 0x4000_u16 >> reg_a)
-    } else {
-        reg_a = (k_a + 1) as u16;
-        (true, 0x7FFF - (0x7FFF >> reg_a))
-    };
+    let (regime, reg_sa, reg_a) = P16E1::calculate_regime(k_a);
 
     let u_z = if reg_a > 14 {
         //max or min pos. exp and frac does not matter.
@@ -126,14 +116,13 @@ pub fn sub_mags_p16(mut ui_a: u16, mut ui_b: u16) -> P16E1 {
             bit_n_plus_one = ((frac32_a >> 15) & 0x1) != 0;
         } else if frac32_a > 0 {
             frac_a = 0;
-            bits_more = true;
         }
         if (reg_a == 14) && (exp_a != 0) {
             bit_n_plus_one = true;
         }
         let mut u_z = P16E1::pack_to_ui(regime, reg_a, exp_a as u16, frac_a);
         if bit_n_plus_one {
-            bits_more = (frac32_a & 0x7FFF) != 0;
+            let bits_more = (frac32_a & 0x7FFF) != 0;
             //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
             u_z += (u_z & 1) | (bits_more as u16);
         }
@@ -142,11 +131,8 @@ pub fn sub_mags_p16(mut ui_a: u16, mut ui_b: u16) -> P16E1 {
     P16E1::from_bits(u_z.with_sign(sign))
 }
 
-#[allow(unused_assignments)]
 #[inline]
 pub fn add_mags_p16(mut ui_a: u16, mut ui_b: u16) -> P16E1 {
-    let mut bits_more = false;
-
     let sign = P16E1::sign_ui(ui_a); //sign is always positive.. actually don't have to do this.
     if sign {
         ui_a = ui_a.wrapping_neg();
@@ -198,14 +184,7 @@ pub fn add_mags_p16(mut ui_a: u16, mut ui_b: u16) -> P16E1 {
         }
     }
 
-    let reg_a: u16;
-    let (reg_sa, regime) = if k_a < 0 {
-        reg_a = (-k_a) as u16;
-        (false, 0x4000_u16 >> reg_a)
-    } else {
-        reg_a = (k_a + 1) as u16;
-        (true, 0x7FFF - (0x7FFF >> reg_a))
-    };
+    let (regime, reg_sa, reg_a) = P16E1::calculate_regime(k_a);
 
     let u_z = if reg_a > 14 {
         //max or min pos. exp and frac does not matter.
@@ -223,14 +202,13 @@ pub fn add_mags_p16(mut ui_a: u16, mut ui_b: u16) -> P16E1 {
             bit_n_plus_one = ((frac32_a >> 15) & 0x1) != 0;
         } else if frac32_a > 0 {
             frac_a = 0;
-            bits_more = true;
         }
         if (reg_a == 14) && (exp_a != 0) {
             bit_n_plus_one = true;
         }
         let mut u_z = P16E1::pack_to_ui(regime, reg_a, exp_a as u16, frac_a);
         if bit_n_plus_one {
-            bits_more = (frac32_a & 0x7FFF) != 0;
+            let bits_more = (frac32_a & 0x7FFF) != 0;
             //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
             u_z += (u_z & 1) | (bits_more as u16);
         }
@@ -289,12 +267,8 @@ impl Sub for P16E1 {
 
 impl Mul for P16E1 {
     type Output = Self;
-    #[allow(unused_assignments)]
     #[inline]
     fn mul(self, other: Self) -> Self {
-        let mut bit_n_plus_one = false;
-        let mut bits_more = false;
-
         let mut ui_a = self.to_bits();
         let mut ui_b = other.to_bits();
 
@@ -336,14 +310,7 @@ impl Mul for P16E1 {
             frac32_z >>= 1;
         }
 
-        let reg_a: u16;
-        let (reg_sa, regime) = if k_a < 0 {
-            reg_a = (-k_a) as u16/* & 0xFFFF */;
-            (false, 0x4000 >> reg_a)
-        } else {
-            reg_a = (k_a + 1) as u16;
-            (true, 0x7FFF - (0x7FFF >> reg_a))
-        };
+        let (regime, reg_sa, reg_a) = P16E1::calculate_regime(k_a);
 
         let u_z = if reg_a > 14 {
             //max or min pos. exp and frac does not matter.
@@ -357,11 +324,11 @@ impl Mul for P16E1 {
             frac32_z = (frac32_z & 0xFFF_FFFF) >> (reg_a - 1);
             frac_a = (frac32_z >> 16) as u16;
 
+            let mut bit_n_plus_one = false;
             if reg_a != 14 {
-                bit_n_plus_one |= (0x8000 & frac32_z) != 0;
+                bit_n_plus_one = (0x8000 & frac32_z) != 0;
             } else if frac_a > 0 {
                 frac_a = 0;
-                bits_more = true;
             }
             if (reg_a == 14) && (exp_a != 0) {
                 bit_n_plus_one = true;
@@ -371,7 +338,7 @@ impl Mul for P16E1 {
             let mut u_z = P16E1::pack_to_ui(regime, reg_a, exp_a as u16, frac_a);
             //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
             if bit_n_plus_one {
-                bits_more = (0x7FFF & frac32_z) != 0;
+                let bits_more = (0x7FFF & frac32_z) != 0;
                 u_z += (u_z & 1) | (bits_more as u16);
             }
             u_z
@@ -383,12 +350,8 @@ impl Mul for P16E1 {
 
 impl Div for P16E1 {
     type Output = Self;
-    #[allow(unused_assignments)]
     #[inline]
     fn div(self, other: Self) -> Self {
-        let mut bit_n_plus_one = false;
-        let mut bits_more = false;
-
         let mut ui_a = self.to_bits();
         let mut ui_b = other.to_bits();
 
@@ -434,14 +397,7 @@ impl Div for P16E1 {
             }
         }
 
-        let reg_a: u16;
-        let (reg_sa, regime) = if k_a < 0 {
-            reg_a = (-k_a) as u16/* & 0xFFFF */;
-            (false, 0x4000 >> reg_a)
-        } else {
-            reg_a = (k_a + 1) as u16;
-            (true, 0x7FFF - (0x7FFF >> reg_a))
-        };
+        let (regime, reg_sa, reg_a) = P16E1::calculate_regime(k_a);
 
         let u_z = if reg_a > 14 {
             //max or min pos. exp and frac does not matter.
@@ -455,11 +411,11 @@ impl Div for P16E1 {
             frac32_z &= 0x3FFF;
             frac_a = (frac32_z >> (reg_a + 1)) as u16;
 
+            let mut bit_n_plus_one = false;
             if reg_a != 14 {
                 bit_n_plus_one = ((frac32_z >> reg_a) & 0x1) != 0;
             } else if frac_a > 0 {
                 frac_a = 0;
-                bits_more = true;
             }
             if (reg_a == 14) && (exp_a != 0) {
                 bit_n_plus_one = true;
@@ -469,10 +425,11 @@ impl Div for P16E1 {
             let mut u_z = P16E1::pack_to_ui(regime, reg_a, exp_a as u16, frac_a);
 
             if bit_n_plus_one {
-                bits_more = (((1 << reg_a) - 1) & frac32_z) != 0;
-                if rem != 0 {
-                    bits_more = true;
-                }
+                let bits_more = if rem != 0 {
+                    true
+                } else {
+                    (((1 << reg_a) - 1) & frac32_z) != 0
+                };
                 //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
                 u_z += (u_z & 1) | (bits_more as u16);
             }

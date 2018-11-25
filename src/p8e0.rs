@@ -97,7 +97,7 @@ impl P8E0 {
 
     #[inline]
     pub(crate) fn separate_bits_tmp(bits: u8) -> (i8, u8) {
-        let mut k = 0_i8;
+        let mut k = 0;
         let mut tmp = bits << 2;
         if Self::sign_reg_ui(bits) {
             while (tmp >> 7) != 0 {
@@ -127,6 +127,20 @@ impl P8E0 {
         }
         bits <<= 1; // Skip over termination bit, which is 0.
         (scale, bits)
+    }
+
+    #[inline]
+    fn calculate_regime(k: i8) -> (u8, bool, u8) {
+        let reg;
+        if k < 0 {
+            reg = (-k) as u8;
+            (0x40 >> reg, false, reg)
+        } else if k < 6 {
+            reg = (k + 1) as u8;
+            (0x7F - (0x7F >> reg), true, reg)
+        } else {
+            (0x7F, true, 7)
+        }
     }
 }
 
