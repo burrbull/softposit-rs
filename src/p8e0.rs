@@ -7,6 +7,8 @@ mod ops;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct P8E0(i8);
 
+pub const ZERO: P8E0 = P8E0::new(0);
+
 /// Machine epsilon (3.125e-2).
 pub const EPSILON: P8E0 = P8E0::new(0x_2);
 
@@ -50,6 +52,10 @@ impl P8E0 {
     #[inline]
     pub fn is_infinite(self) -> bool {
         self == INFINITY
+    }
+    #[inline]
+    pub fn is_zero(self) -> bool {
+        self == ZERO
     }
     #[inline]
     pub fn is_finite(self) -> bool {
@@ -145,5 +151,31 @@ impl P8E0 {
 impl PartialOrd for P8E0 {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         (self.to_bits() as i8).partial_cmp(&(other.to_bits() as i8))
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct Q8E0(i32);
+
+impl Q8E0 {
+    #[inline]
+    pub const fn new(i: i32) -> Self {
+        Q8E0(i)
+    }
+    #[inline]
+    pub fn from_bits(v: u32) -> Self {
+        unsafe { mem::transmute(v) }
+    }
+    #[inline]
+    pub fn to_bits(self) -> u32 {
+        unsafe { mem::transmute(self) }
+    }
+    #[inline]
+    pub fn is_zero(self) -> bool {
+        self.to_bits() == 0
+    }
+    #[inline]
+    pub fn is_nan(self) -> bool {
+        self.to_bits() == 0x8000_0000
     }
 }

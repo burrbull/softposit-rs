@@ -8,6 +8,8 @@ mod ops;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct P32E2(i32);
 
+pub const ZERO: P32E2 = P32E2::new(0);
+
 /// Machine epsilon (7.450580596923828e-9).
 pub const EPSILON: P32E2 = P32E2::new(0x_a0_0000);
 
@@ -51,6 +53,10 @@ impl P32E2 {
     #[inline]
     pub fn is_infinite(self) -> bool {
         self == INFINITY
+    }
+    #[inline]
+    pub fn is_zero(self) -> bool {
+        self == ZERO
     }
     #[inline]
     pub fn is_finite(self) -> bool {
@@ -190,5 +196,40 @@ impl P32E2 {
 impl PartialOrd for P32E2 {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         (self.to_bits() as i32).partial_cmp(&(other.to_bits() as i32))
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct Q32E2(i64, u64, u64, u64, u64, u64, u64, u64);
+
+impl Q32E2 {
+    #[inline]
+    pub const fn new(
+        i: i64,
+        u1: u64,
+        u2: u64,
+        u3: u64,
+        u4: u64,
+        u5: u64,
+        u6: u64,
+        u7: u64,
+    ) -> Self {
+        Q32E2(i, u1, u2, u3, u4, u5, u6, u7)
+    }
+    #[inline]
+    pub fn from_bits(v: [u64; 8]) -> Self {
+        unsafe { mem::transmute(v) }
+    }
+    #[inline]
+    pub fn to_bits(self) -> [u64; 8] {
+        unsafe { mem::transmute(self) }
+    }
+    #[inline]
+    pub fn is_zero(self) -> bool {
+        self.to_bits() == [0, 0, 0, 0, 0, 0, 0, 0]
+    }
+    #[inline]
+    pub fn is_nan(self) -> bool {
+        self.to_bits() == [0x8000_0000, 0, 0, 0, 0, 0, 0, 0]
     }
 }

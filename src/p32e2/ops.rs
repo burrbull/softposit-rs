@@ -50,7 +50,7 @@ impl Add for P32E2 {
             // Not required but put here for speed
             P32E2::from_bits(ui_a | ui_b)
         } else if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) {
-            P32E2::from_bits(0x8000_0000)
+            INFINITY
         } else {
             //different signs
             if ((ui_a ^ ui_b) >> 31) != 0 {
@@ -71,7 +71,7 @@ impl Sub for P32E2 {
 
         //infinity
         if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) {
-            P32E2::from_bits(0x8000_0000)
+            INFINITY
         } else if (ui_a == 0) || (ui_b == 0) {
             //Zero
             P32E2::from_bits(ui_a | ui_b.wrapping_neg())
@@ -97,9 +97,9 @@ impl Div for P32E2 {
 
         //Zero or infinity
         if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) || (ui_b == 0) {
-            return P32E2::from_bits(0x8000_0000);
+            return INFINITY;
         } else if ui_a == 0 {
-            return P32E2::from_bits(0);
+            return ZERO;
         }
 
         let sign_a = P32E2::sign_ui(ui_a);
@@ -197,9 +197,9 @@ impl Mul for P32E2 {
 
         //NaR or Zero
         if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) {
-            return P32E2::from_bits(0x8000_0000);
+            return INFINITY;
         } else if (ui_a == 0) || (ui_b == 0) {
-            return P32E2::from_bits(0);
+            return ZERO;
         }
 
         let sign_a = P32E2::sign_ui(ui_a);
@@ -377,7 +377,7 @@ fn sub_mags_p32(mut ui_a: u32, mut ui_b: u32) -> P32E2 {
 
     if ui_a == ui_b {
         //essential, if not need special handling
-        return P32E2::from_bits(0);
+        return ZERO;
     }
     if (ui_a as i32) < (ui_b as i32) {
         ui_a ^= ui_b;

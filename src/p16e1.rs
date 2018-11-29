@@ -8,6 +8,8 @@ mod ops;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct P16E1(i16);
 
+pub const ZERO: P16E1 = P16E1::new(0);
+
 /// Machine epsilon (2.44140625e-4).
 pub const EPSILON: P16E1 = P16E1::new(0x_100);
 
@@ -51,6 +53,10 @@ impl P16E1 {
     #[inline]
     pub fn is_infinite(self) -> bool {
         self == INFINITY
+    }
+    #[inline]
+    pub fn is_zero(self) -> bool {
+        self == ZERO
     }
     #[inline]
     pub fn is_finite(self) -> bool {
@@ -166,5 +172,31 @@ impl P16E1 {
 impl PartialOrd for P16E1 {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         (self.to_bits() as i16).partial_cmp(&(other.to_bits() as i16))
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct Q16E1(i64, u64);
+
+impl Q16E1 {
+    #[inline]
+    pub const fn new(i: i64, u: u64) -> Self {
+        Q16E1(i, u)
+    }
+    #[inline]
+    pub fn from_bits(v: [u64; 2]) -> Self {
+        unsafe { mem::transmute(v) }
+    }
+    #[inline]
+    pub fn to_bits(self) -> [u64; 2] {
+        unsafe { mem::transmute(self) }
+    }
+    #[inline]
+    pub fn is_zero(self) -> bool {
+        self.to_bits() == [0, 0]
+    }
+    #[inline]
+    pub fn is_nan(self) -> bool {
+        self.to_bits() == [0x8000_0000, 0]
     }
 }

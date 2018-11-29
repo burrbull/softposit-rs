@@ -51,7 +51,7 @@ pub fn sub_mags_p16(mut ui_a: u16, mut ui_b: u16) -> P16E1 {
 
     if ui_a == ui_b {
         //essential, if not need special handling
-        return P16E1::from_bits(0);
+        return ZERO;
     }
     if ui_a < ui_b {
         ui_a ^= ui_b;
@@ -229,7 +229,7 @@ impl Add for P16E1 {
             // Not required but put here for speed
             P16E1::from_bits(ui_a | ui_b)
         } else if (ui_a == 0x8000) || (ui_b == 0x8000) {
-            P16E1::from_bits(0x8000)
+            INFINITY
         } else {
             //different signs
             if ((ui_a ^ ui_b) >> 15) != 0 {
@@ -250,7 +250,7 @@ impl Sub for P16E1 {
 
         //infinity
         if (ui_a == 0x8000) || (ui_b == 0x8000) {
-            P16E1::from_bits(0x8000)
+            INFINITY
         } else if (ui_a == 0) || (ui_b == 0) {
             //Zero
             P16E1::from_bits(ui_a | ui_b.wrapping_neg())
@@ -274,9 +274,9 @@ impl Mul for P16E1 {
 
         //NaR or Zero
         if (ui_a == 0x8000) || (ui_b == 0x8000) {
-            return P16E1::from_bits(0x8000);
+            return INFINITY;
         } else if (ui_a == 0) || (ui_b == 0) {
-            return P16E1::from_bits(0);
+            return ZERO;
         }
 
         let sign_a = P16E1::sign_ui(ui_a);
@@ -357,9 +357,9 @@ impl Div for P16E1 {
 
         //NaR or Zero
         if (ui_a == 0x8000) || (ui_b == 0x8000) || (ui_b == 0) {
-            return P16E1::from_bits(0x8000);
+            return INFINITY;
         } else if ui_a == 0 {
-            return P16E1::from_bits(0);
+            return ZERO;
         }
 
         let sign_a = P16E1::sign_ui(ui_a);

@@ -81,7 +81,7 @@ impl From<f64> for P8E0 {
         let mut bits_more = false;
 
         if float == 0. {
-            return P8E0::new(0);
+            return ZERO;
         } else if !float.is_finite() {
             return INFINITY;
         } else if float >= 64. {
@@ -541,5 +541,64 @@ fn convert_u64_to_p8bits(a: u64) -> u8 {
             ui_a += 1;
         }
         ui_a
+    }
+}
+
+impl From<Q8E0> for P8E0 {
+    #[inline]
+    fn from(q_a: Q8E0) -> Self {
+        if q_a.is_zero() {
+            return ZERO;
+        } else if q_a.is_nan() {
+            return NAN;
+        }
+
+        let mut u_z = q_a.to_bits();
+
+        let sign = (u_z >> 31) != 0;
+
+        if sign {
+            u_z = u_z.wrapping_neg();
+        }
+
+        let mut no_lz = 0_i8;
+        let mut tmp = u_z;
+        while (tmp >> 31) == 0 {
+            no_lz += 1;
+            tmp <<= 1;
+        }
+        let mut frac32_a = tmp;
+
+        //default dot is between bit 19 and 20, extreme left bit is bit 0. Last right bit is bit 31.
+        //Scale =  k
+        let k_a = 19 - no_lz;
+
+        let (regime, reg_sa, reg_a) = P8E0::calculate_regime(k_a);
+
+        let u_a = if reg_a > 6 {
+            //max or min pos. exp and frac does not matter.
+            if reg_sa {
+                0x7F
+            } else {
+                0x1
+            }
+        } else {
+            //remove hidden bit
+            frac32_a &= 0x7FFF_FFFF;
+            let shift = reg_a + 25; // 1 sign bit and 1 r terminating bit , 16+7+2
+            let frac_a = (frac32_a >> shift) as u8;
+
+            let bit_n_plus_one = ((frac32_a >> (shift - 1)) & 0x1) != 0;
+
+            let mut u_a = P8E0::pack_to_ui(regime, frac_a);
+
+            if bit_n_plus_one {
+                let bits_more = (frac32_a << (33 - shift)) != 0;
+                u_a += (u_a & 1) | (bits_more as u8);
+            }
+            u_a
+        };
+
+        P8E0::from_bits(u_a.with_sign(sign))
     }
 }

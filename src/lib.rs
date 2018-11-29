@@ -1,7 +1,7 @@
 #![no_std]
 
 pub mod p8e0;
-pub use self::p8e0::P8E0;
+pub use self::p8e0::{P8E0, Q8E0};
 pub type P8 = P8E0;
 
 pub mod p16e1;

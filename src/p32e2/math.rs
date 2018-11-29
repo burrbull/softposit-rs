@@ -19,11 +19,22 @@ impl P32E2 {
     }
 }
 
+impl Q32E2 {
+    #[inline]
+    pub fn fdp_add(self, p_a: P32E2, p_b: P32E2) -> Self {
+        q32_fdp_add(self, p_a, p_b)
+    }
+    #[inline]
+    pub fn fdp_sub(self, p_a: P32E2, p_b: P32E2) -> Self {
+        q32_fdp_sub(self, p_a, p_b)
+    }
+}
+
 fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2 {
     let mut bits_more = false;
     //NaR
     if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) || (ui_c == 0x8000_0000) {
-        return P32E2::from_bits(0x8000_0000);
+        return INFINITY;
     } else if (ui_a == 0) || (ui_b == 0) {
         return match op {
             MulAddType::SubC => P32E2::from_bits(ui_c.wrapping_neg()),
@@ -122,7 +133,7 @@ fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2
         } else {
             if (frac64_c == frac64_z) && (sign_z != sign_c) {
                 //check if same number
-                return P32E2::from_bits(0);
+                return ZERO;
             } else if sign_z == sign_c {
                 frac64_z += frac64_c;
             } else if frac64_z < frac64_c {
@@ -227,7 +238,7 @@ fn round(p_a: P32E2) -> P32E2 {
     } // A is now |A|.
     if ui_a <= 0x3800_0000 {
         // 0 <= |pA| <= 1/2 rounds to zero.
-        return P32E2::from_bits(0);
+        return ZERO;
     } else if ui_a < 0x4400_0000 {
         // 1/2 < x < 3/2 rounds to 1.
         u_a = 0x4000_0000;
@@ -280,7 +291,7 @@ fn sqrt(p_a: P32E2) -> P32E2 {
 
     // If NaR or a negative number, return NaR.
     if (ui_a & 0x8000_0000) != 0 {
-        return P32E2::from_bits(0x8000_0000);
+        return INFINITY;
     }
     // If the argument is zero, return zero.
     else if ui_a == 0 {
@@ -364,312 +375,230 @@ fn sqrt(p_a: P32E2) -> P32E2 {
     // Assemble the result and return it.
     P32E2::from_bits(ui_z | (exp_z << (27 - shift)) | (frac_z >> (5 + shift)) as u32)
 }
-/*
-quire32_t q32_fdp_add( quire32_t q, posit32_t pA, posit32_t pB ){
 
-    union ui32_p32 u_a, uB;
-    union ui512_q32 u_z, u_z1, u_z2;
-    u32 ui_a, ui_b;
-    u32 frac_a, tmp;
-    bool sign_a, sign_b, sign_z2, reg_sa, reg_sb, rcarry;
-    i32 exp_a;
-    i16 k_a=0, shift_right=0;
-    u64 frac64_z;
-    //For add
-    bool rcarryb, b1, b2, rcarryZ=0;
+fn q32_fdp_add(q: Q32E2, p_a: P32E2, p_b: P32E2) -> Q32E2 {
+    let u_z1 = q.to_bits();
 
-    u_z1.q = q;
+    let mut ui_a = p_a.to_bits();
+    let mut ui_b = p_b.to_bits();
 
-    u_a.p = pA;
-    ui_a = u_a.ui;
-    uB.p = pB;
-    ui_b = uB.ui;
-
-    u_z2.q = q32Clr(u_z2.q); //set it to zero
-    //NaR
-    if (isNaRQ32(q) || isNaRP32E2UI(u_a.ui) || isNaRP32E2UI(uB.ui)){
-        //set to all zeros
-        u_z2.ui[0]=0x8000_0000_0000_0000;
-        return u_z2.q;
-    }
-    else if (ui_a==0 || ui_b==0)
+    if q.is_nan() || p_a.is_nan() || p_b.is_nan() {
+        return Q32E2::new(-0x8000_0000_0000_0000, 0, 0, 0, 0, 0, 0, 0);
+    } else if (ui_a == 0) || (ui_b == 0) {
         return q;
-
+    }
 
     //max pos (sign plus and minus)
-    sign_a = signP32E2UI( ui_a );
-    sign_b = signP32E2UI( ui_b );
-    sign_z2 = sign_a ^ sign_b;
+    let sign_a = P32E2::sign_ui(ui_a);
+    let sign_b = P32E2::sign_ui(ui_b);
+    let sign_z2 = sign_a ^ sign_b;
 
-    if(sign_a) ui_a = (-ui_a /* & 0xFFFF_FFFF*/);
-    if(sign_b) ui_b = (-ui_b /* & 0xFFFF_FFFF*/);
-
-    reg_sa = signregP32E2UI(ui_a);
-    reg_sb = signregP32E2UI(ui_b);
-
-    tmp = ui_a<<2 /* & 0xFFFF_FFFF*/;
-    if (reg_sa){
-        while (tmp>>31){
-            k_a += 1;
-            tmp <<= 1 /* & 0xFFFF_FFFF*/;
-        }
+    if sign_a {
+        ui_a = ui_a.wrapping_neg();
     }
-    else{
-        k_a=-1;
-        while (!(tmp>>31)){
-            k_a -= 1;
-            tmp <<= 1 /* & 0xFFFF_FFFF*/;
-        }
-        tmp&=0x7FFF_FFFF;
+    if sign_b {
+        ui_b = ui_b.wrapping_neg();
     }
-    exp_a = tmp>>29; //to get 2 bits
-    frac_a = ((tmp<<2) | 0x8000_0000) /* & 0xFFFF_FFFF*/;
 
+    let (mut k_a, mut exp_a, frac_a) = P32E2::separate_bits(ui_a);
 
-    tmp = (ui_b<<2) /* & 0xFFFF_FFFF*/;
-    if (reg_sb){
-        while (tmp>>31){
-            k_a += 1;
-            tmp <<= 1 /* & 0xFFFF_FFFF*/;
-        }
-    }
-    else{
-        k_a -= 1;
-        while (!(tmp>>31)){
-            k_a -= 1;
-            tmp <<= 1 /* & 0xFFFF_FFFF*/;
-        }
-        tmp&=0x7FFF_FFFF;
-    }
-    exp_a += tmp>>29;
-    frac64_z = (u64) frac_a * (((tmp<<2) | 0x8000_0000) /* & 0xFFFF_FFFF*/);
+    let (k_b, exp_b, frac_b) = P32E2::separate_bits(ui_b);
+    k_a += k_b;
+    exp_a += exp_b;
+    let mut frac64_z = (frac_a as u64) * (frac_b as u64);
 
-    if (exp_a>3){
+    if exp_a>3 {
         k_a += 1;
         exp_a&=0x3; // -=4
     }
     //Will align frac64_z such that hidden bit is the first bit on the left.
-    rcarry = frac64_z>>63;//1st bit of frac64_z
-    if (rcarry){
+    let rcarry = (frac64_z>>63) != 0;//1st bit of frac64_z
+    if rcarry {
         exp_a += 1;
-        if (exp_a>3){
+        if exp_a>3 {
             k_a += 1;
             exp_a&=0x3;
         }
+        //frac64_z>>=1;
     }
-    else
+    else {
         frac64_z<<=1;
+    }
 
     //default dot is between bit 271 and 272, extreme left bit is bit 0. Last right bit is bit 512.
     //Minpos is 120 position to the right of binary point (dot)
     //Scale = 2^es * k + e  => 2k + e
-    int firstPos = 271 - (k_a<<2) - exp_a;
+    let first_pos = 271 - ((k_a<<2) as i32) - exp_a;
 
     //Moving in chunk of 64. If it is in first chunk, a part might be in the chunk right to it. Simply have to handle that.
-    int i;
-    for (i=0; i<8; i += 1){
-        if (firstPos<(i+1)*64){
+    let mut u_z2: [u64; 8] = [0; 8];
+    for i in 0usize..8 {
+        if first_pos < ((i+1)*64) as i32 {
             //Need to check how much of the fraction is in the next 64 bits
-            shift_right = firstPos - (i*64);
-            u_z2.ui[i] = frac64_z >> shift_right;
-
-            if (i!=7 && shift_right!=0) u_z2.ui[i+1] = frac64_z << (64 - shift_right);
+            let shift_right = (first_pos - ((i*64) as i32)) as i16;
+            u_z2[i] = frac64_z >> shift_right;
+            if (i != 7) && (shift_right != 0) {
+                u_z2[i+1] = frac64_z << (64 - shift_right);
+            }
             break;
         }
     }
 
-    if (sign_z2){
-        for (i=7; i>=0; i -= 1){
-            if (u_z2.ui[i]>0){
-                u_z2.ui[i] = - u_z2.ui[i];
-                i -= 1;
-                while(i>=0){
-                    u_z2.ui[i] = ~u_z2.ui[i];
-                    i -= 1;
+    if sign_z2 {
+        let mut j = u_z2.iter_mut().rev();
+        while let Some(u) = j.next() {
+            if *u > 0 {
+                *u = u.wrapping_neg();
+                while let Some(w) = j.next() {
+                    *w = !*w;
                 }
                 break;
             }
         }
     }
 
-    //Addition
-    for (i=7; i>=0; i -= 1){
-        b1 = u_z1.ui[i] & 0x1;
-        b2 = u_z2.ui[i] & 0x1;
-        if (i==7){
-            rcarryb = b1 & b2;
-            u_z.ui[i] = (u_z1.ui[i]>>1) + (u_z2.ui[i]>>1) + rcarryb;
-            rcarryZ = u_z.ui[i]>>63;
-            u_z.ui[i] = (u_z.ui[i]<<1 | (b1^b2) );
+    //Subtraction
+    let mut u_z: [u64; 8] = [0; 8];
+    let mut rcarry_z = false;
+    for (i, (u, (u1, u2))) in (0..8).rev().zip(u_z.iter_mut().rev()
+                                 .zip(u_z1.iter().rev().zip(u_z2.iter().rev())))
+    {
+        let b1 = (*u1 & 0x1) != 0;
+        let b2 = (*u2 & 0x1) != 0;
+        if i==7 {
+            let rcarryb = b1 & b2;
+            *u = (*u1>>1) + (*u2>>1) + (rcarryb as u64);
+            rcarry_z = *u>>63 != 0;
+            *u = (*u<<1) | ((b1^b2) as u64);
         }
         else{
-            i8 rcarryb3 =  b1 + b2 + rcarryZ;
-            u_z.ui[i] = (u_z1.ui[i]>>1) + (u_z2.ui[i]>>1) + (rcarryb3>>1);
-            rcarryZ = u_z.ui[i]>>63;
-            u_z.ui[i] = (u_z.ui[i]<<1 | (rcarryb3 & 0x1) );
+            let rcarryb3 =  (b1 as i8) + (b2 as i8) + (rcarry_z as i8);
+            *u = (*u1>>1) + (*u2>>1) + ((rcarryb3>>1) as u64);
+            rcarry_z = *u>>63 != 0;
+            *u = (*u<<1) | ((rcarryb3 & 0x1) as u64);
         }
-
     }
 
     //Exception handling
-    if (isNaRQ32(u_z.q) ) u_z.q.v[0]=0;
-
-    return u_z.q;
+    let q_z = Q32E2::from_bits(u_z);
+    if q_z.is_nan() {
+        Q32E2::new(0, 0, 0, 0, 0, 0, 0, 0)
+    } else {
+        q_z
+    }
 }
 
 
+fn q32_fdp_sub(q: Q32E2, p_a: P32E2, p_b: P32E2) -> Q32E2 {
+    let u_z1 = q.to_bits();
 
+    let mut ui_a = p_a.to_bits();
+    let mut ui_b = p_b.to_bits();
 
-quire32_t q32_fdp_sub( quire32_t q, posit32_t pA, posit32_t pB ){
-
-    union ui32_p32 u_a, uB;
-    union ui512_q32 u_z, u_z1, u_z2;
-    u32 ui_a, ui_b;
-    u32 frac_a, tmp;
-    bool sign_a, sign_b, sign_z2, reg_sa, reg_sb, rcarry;
-    i32 exp_a;
-    i16 k_a=0, shift_right=0;
-    u64 frac64_z;
-    //For sub
-    bool rcarryb, b1, b2, rcarryZ;
-
-    u_z1.q = q;
-
-    u_a.p = pA;
-    ui_a = u_a.ui;
-    uB.p = pB;
-    ui_b = uB.ui;
-
-    u_z2.q = q32Clr(u_z2.q); //set it to zero
-    //NaR
-    if (isNaRQ32(q) || isNaRP32E2UI(u_a.ui) || isNaRP32E2UI(uB.ui)){
-        //set to all zeros
-        u_z2.ui[0]=0x8000_0000_0000_0000;
-        return u_z2.q;
-    }
-    else if (ui_a==0 || ui_b==0)
+    if q.is_nan() || p_a.is_nan() || p_b.is_nan() {
+        return Q32E2::new(-0x8000_0000_0000_0000, 0, 0, 0, 0, 0, 0, 0);
+    } else if (ui_a == 0) || (ui_b == 0) {
         return q;
+    }
 
     //max pos (sign plus and minus)
-    sign_a = signP32E2UI( ui_a );
-    sign_b = signP32E2UI( ui_b );
-    sign_z2 = sign_a ^ sign_b;
+    let sign_a = P32E2::sign_ui(ui_a);
+    let sign_b = P32E2::sign_ui(ui_b);
+    let sign_z2 = sign_a ^ sign_b;
 
-    if(sign_a) ui_a = (-ui_a /* & 0xFFFF_FFFF*/);
-    if(sign_b) ui_b = (-ui_b /* & 0xFFFF_FFFF*/);
-
-    reg_sa = signregP32E2UI(ui_a);
-    reg_sb = signregP32E2UI(ui_b);
-
-    tmp = ui_a<<2 /* & 0xFFFF_FFFF*/;
-    if (reg_sa){
-        while (tmp>>31){
-            k_a += 1;
-            tmp <<= 1 /* & 0xFFFF_FFFF*/;
-        }
+    if sign_a {
+        ui_a = ui_a.wrapping_neg();
     }
-    else{
-        k_a=-1;
-        while (!(tmp>>31)){
-            k_a -= 1;
-            tmp <<= 1 /* & 0xFFFF_FFFF*/;
-        }
-        tmp&=0x7FFF_FFFF;
+    if sign_b {
+        ui_b = ui_b.wrapping_neg();
     }
-    exp_a = tmp>>29; //to get 2 bits
-    frac_a = ((tmp<<2) | 0x8000_0000) /* & 0xFFFF_FFFF*/;
 
-    tmp = ui_b<<2 /* & 0xFFFF_FFFF*/;
-    if (reg_sb){
-        while (tmp>>31){
-            k_a += 1;
-            tmp <<= 1 /* & 0xFFFF_FFFF*/;
-        }
-    }
-    else{
-        k_a -= 1;
-        while (!(tmp>>31)){
-            k_a -= 1;
-            tmp <<= 1 /* & 0xFFFF_FFFF*/;
-        }
-        tmp&=0x7FFF_FFFF;
-    }
-    exp_a += tmp>>29;
-    frac64_z = (u64) frac_a * (((tmp<<2) | 0x8000_0000) /* & 0xFFFF_FFFF*/);
+    let (mut k_a, mut exp_a, frac_a) = P32E2::separate_bits(ui_a);
 
-    if (exp_a>3){
+    let (k_b, exp_b, frac_b) = P32E2::separate_bits(ui_b);
+    k_a += k_b;
+    exp_a += exp_b;
+    let mut frac64_z = (frac_a as u64) * (frac_b as u64);
+
+    if exp_a>3 {
         k_a += 1;
         exp_a&=0x3; // -=4
     }
     //Will align frac64_z such that hidden bit is the first bit on the left.
-    rcarry = frac64_z>>63;//1st bit of frac64_z
-    if (rcarry){
+    let rcarry = (frac64_z>>63) != 0;//1st bit of frac64_z
+    if rcarry {
         exp_a += 1;
-        if (exp_a>3){
+        if exp_a>3 {
             k_a += 1;
             exp_a&=0x3;
         }
         //frac64_z>>=1;
     }
-    else
+    else {
         frac64_z<<=1;
+    }
 
     //default dot is between bit 271 and 272, extreme left bit is bit 0. Last right bit is bit 512.
     //Minpos is 120 position to the right of binary point (dot)
     //Scale = 2^es * k + e  => 2k + e
-    int firstPos = 271 - (k_a<<2) - exp_a;
+    let first_pos = 271 - ((k_a<<2) as i32) - exp_a;
 
     //Moving in chunk of 64. If it is in first chunk, a part might be in the chunk right to it. Simply have to handle that.
-    int i;
-    for (i=0; i<8; i += 1){
-        if (firstPos<(i+1)*64){
+    let mut u_z2: [u64; 8] = [0; 8];
+    for i in 0usize..8 {
+        if first_pos < ((i+1)*64) as i32 {
             //Need to check how much of the fraction is in the next 64 bits
-            shift_right = firstPos - (i*64);
-            u_z2.ui[i] = frac64_z >> shift_right;
-            if (i!=7 && shift_right!=0) u_z2.ui[i+1] = frac64_z << (64 - shift_right);
+            let shift_right = (first_pos - ((i*64) as i32)) as i16;
+            u_z2[i] = frac64_z >> shift_right;
+            if (i != 7) && (shift_right != 0) {
+                u_z2[i+1] = frac64_z << (64 - shift_right);
+            }
             break;
         }
     }
 
 
     //This is the only difference from ADD (sign_z2) and (!sign_z2)
-    if (!sign_z2){
-        for (i=7; i>=0; i -= 1){
-            if (u_z2.ui[i]>0){
-                u_z2.ui[i] = - u_z2.ui[i];
-                i -= 1;
-                while(i>=0){
-                    u_z2.ui[i] = ~u_z2.ui[i];
-                    i -= 1;
+    if !sign_z2 {
+        let mut j = u_z2.iter_mut().rev();
+        while let Some(u) = j.next() {
+            if *u > 0 {
+                *u = u.wrapping_neg();
+                while let Some(w) = j.next() {
+                    *w = !*w;
                 }
                 break;
             }
         }
-
     }
 
     //Subtraction
-    for (i=7; i>=0; i -= 1){
-        b1 = u_z1.ui[i] & 0x1;
-        b2 = u_z2.ui[i] & 0x1;
-        if (i==7){
-            rcarryb = b1 & b2;
-            u_z.ui[i] = (u_z1.ui[i]>>1) + (u_z2.ui[i]>>1) + rcarryb;
-            rcarryZ = u_z.ui[i]>>63;
-            u_z.ui[i] = (u_z.ui[i]<<1 | (b1^b2) );
+    let mut u_z: [u64; 8] = [0; 8];
+    let mut rcarry_z = false;
+    for (i, (u, (u1, u2))) in (0..8).rev().zip(u_z.iter_mut().rev()
+                                 .zip(u_z1.iter().rev().zip(u_z2.iter().rev())))
+    {
+        let b1 = (*u1 & 0x1) != 0;
+        let b2 = (*u2 & 0x1) != 0;
+        if i==7 {
+            let rcarryb = b1 & b2;
+            *u = (*u1>>1) + (*u2>>1) + (rcarryb as u64);
+            rcarry_z = *u>>63 != 0;
+            *u = (*u<<1) | ((b1^b2) as u64);
         }
         else{
-            i8 rcarryb3 =  b1 + b2 + rcarryZ;
-            u_z.ui[i] = (u_z1.ui[i]>>1) + (u_z2.ui[i]>>1) + (rcarryb3>>1);
-            rcarryZ = u_z.ui[i]>>63;
-            u_z.ui[i] = (u_z.ui[i]<<1 | (rcarryb3 & 0x1) );
+            let rcarryb3 =  (b1 as i8) + (b2 as i8) + (rcarry_z as i8);
+            *u = (*u1>>1) + (*u2>>1) + ((rcarryb3>>1) as u64);
+            rcarry_z = *u>>63 != 0;
+            *u = (*u<<1) | ((rcarryb3 & 0x1) as u64);
         }
-
     }
 
     //Exception handling
-    if (isNaRQ32(u_z.q) ) u_z.q.v[0]=0;
-
-    return u_z.q;
+    let q_z = Q32E2::from_bits(u_z);
+    if q_z.is_nan() {
+        Q32E2::new(0, 0, 0, 0, 0, 0, 0, 0)
+    } else {
+        q_z
+    }
 }
-*/

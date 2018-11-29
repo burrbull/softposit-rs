@@ -50,7 +50,7 @@ impl Add for P8E0 {
             // Not required but put here for speed
             P8E0::from_bits(ui_a | ui_b)
         } else if (ui_a == 0x80) || (ui_b == 0x80) {
-            P8E0::from_bits(0x80)
+            INFINITY
         } else {
             //different signs
             if ((ui_a ^ ui_b) >> 7) != 0 {
@@ -71,7 +71,7 @@ impl Sub for P8E0 {
 
         //infinity
         if (ui_a == 0x80) || (ui_b == 0x80) {
-            P8E0::from_bits(0x80)
+            INFINITY
         }
         //Zero
         else if (ui_a == 0) || (ui_b == 0) {
@@ -96,9 +96,9 @@ impl Div for P8E0 {
 
         //Zero or infinity
         if (ui_a == 0x80) || (ui_b == 0x80) || (ui_b == 0) {
-            return P8E0::from_bits(0x80);
+            return INFINITY;
         } else if ui_a == 0 {
-            return P8E0::from_bits(0);
+            return ZERO;
         }
 
         let sign_a = P8E0::sign_ui(ui_a);
@@ -171,9 +171,9 @@ impl Mul for P8E0 {
 
         //NaR or Zero
         if (ui_a == 0x80) || (ui_b == 0x80) {
-            return P8E0::from_bits(0x80);
+            return INFINITY;
         } else if (ui_a == 0) || (ui_b == 0) {
-            return P8E0::from_bits(0);
+            return ZERO;
         }
 
         let sign_a = P8E0::sign_ui(ui_a);
@@ -299,7 +299,7 @@ fn sub_mags_p8(mut ui_a: u8, mut ui_b: u8) -> P8E0 {
     }
     if ui_a == ui_b {
         //essential, if not need special handling
-        return P8E0::from_bits(0);
+        return ZERO;
     }
     if ui_a < ui_b {
         ui_a ^= ui_b;
