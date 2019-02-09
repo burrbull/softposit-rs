@@ -235,7 +235,6 @@ impl From<f64> for P32E2 {
     }
 }
 
-#[cfg(feature = "float_convert")]
 impl From<P32E2> for f32 {
     #[inline]
     fn from(a: P32E2) -> Self {
@@ -243,68 +242,28 @@ impl From<P32E2> for f32 {
     }
 }
 
-#[cfg(feature = "float_convert")]
 impl From<P32E2> for f64 {
     #[inline]
-    fn from(a: P32E2) -> Self {
-        let mut u_z = a.to_bits();
+    fn from(p_a: P32E2) -> Self {
+        let mut ui_a = p_a.to_bits();
 
-        if u_z == 0 {
-            return 0.;
-        } else if u_z == 0x7FFF_FFFF {
-            //maxpos
-            return 1.329_227_995_784_916_e36;
-        } else if u_z == 0x8000_0001 {
-            //-maxpos
-            return -1.329_227_995_784_916_e36;
-        } else if u_z == 0x8000_0000 {
-            return f64::INFINITY;
-        }
-
-        let mut shift = 2u32;
-        let mut k = 0i32;
-
-        let sign = P32E2::sign_ui(u_z);
-        if sign {
-            u_z = u_z.wrapping_neg() /* & 0xFFFF_FFFF*/;
-        }
-        let reg_s = P32E2::sign_reg_ui(u_z);
-
-        let mut tmp = u_z<<2 /*() & &0xFFFF_FFFF*/;
-        let reg: u32 = if reg_s {
-            while (tmp >> 31) != 0 {
-                k += 1;
-                shift += 1;
-                tmp <<= 1 /*() & 0xFFFF_FFFF*/;
+        if p_a.is_zero() {
+            0.
+        } else if p_a.is_infinite() {
+            f64::NAN
+        } else {
+            let sign_a = P32E2::sign_ui( ui_a );
+            if sign_a {
+                ui_a = ui_a.wrapping_neg();
             }
-            k + 1
-        } else {
-            k = -1;
-            while (tmp >> 31) == 0 {
-                k -= 1;
-                shift += 1;
-                tmp <<= 1 /*() & 0xFFFF_FFFF*/;
-            }
-            tmp &= 0x7FFF_FFFF;
-            -k
-        } as u32;
-        let exp = (tmp >> 29) as i8;
+            let (k_a, tmp) = P32E2::separate_bits_tmp(ui_a);
 
-        let frac = (tmp & 0x1FFF_FFFF) >> shift;
+            let mut exp_a = (tmp>>29) as u64; //to get 2 bits
 
-        let fraction_max: f64 = if reg > 28 {
-            1.
-        } else {
-            libm::pow(2., (28 - reg) as f64)
-        };
+            let frac_a = (((tmp as u64)<<3) & 0xFFFF_FFFF)<<20;
+            exp_a = ((((k_a as u64)<<2)+exp_a) + 1023) << 52;
 
-        let d32 = libm::pow(16., k as f64)
-            * libm::pow(2., exp as f64)
-            * (1. + ((frac as f64) / fraction_max));
-        if sign {
-            -d32
-        } else {
-            d32
+            f64::from_bits(exp_a + frac_a + (((sign_a as u64)&0x1)<<63))
         }
     }
 }
@@ -356,11 +315,7 @@ impl From<P32E2> for i32 {
             (i_z64 >> (62 - scale)) as i32 // Right-justify the integer.
         };
 
-        if sign {
-            -i_z /* & 0xFFFF_FFFF*/
-        } else {
-            i_z
-        }
+        i_z.with_sign(sign)
     }
 }
 
@@ -467,11 +422,7 @@ impl From<P32E2> for i64 {
             i_z as i64
         };
 
-        if sign {
-            -i_z
-        } else {
-            i_z
-        }
+        i_z.with_sign(sign)
     }
 }
 
