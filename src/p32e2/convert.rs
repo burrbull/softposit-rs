@@ -315,7 +315,11 @@ impl From<P32E2> for i32 {
             (i_z64 >> (62 - scale)) as i32 // Right-justify the integer.
         };
 
-        i_z.with_sign(sign)
+        if sign {
+            -i_z
+        } else {
+            i_z
+        }
     }
 }
 
@@ -422,7 +426,11 @@ impl From<P32E2> for i64 {
             i_z as i64
         };
 
-        i_z.with_sign(sign)
+        if sign {
+            -i_z
+        } else {
+            i_z
+        }
     }
 }
 
