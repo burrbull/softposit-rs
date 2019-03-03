@@ -5,7 +5,7 @@ mod convert;
 mod math;
 mod ops;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Hash)]
 pub struct P32E2(i32);
 
 pub const ZERO: P32E2 = P32E2::new(0);
@@ -190,12 +190,6 @@ impl P32E2 {
                 reg,
             )
         }
-    }
-}
-
-impl PartialOrd for P32E2 {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        (self.to_bits() as i32).partial_cmp(&(other.to_bits() as i32))
     }
 }
 

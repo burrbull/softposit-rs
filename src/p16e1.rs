@@ -5,7 +5,7 @@ mod convert;
 mod math;
 mod ops;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Hash)]
 pub struct P16E1(i16);
 
 pub const ZERO: P16E1 = P16E1::new(0);
@@ -166,12 +166,6 @@ impl P16E1 {
                 reg,
             )
         }
-    }
-}
-
-impl PartialOrd for P16E1 {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        (self.to_bits() as i16).partial_cmp(&(other.to_bits() as i16))
     }
 }
 

@@ -4,7 +4,7 @@ mod convert;
 mod math;
 mod ops;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Hash)]
 pub struct P8E0(i8);
 
 pub const ZERO: P8E0 = P8E0::new(0);
@@ -145,12 +145,6 @@ impl P8E0 {
             reg = (k + 1) as u8;
             (if reg > 7 { 0x7F } else { 0x7F - (0x7F >> reg) }, true, reg)
         }
-    }
-}
-
-impl PartialOrd for P8E0 {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        (self.to_bits() as i8).partial_cmp(&(other.to_bits() as i8))
     }
 }
 
