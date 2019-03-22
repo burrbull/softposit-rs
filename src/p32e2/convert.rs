@@ -1,4 +1,5 @@
 use super::*;
+use num_traits::Zero;
 use crate::WithSign;
 use core::convert::From;
 use core::f64;
@@ -81,7 +82,7 @@ impl From<f64> for P32E2 {
         let mut bits_more = false;
 
         if float == 0. {
-            return ZERO;
+            return Self::zero();
         } else if !float.is_finite() {
             return INFINITY;
         } else if float >= 1.329_227_995_784_916_e36 {
@@ -597,7 +598,7 @@ impl From<Q32E2> for P32E2 {
         let mut frac64_a = 0_u64;
 
         if q_a.is_zero() {
-            return ZERO;
+            return Self::zero();
         } else if q_a.is_nan() {
             return NAN;
         }

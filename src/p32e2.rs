@@ -8,8 +8,6 @@ mod ops;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Hash)]
 pub struct P32E2(i32);
 
-pub const ZERO: P32E2 = P32E2::new(0);
-
 /// Machine epsilon (7.450580596923828e-9).
 pub const EPSILON: P32E2 = P32E2::new(0x_a0_0000);
 
@@ -53,10 +51,6 @@ impl P32E2 {
     #[inline]
     pub fn is_infinite(self) -> bool {
         self == INFINITY
-    }
-    #[inline]
-    pub fn is_zero(self) -> bool {
-        self == ZERO
     }
     #[inline]
     pub fn is_finite(self) -> bool {
@@ -225,5 +219,30 @@ impl Q32E2 {
     #[inline]
     pub fn is_nan(self) -> bool {
         self.to_bits() == [0x8000_0000, 0, 0, 0, 0, 0, 0, 0]
+    }
+}
+
+impl num_traits::Zero for P32E2 {
+    fn zero() -> Self {
+        P32E2::new(0)
+    }
+    fn is_zero(&self) -> bool {
+        *self == P32E2::new(0)
+    }
+}
+
+impl num_traits::One for P32E2 {
+    fn one() -> Self {
+        P32E2::new(0x_4000_0000)
+    }
+    fn is_one(&self) -> bool {
+        *self == P32E2::new(0x_4000_0000)
+    }
+}
+
+impl num_traits::Num for P32E2 {
+    type FromStrRadixErr = num_traits::ParseFloatError;
+    fn from_str_radix(src: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
+        Ok(Self::from(f64::from_str_radix(src, radix)?))
     }
 }

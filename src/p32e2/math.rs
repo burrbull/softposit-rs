@@ -1,4 +1,5 @@
 use super::*;
+use num_traits::Zero;
 use crate::{MulAddType, WithSign};
 
 impl P32E2 {
@@ -133,7 +134,7 @@ fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2
         } else {
             if (frac64_c == frac64_z) && (sign_z != sign_c) {
                 //check if same number
-                return ZERO;
+                return P32E2::zero();
             } else if sign_z == sign_c {
                 frac64_z += frac64_c;
             } else if frac64_z < frac64_c {
@@ -238,7 +239,7 @@ fn round(p_a: P32E2) -> P32E2 {
     } // A is now |A|.
     if ui_a <= 0x3800_0000 {
         // 0 <= |pA| <= 1/2 rounds to zero.
-        return ZERO;
+        return P32E2::zero();
     } else if ui_a < 0x4400_0000 {
         // 1/2 < x < 3/2 rounds to 1.
         u_a = 0x4000_0000;

@@ -1,4 +1,5 @@
 use super::*;
+use num_traits::Zero;
 use crate::WithSign;
 use core::convert::From;
 use core::f64;
@@ -370,7 +371,7 @@ impl From<f64> for P16E1 {
         let mut exp = 0_i8;
 
         if float == 0. {
-            return ZERO;
+            return Self::zero();
         } else if !float.is_finite() {
             return INFINITY;
         } else if float >= 268_435_456. {
@@ -580,7 +581,7 @@ impl From<P16E1> for f64 {
 impl From<Q16E1> for P16E1 {
     fn from(q_a: Q16E1) -> Self {
         if q_a.is_zero() {
-            return ZERO;
+            return Self::zero();
         } else if q_a.is_nan() {
             return NAN;
         }

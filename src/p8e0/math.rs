@@ -1,4 +1,5 @@
 use super::*;
+use num_traits::Zero;
 use crate::{MulAddType, WithSign};
 
 impl P8E0 {
@@ -44,7 +45,7 @@ fn round(p_a: P8E0) -> P8E0 {
     }
     if ui_a <= 0x20 {
         // 0 <= |p_a| <= 1/2 rounds to zero.
-        return ZERO;
+        return P8E0::zero();
     } else if ui_a < 0x50 {
         // 1/2 < x < 3/2 rounds to 1.
         u_a = 0x40;
@@ -189,7 +190,7 @@ fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
         } else {
             if (frac16_c == frac16_z) && (sign_z != sign_c) {
                 //check if same number
-                return ZERO;
+                return P8E0::zero();
             } else if sign_z == sign_c {
                 frac16_z += frac16_c;
             } else if frac16_z < frac16_c {

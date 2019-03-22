@@ -1,8 +1,9 @@
 use super::*;
+use num_traits::Zero;
 use crate::WithSign;
-use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use core::ops;
 
-impl Neg for P8E0 {
+impl ops::Neg for P8E0 {
     type Output = Self;
     #[inline]
     fn neg(self) -> Self {
@@ -10,35 +11,42 @@ impl Neg for P8E0 {
     }
 }
 
-impl AddAssign for P8E0 {
+impl ops::AddAssign for P8E0 {
     #[inline]
     fn add_assign(&mut self, other: Self) {
         *self = *self + other
     }
 }
 
-impl SubAssign for P8E0 {
+impl ops::SubAssign for P8E0 {
     #[inline]
     fn sub_assign(&mut self, other: Self) {
         *self = *self - other
     }
 }
 
-impl MulAssign for P8E0 {
+impl ops::MulAssign for P8E0 {
     #[inline]
     fn mul_assign(&mut self, other: Self) {
         *self = *self * other
     }
 }
 
-impl DivAssign for P8E0 {
+impl ops::DivAssign for P8E0 {
     #[inline]
     fn div_assign(&mut self, other: Self) {
         *self = *self / other
     }
 }
 
-impl Add for P8E0 {
+impl ops::RemAssign for P8E0 {
+    #[inline]
+    fn rem_assign(&mut self, other: Self) {
+        *self = *self % other
+    }
+}
+
+impl ops::Add for P8E0 {
     type Output = Self;
     #[inline]
     fn add(self, other: Self) -> Self {
@@ -62,7 +70,7 @@ impl Add for P8E0 {
     }
 }
 
-impl Sub for P8E0 {
+impl ops::Sub for P8E0 {
     type Output = Self;
     #[inline]
     fn sub(self, other: Self) -> Self {
@@ -87,7 +95,7 @@ impl Sub for P8E0 {
     }
 }
 
-impl Div for P8E0 {
+impl ops::Div for P8E0 {
     type Output = Self;
     #[inline]
     fn div(self, other: Self) -> Self {
@@ -98,7 +106,7 @@ impl Div for P8E0 {
         if (ui_a == 0x80) || (ui_b == 0x80) || (ui_b == 0) {
             return INFINITY;
         } else if ui_a == 0 {
-            return ZERO;
+            return Self::zero();
         }
 
         let sign_a = P8E0::sign_ui(ui_a);
@@ -162,7 +170,7 @@ impl Div for P8E0 {
     }
 }
 
-impl Mul for P8E0 {
+impl ops::Mul for P8E0 {
     type Output = Self;
     #[inline]
     fn mul(self, other: Self) -> Self {
@@ -173,7 +181,7 @@ impl Mul for P8E0 {
         if (ui_a == 0x80) || (ui_b == 0x80) {
             return INFINITY;
         } else if (ui_a == 0) || (ui_b == 0) {
-            return ZERO;
+            return Self::zero();
         }
 
         let sign_a = P8E0::sign_ui(ui_a);
@@ -299,7 +307,7 @@ fn sub_mags_p8(mut ui_a: u8, mut ui_b: u8) -> P8E0 {
     }
     if ui_a == ui_b {
         //essential, if not need special handling
-        return ZERO;
+        return P8E0::zero();
     }
     if ui_a < ui_b {
         ui_a ^= ui_b;
@@ -355,4 +363,11 @@ fn sub_mags_p8(mut ui_a: u8, mut ui_b: u8) -> P8E0 {
         u_z
     };
     P8E0::from_bits(u_z.with_sign(sign))
+}
+
+impl ops::Rem for P8E0 {
+    type Output = Self;
+    fn rem(self, _other: Self) -> Self {
+        unimplemented!()
+    }
 }

@@ -1,4 +1,5 @@
 use super::*;
+use num_traits::Zero;
 use crate::{MulAddType, WithSign};
 
 impl P16E1 {
@@ -138,7 +139,7 @@ fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1
         } else {
             if (frac32_c == frac32_z) && (sign_z != sign_c) {
                 //check if same number
-                return ZERO;
+                return P16E1::zero();
             } else if sign_z == sign_c {
                 frac32_z += frac32_c;
             } else if frac32_z < frac32_c {
@@ -235,7 +236,7 @@ fn round(p_a: P16E1) -> P16E1 {
     };
     if ui_a <= 0x3000 {
         // 0 <= |p_a| <= 1/2 rounds to zero.
-        return ZERO;
+        return P16E1::zero();
     } else if ui_a < 0x4800 {
         // 1/2 < x < 3/2 rounds to 1.
         u_a = 0x4000;
@@ -286,7 +287,7 @@ fn sqrt(p_a: P16E1) -> P16E1 {
     }
     // If the argument is zero, return zero.
     if ui_a == 0 {
-        return ZERO;
+        return P16E1::zero();
     }
     // Compute the square root. Here, k_z is the net power-of-2 scaling of the result.
     // Decode the regime and exponent bit; scale the input to be in the range 1 to 4:

@@ -1,8 +1,9 @@
 use super::*;
+use num_traits::Zero;
 use crate::WithSign;
-use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use core::ops;
 
-impl Neg for P16E1 {
+impl ops::Neg for P16E1 {
     type Output = Self;
     #[inline]
     fn neg(self) -> Self {
@@ -10,31 +11,38 @@ impl Neg for P16E1 {
     }
 }
 
-impl AddAssign for P16E1 {
+impl ops::AddAssign for P16E1 {
     #[inline]
     fn add_assign(&mut self, other: Self) {
         *self = *self + other
     }
 }
 
-impl SubAssign for P16E1 {
+impl ops::SubAssign for P16E1 {
     #[inline]
     fn sub_assign(&mut self, other: Self) {
         *self = *self - other
     }
 }
 
-impl MulAssign for P16E1 {
+impl ops::MulAssign for P16E1 {
     #[inline]
     fn mul_assign(&mut self, other: Self) {
         *self = *self * other
     }
 }
 
-impl DivAssign for P16E1 {
+impl ops::DivAssign for P16E1 {
     #[inline]
     fn div_assign(&mut self, other: Self) {
         *self = *self / other
+    }
+}
+
+impl ops::RemAssign for P16E1 {
+    #[inline]
+    fn rem_assign(&mut self, other: Self) {
+        *self = *self % other
     }
 }
 
@@ -51,7 +59,7 @@ pub fn sub_mags_p16(mut ui_a: u16, mut ui_b: u16) -> P16E1 {
 
     if ui_a == ui_b {
         //essential, if not need special handling
-        return ZERO;
+        return P16E1::zero();
     }
     if ui_a < ui_b {
         ui_a ^= ui_b;
@@ -217,7 +225,7 @@ pub fn add_mags_p16(mut ui_a: u16, mut ui_b: u16) -> P16E1 {
     P16E1::from_bits(u_z.with_sign(sign))
 }
 
-impl Add for P16E1 {
+impl ops::Add for P16E1 {
     type Output = Self;
     #[inline]
     fn add(self, other: Self) -> Self {
@@ -241,7 +249,7 @@ impl Add for P16E1 {
     }
 }
 
-impl Sub for P16E1 {
+impl ops::Sub for P16E1 {
     type Output = Self;
     #[inline]
     fn sub(self, other: Self) -> Self {
@@ -265,7 +273,7 @@ impl Sub for P16E1 {
     }
 }
 
-impl Mul for P16E1 {
+impl ops::Mul for P16E1 {
     type Output = Self;
     #[inline]
     fn mul(self, other: Self) -> Self {
@@ -276,7 +284,7 @@ impl Mul for P16E1 {
         if (ui_a == 0x8000) || (ui_b == 0x8000) {
             return INFINITY;
         } else if (ui_a == 0) || (ui_b == 0) {
-            return ZERO;
+            return Self::zero();
         }
 
         let sign_a = P16E1::sign_ui(ui_a);
@@ -348,7 +356,7 @@ impl Mul for P16E1 {
     }
 }
 
-impl Div for P16E1 {
+impl ops::Div for P16E1 {
     type Output = Self;
     #[inline]
     fn div(self, other: Self) -> Self {
@@ -359,7 +367,7 @@ impl Div for P16E1 {
         if (ui_a == 0x8000) || (ui_b == 0x8000) || (ui_b == 0) {
             return INFINITY;
         } else if ui_a == 0 {
-            return ZERO;
+            return Self::zero();
         }
 
         let sign_a = P16E1::sign_ui(ui_a);
@@ -437,5 +445,12 @@ impl Div for P16E1 {
         };
 
         P16E1::from_bits(u_z.with_sign(sign_z))
+    }
+}
+
+impl ops::Rem for P16E1 {
+    type Output = Self;
+    fn rem(self, _other: Self) -> Self {
+        unimplemented!()
     }
 }

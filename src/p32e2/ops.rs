@@ -1,8 +1,9 @@
 use super::*;
+use num_traits::Zero;
 use crate::WithSign;
-use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use core::ops;
 
-impl Neg for P32E2 {
+impl ops::Neg for P32E2 {
     type Output = Self;
     #[inline]
     fn neg(self) -> Self {
@@ -10,35 +11,42 @@ impl Neg for P32E2 {
     }
 }
 
-impl AddAssign for P32E2 {
+impl ops::AddAssign for P32E2 {
     #[inline]
     fn add_assign(&mut self, other: Self) {
         *self = *self + other
     }
 }
 
-impl SubAssign for P32E2 {
+impl ops::SubAssign for P32E2 {
     #[inline]
     fn sub_assign(&mut self, other: Self) {
         *self = *self - other
     }
 }
 
-impl MulAssign for P32E2 {
+impl ops::MulAssign for P32E2 {
     #[inline]
     fn mul_assign(&mut self, other: Self) {
         *self = *self * other
     }
 }
 
-impl DivAssign for P32E2 {
+impl ops::DivAssign for P32E2 {
     #[inline]
     fn div_assign(&mut self, other: Self) {
         *self = *self / other
     }
 }
 
-impl Add for P32E2 {
+impl ops::RemAssign for P32E2 {
+    #[inline]
+    fn rem_assign(&mut self, other: Self) {
+        *self = *self % other
+    }
+}
+
+impl ops::Add for P32E2 {
     type Output = Self;
     #[inline]
     fn add(self, other: Self) -> Self {
@@ -62,7 +70,7 @@ impl Add for P32E2 {
     }
 }
 
-impl Sub for P32E2 {
+impl ops::Sub for P32E2 {
     type Output = Self;
     #[inline]
     fn sub(self, other: Self) -> Self {
@@ -86,7 +94,7 @@ impl Sub for P32E2 {
     }
 }
 
-impl Div for P32E2 {
+impl ops::Div for P32E2 {
     type Output = Self;
     #[inline]
     fn div(self, other: Self) -> Self {
@@ -99,7 +107,7 @@ impl Div for P32E2 {
         if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) || (ui_b == 0) {
             return INFINITY;
         } else if ui_a == 0 {
-            return ZERO;
+            return P32E2::zero();
         }
 
         let sign_a = P32E2::sign_ui(ui_a);
@@ -188,7 +196,7 @@ impl Div for P32E2 {
     }
 }
 
-impl Mul for P32E2 {
+impl ops::Mul for P32E2 {
     type Output = Self;
     #[inline]
     fn mul(self, other: Self) -> Self {
@@ -199,7 +207,7 @@ impl Mul for P32E2 {
         if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) {
             return INFINITY;
         } else if (ui_a == 0) || (ui_b == 0) {
-            return ZERO;
+            return P32E2::zero();
         }
 
         let sign_a = P32E2::sign_ui(ui_a);
@@ -377,7 +385,7 @@ fn sub_mags_p32(mut ui_a: u32, mut ui_b: u32) -> P32E2 {
 
     if ui_a == ui_b {
         //essential, if not need special handling
-        return ZERO;
+        return P32E2::zero();
     }
     if (ui_a as i32) < (ui_b as i32) {
         ui_a ^= ui_b;
@@ -463,4 +471,11 @@ fn sub_mags_p32(mut ui_a: u32, mut ui_b: u32) -> P32E2 {
     };
 
     P32E2::from_bits(u_z.with_sign(sign))
+}
+
+impl ops::Rem for P32E2 {
+    type Output = Self;
+    fn rem(self, _other: Self) -> Self {
+        unimplemented!()
+    }
 }

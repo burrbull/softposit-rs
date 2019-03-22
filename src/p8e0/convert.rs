@@ -1,4 +1,5 @@
 use super::*;
+use num_traits::Zero;
 use crate::WithSign;
 use core::convert::From;
 use core::f64;
@@ -81,7 +82,7 @@ impl From<f64> for P8E0 {
         let mut bits_more = false;
 
         if float == 0. {
-            return ZERO;
+            return Self::zero();
         } else if !float.is_finite() {
             return INFINITY;
         } else if float >= 64. {
@@ -548,7 +549,7 @@ impl From<Q8E0> for P8E0 {
     #[inline]
     fn from(q_a: Q8E0) -> Self {
         if q_a.is_zero() {
-            return ZERO;
+            return Self::zero();
         } else if q_a.is_nan() {
             return NAN;
         }

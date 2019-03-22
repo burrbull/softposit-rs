@@ -7,8 +7,6 @@ mod ops;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Hash)]
 pub struct P8E0(i8);
 
-pub const ZERO: P8E0 = P8E0::new(0);
-
 /// Machine epsilon (3.125e-2).
 pub const EPSILON: P8E0 = P8E0::new(0x_2);
 
@@ -52,10 +50,6 @@ impl P8E0 {
     #[inline]
     pub fn is_infinite(self) -> bool {
         self == INFINITY
-    }
-    #[inline]
-    pub fn is_zero(self) -> bool {
-        self == ZERO
     }
     #[inline]
     pub fn is_finite(self) -> bool {
@@ -171,5 +165,32 @@ impl Q8E0 {
     #[inline]
     pub fn is_nan(self) -> bool {
         self.to_bits() == 0x8000_0000
+    }
+}
+
+impl num_traits::Zero for P8E0 {
+    fn zero() -> Self {
+        P8E0::new(0)
+    }
+    fn is_zero(&self) -> bool {
+        *self == P8E0::new(0)
+    }
+}
+
+impl num_traits::Num for P8E0 {
+    type FromStrRadixErr = num_traits::ParseFloatError;
+    fn from_str_radix(src: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
+        Ok(Self::from(f64::from_str_radix(src, radix)?))
+    }
+}
+
+
+
+impl num_traits::One for P8E0 {
+    fn one() -> Self {
+        P8E0::new(0x_40)
+    }
+    fn is_one(&self) -> bool {
+        *self == P8E0::new(0x_40)
     }
 }

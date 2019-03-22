@@ -8,8 +8,6 @@ mod ops;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Hash)]
 pub struct P16E1(i16);
 
-pub const ZERO: P16E1 = P16E1::new(0);
-
 /// Machine epsilon (2.44140625e-4).
 pub const EPSILON: P16E1 = P16E1::new(0x_100);
 
@@ -53,10 +51,6 @@ impl P16E1 {
     #[inline]
     pub fn is_infinite(self) -> bool {
         self == INFINITY
-    }
-    #[inline]
-    pub fn is_zero(self) -> bool {
-        self == ZERO
     }
     #[inline]
     pub fn is_finite(self) -> bool {
@@ -192,5 +186,30 @@ impl Q16E1 {
     #[inline]
     pub fn is_nan(self) -> bool {
         self.to_bits() == [0x8000_0000, 0]
+    }
+}
+
+impl num_traits::Zero for P16E1 {
+    fn zero() -> Self {
+        P16E1::new(0)
+    }
+    fn is_zero(&self) -> bool {
+        *self == P16E1::new(0)
+    }
+}
+
+impl num_traits::One for P16E1 {
+    fn one() -> Self {
+        P16E1::new(0x_4000)
+    }
+    fn is_one(&self) -> bool {
+        *self == P16E1::new(0x_4000)
+    }
+}
+
+impl num_traits::Num for P16E1 {
+    type FromStrRadixErr = num_traits::ParseFloatError;
+    fn from_str_radix(src: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
+        Ok(Self::from(f64::from_str_radix(src, radix)?))
     }
 }
