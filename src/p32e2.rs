@@ -246,3 +246,10 @@ impl num_traits::Num for P32E2 {
         Ok(Self::from(f64::from_str_radix(src, radix)?))
     }
 }
+
+use core::fmt;
+impl fmt::Display for P32E2 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "P32({})", f32::from(*self))
+    }
+}
