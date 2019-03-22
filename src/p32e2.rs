@@ -250,6 +250,6 @@ impl num_traits::Num for P32E2 {
 use core::fmt;
 impl fmt::Display for P32E2 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "P32({})", f32::from(*self))
+        write!(f, "p32({})", f32::from(*self))
     }
 }
