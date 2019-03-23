@@ -184,13 +184,29 @@ impl num_traits::Num for P8E0 {
     }
 }
 
-
-
 impl num_traits::One for P8E0 {
     fn one() -> Self {
         P8E0::new(0x_40)
     }
     fn is_one(&self) -> bool {
         *self == P8E0::new(0x_40)
+    }
+}
+
+impl num_traits::ToPrimitive for P8E0 {
+    fn to_i64(&self) -> Option<i64> {
+        Some(i64::from(*self))
+    }
+    fn to_u64(&self) -> Option<u64> {
+        Some(u64::from(*self))
+    }
+    fn to_f64(&self) -> Option<f64> {
+        Some(f64::from(*self))
+    }
+}
+
+impl num_traits::NumCast for P8E0 {
+    fn from<N: num_traits::ToPrimitive>(n: N) -> Option<Self> {
+        n.to_f64().map(|x| x.into())
     }
 }

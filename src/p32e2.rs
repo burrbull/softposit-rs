@@ -1,6 +1,5 @@
 use core::mem;
 
-pub mod consts;
 mod convert;
 mod math;
 mod ops;
@@ -63,7 +62,7 @@ impl P32E2 {
     }
     #[inline]
     pub fn to_radians(self) -> P32E2 {
-        let value: P32E2 = consts::PI;
+        let value: P32E2 = Self::PI;
         self * (value / P32E2::new(0x_6da0_0000))
     }
     #[inline]
@@ -222,7 +221,8 @@ impl Q32E2 {
     }
 }
 
-impl num_traits::Zero for P32E2 {
+use num_traits::Zero;
+impl Zero for P32E2 {
     fn zero() -> Self {
         P32E2::new(0)
     }
@@ -231,7 +231,8 @@ impl num_traits::Zero for P32E2 {
     }
 }
 
-impl num_traits::One for P32E2 {
+use num_traits::One;
+impl One for P32E2 {
     fn one() -> Self {
         P32E2::new(0x_4000_0000)
     }
@@ -251,5 +252,298 @@ use core::fmt;
 impl fmt::Display for P32E2 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "p32({})", f32::from(*self))
+    }
+}
+
+impl num_traits::ToPrimitive for P32E2 {
+    fn to_i64(&self) -> Option<i64> {
+        Some(i64::from(*self))
+    }
+    fn to_u64(&self) -> Option<u64> {
+        Some(u64::from(*self))
+    }
+    fn to_f64(&self) -> Option<f64> {
+        Some(f64::from(*self))
+    }
+}
+
+impl num_traits::NumCast for P32E2 {
+    fn from<N: num_traits::ToPrimitive>(n: N) -> Option<Self> {
+        n.to_f64().map(|x| x.into())
+    }
+}
+
+impl num_traits::Signed for P32E2 {
+    fn abs(&self) -> Self {
+        Self::abs(*self)
+    }
+    fn abs_sub(&self, other: &Self) -> Self {
+        if *self <= *other {
+            Self::zero()
+        } else {
+            *self - *other
+        }
+    }
+    fn signum(&self) -> Self {
+        unimplemented!()
+    }
+    fn is_positive(&self) -> bool {
+        !self.is_negative()
+    }
+    fn is_negative(&self) -> bool {
+        unimplemented!()
+    }
+}
+
+impl num_traits::Float for P32E2 {
+    fn nan() -> Self {
+        NAN
+    }
+    fn infinity() -> Self {
+        INFINITY
+    }
+    fn neg_infinity() -> Self {
+        INFINITY
+    }
+    fn neg_zero() -> Self {
+        Self::zero()
+    }
+    fn min_value() -> Self {
+        MIN
+    }
+    fn min_positive_value() -> Self {
+        MIN_POSITIVE
+    }
+    fn max_value() -> Self {
+        MAX
+    }
+    fn is_nan(self) -> bool {
+        self == NAN
+    }
+    fn is_infinite(self) -> bool {
+        self == INFINITY
+    }
+    fn is_finite(self) -> bool {
+        !self.is_nan()
+    }
+    fn is_normal(self) -> bool {
+        unimplemented!()
+    }
+    fn classify(self) -> core::num::FpCategory {
+        unimplemented!()
+    }
+    fn floor(self) -> Self {
+        unimplemented!()
+    }
+    fn ceil(self) -> Self {
+        unimplemented!()
+    }
+    fn round(self) -> Self {
+        math::round(self)
+    }
+    fn trunc(self) -> Self {
+        unimplemented!()
+    }
+    fn fract(self) -> Self {
+        unimplemented!()
+    }
+    fn abs(self) -> Self {
+        Self::abs(self)
+    }
+    fn signum(self) -> Self {
+        if self.is_nan() {
+            Self::nan()
+        } else if self.is_sign_negative() {
+            -Self::one()
+        } else {
+            Self::one()
+        }
+    }
+    fn is_sign_positive(self) -> bool {
+        !self.is_sign_negative()
+    }
+    fn is_sign_negative(self) -> bool {
+        self.to_bits() >> 31 != 0
+    }
+    fn mul_add(self, a: Self, b: Self) -> Self {
+        math::mul_add(self.to_bits(), a.to_bits(), b.to_bits(), crate::MulAddType::Add)
+    }
+    fn recip(self) -> Self {
+        unimplemented!()
+    }
+    fn powi(self, _n: i32) -> Self {
+        unimplemented!()
+    }
+    fn powf(self, _n: Self) -> Self {
+        unimplemented!()
+    }
+    fn sqrt(self) -> Self {
+        math::sqrt(self)
+    }
+    fn exp(self) -> Self {
+        unimplemented!()
+    }
+    fn exp2(self) -> Self {
+        unimplemented!()
+    }
+    fn ln(self) -> Self {
+        unimplemented!()
+    }
+    fn log(self, _base: Self) -> Self {
+        unimplemented!()
+    }
+    fn log2(self) -> Self {
+        unimplemented!()
+    }
+    fn log10(self) -> Self {
+        unimplemented!()
+    }
+    fn max(self, other: Self) -> Self {
+        self.max(other)
+    }
+    fn min(self, other: Self) -> Self {
+        self.min(other)
+    }
+    fn abs_sub(self, _other: Self) -> Self {
+        unimplemented!()
+    }
+    fn cbrt(self) -> Self {
+        unimplemented!()
+    }
+    fn hypot(self, _other: Self) -> Self {
+        unimplemented!()
+    }
+    fn sin(self) -> Self {
+        unimplemented!()
+    }
+    fn cos(self) -> Self {
+        unimplemented!()
+    }
+    fn tan(self) -> Self {
+        unimplemented!()
+    }
+    fn asin(self) -> Self {
+        unimplemented!()
+    }
+    fn acos(self) -> Self {
+        unimplemented!()
+    }
+    fn atan(self) -> Self {
+        unimplemented!()
+    }
+    fn atan2(self, _other: Self) -> Self {
+        unimplemented!()
+    }
+    fn sin_cos(self) -> (Self, Self) {
+        unimplemented!()
+    }
+    fn exp_m1(self) -> Self {
+        unimplemented!()
+    }
+    fn ln_1p(self) -> Self {
+        unimplemented!()
+    }
+    fn sinh(self) -> Self {
+        unimplemented!()
+    }
+    fn cosh(self) -> Self {
+        unimplemented!()
+    }
+    fn tanh(self) -> Self {
+        unimplemented!()
+    }
+    fn asinh(self) -> Self {
+        unimplemented!()
+    }
+    fn acosh(self) -> Self {
+        unimplemented!()
+    }
+    fn atanh(self) -> Self {
+        unimplemented!()
+    }
+    fn integer_decode(self) -> (u64, i16, i8) {
+        unimplemented!()
+    }
+}
+
+use crate::MathConsts;
+impl MathConsts for P32E2 {
+    const E: Self = Self::new(0x_4adf_8546);
+    const FRAC_1_PI: Self = Self::new(0x_322f_9837);
+    const FRAC_1_SQRT_2: Self = Self::new(0x_3b50_4f33);
+    const FRAC_2_PI: Self = Self::new(0x_3a2f_9837);
+    const FRAC_2_SQRT_PI: Self = Self::new(0x_4106_eba8);
+    const FRAC_PI_2: Self = Self::new(0x_4490_fdaa);
+    const FRAC_PI_3: Self = Self::new(0x_4060_a91c);
+    const FRAC_PI_4: Self = Self::new(0x_3c90_fdaa);
+    const FRAC_PI_6: Self = Self::new(0x_3860_a91c);
+    const FRAC_PI_8: Self = Self::new(0x_3490_fdaa);
+    const LN_10: Self = Self::new(0x_4935_d8de);
+    const LN_2: Self = Self::new(0x_3b17_217f);
+    const LOG10_E: Self = Self::new(0x_35e5_bd8b);
+    const LOG2_E: Self = Self::new(0x_438a_a3b3);
+    const PI: Self = Self::new(0x_4c90_fdaa);
+    const SQRT_2: Self = Self::new(0x_4350_4f33);
+    const LOG2_10: Self = Self::new(0x_4d49_a785);
+    const LOG10_2: Self = Self::new(0x_31a2_09a8);
+}
+
+impl num_traits::FloatConst for P32E2 {
+    fn E() -> Self {
+        MathConsts::E
+    }
+    fn FRAC_1_PI() -> Self {
+        MathConsts::FRAC_1_PI
+    }
+    fn FRAC_1_SQRT_2() -> Self {
+        MathConsts::FRAC_1_SQRT_2
+    }
+    fn FRAC_2_PI() -> Self {
+        MathConsts::FRAC_2_PI
+    }
+    fn FRAC_2_SQRT_PI() -> Self {
+        MathConsts::FRAC_2_SQRT_PI
+    }
+    fn FRAC_PI_2() -> Self {
+        MathConsts::FRAC_PI_2
+    }
+    fn FRAC_PI_3() -> Self {
+        MathConsts::FRAC_PI_3
+    }
+    fn FRAC_PI_4() -> Self {
+        MathConsts::FRAC_PI_4
+    }
+    fn FRAC_PI_6() -> Self {
+        MathConsts::FRAC_PI_6
+    }
+    fn FRAC_PI_8() -> Self {
+        MathConsts::FRAC_PI_8
+    }
+    fn LN_10() -> Self {
+        MathConsts::LN_10
+    }
+    fn LN_2() -> Self {
+        MathConsts::LN_2
+    }
+    fn LOG10_E() -> Self {
+        MathConsts::LOG10_E
+    }
+    fn LOG2_E() -> Self {
+        MathConsts::LOG2_E
+    }
+    fn PI() -> Self {
+        MathConsts::PI
+    }
+    fn SQRT_2() -> Self {
+        MathConsts::SQRT_2
+    }
+}
+
+impl num_traits::Bounded for P32E2 {
+    fn min_value() -> Self {
+        MIN
+    }
+    fn max_value() -> Self {
+        MAX
     }
 }

@@ -71,7 +71,7 @@ fn convert_fraction_p8(
 
 impl From<f32> for P8E0 {
     fn from(float: f32) -> Self {
-        P8E0::from(float as f64)
+        Self::from(float as f64)
     }
 }
 
@@ -179,7 +179,7 @@ impl From<f64> for P8E0 {
             //NaR - for NaN, INF and all other combinations
             0x80
         };
-        P8E0::from_bits(u_z)
+        Self::from_bits(u_z)
     }
 }
 
@@ -452,7 +452,7 @@ impl From<P8E0> for u64 {
 impl From<u32> for P8E0 {
     #[inline]
     fn from(a: u32) -> Self {
-        P8E0::from_bits(convert_u32_to_p8bits(a))
+        Self::from_bits(convert_u32_to_p8bits(a))
     }
 }
 
@@ -463,14 +463,14 @@ impl From<i32> for P8E0 {
         if sign {
             a = -a;
         }
-        P8E0::from_bits(convert_u32_to_p8bits(a as u32).with_sign(sign))
+        Self::from_bits(convert_u32_to_p8bits(a as u32).with_sign(sign))
     }
 }
 
 impl From<u64> for P8E0 {
     #[inline]
     fn from(a: u64) -> Self {
-        P8E0::from_bits(convert_u64_to_p8bits(a))
+        Self::from_bits(convert_u64_to_p8bits(a))
     }
 }
 
@@ -481,7 +481,7 @@ impl From<i64> for P8E0 {
         if sign {
             a = -a;
         }
-        P8E0::from_bits(convert_u64_to_p8bits(a as u64).with_sign(sign))
+        Self::from_bits(convert_u64_to_p8bits(a as u64).with_sign(sign))
     }
 }
 
@@ -574,7 +574,7 @@ impl From<Q8E0> for P8E0 {
         //Scale =  k
         let k_a = 19 - no_lz;
 
-        let (regime, reg_sa, reg_a) = P8E0::calculate_regime(k_a);
+        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
 
         let u_a = if reg_a > 6 {
             //max or min pos. exp and frac does not matter.
@@ -591,7 +591,7 @@ impl From<Q8E0> for P8E0 {
 
             let bit_n_plus_one = ((frac32_a >> (shift - 1)) & 0x1) != 0;
 
-            let mut u_a = P8E0::pack_to_ui(regime, frac_a);
+            let mut u_a = Self::pack_to_ui(regime, frac_a);
 
             if bit_n_plus_one {
                 let bits_more = (frac32_a << (33 - shift)) != 0;
@@ -600,6 +600,6 @@ impl From<Q8E0> for P8E0 {
             u_a
         };
 
-        P8E0::from_bits(u_a.with_sign(sign))
+        Self::from_bits(u_a.with_sign(sign))
     }
 }

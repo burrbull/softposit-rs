@@ -2,24 +2,6 @@ use super::*;
 use num_traits::Zero;
 use crate::{MulAddType, WithSign};
 
-impl P32E2 {
-    #[inline]
-    pub fn mul_add(self, b: Self, c: Self) -> Self {
-        let ui_a = self.to_bits();
-        let ui_b = b.to_bits();
-        let ui_c = c.to_bits();
-        mul_add(ui_a, ui_b, ui_c, crate::MulAddType::Add)
-    }
-    #[inline]
-    pub fn round(self) -> Self {
-        round(self)
-    }
-    #[inline]
-    pub fn sqrt(self) -> Self {
-        sqrt(self)
-    }
-}
-
 impl Q32E2 {
     #[inline]
     pub fn fdp_add(self, p_a: P32E2, p_b: P32E2) -> Self {
@@ -31,7 +13,7 @@ impl Q32E2 {
     }
 }
 
-fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2 {
+pub(super) fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2 {
     let mut bits_more = false;
     //NaR
     if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) || (ui_c == 0x8000_0000) {
@@ -224,7 +206,7 @@ fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2
     P32E2::from_bits(u_z.with_sign(sign_z))
 }
 
-fn round(p_a: P32E2) -> P32E2 {
+pub(super) fn round(p_a: P32E2) -> P32E2 {
     let mut mask = 0x2000_0000_u32;
     let mut scale = 0_u32;
 
@@ -287,7 +269,7 @@ fn round(p_a: P32E2) -> P32E2 {
 }
 
 #[inline]
-fn sqrt(p_a: P32E2) -> P32E2 {
+pub(super) fn sqrt(p_a: P32E2) -> P32E2 {
     let mut ui_a = p_a.to_bits();
 
     // If NaR or a negative number, return NaR.

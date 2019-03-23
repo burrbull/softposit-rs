@@ -69,7 +69,7 @@ fn convert_fraction_p32(
 
 impl From<f32> for P32E2 {
     fn from(float: f32) -> Self {
-        P32E2::from(float as f64)
+        Self::from(float as f64)
     }
 }
 
@@ -232,7 +232,7 @@ impl From<f64> for P32E2 {
             //NaR - for NaN, INF and all other combinations
             0x8000_0000
         };
-        P32E2::from_bits(u_z)
+        Self::from_bits(u_z)
     }
 }
 
@@ -490,14 +490,14 @@ impl From<i32> for P32E2 {
         if sign {
             a = -a; // &0xFFFF_FFFF;
         }
-        P32E2::from_bits(convert_u32_to_p32bits(a as u32).with_sign(sign))
+        Self::from_bits(convert_u32_to_p32bits(a as u32).with_sign(sign))
     }
 }
 
 impl From<u32> for P32E2 {
     #[inline]
     fn from(a: u32) -> Self {
-        P32E2::from_bits(convert_u32_to_p32bits(a))
+        Self::from_bits(convert_u32_to_p32bits(a))
     }
 }
 
@@ -508,14 +508,14 @@ impl From<i64> for P32E2 {
         if sign {
             a = -a;
         }
-        P32E2::from_bits(convert_u64_to_p32bits(a as u64).with_sign(sign))
+        Self::from_bits(convert_u64_to_p32bits(a as u64).with_sign(sign))
     }
 }
 
 impl From<u64> for P32E2 {
     #[inline]
     fn from(a: u64) -> Self {
-        P32E2::from_bits(convert_u64_to_p32bits(a))
+        Self::from_bits(convert_u64_to_p32bits(a))
     }
 }
 
@@ -660,7 +660,7 @@ impl From<Q32E2> for P32E2 {
         let k_a = ((271 - no_lz) >> 2) as i8;
         let mut exp_a = 271 - (no_lz as i32) - ((k_a << 2) as i32);
 
-        let (regime, reg_sa, reg_a) = P32E2::calculate_regime(k_a);
+        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
 
         let u_a = if reg_a > 30 {
             //max or min pos. exp and frac does not matter.
@@ -698,12 +698,12 @@ impl From<Q32E2> for P32E2 {
                 }
             }
 
-            let mut u_a = P32E2::pack_to_ui(regime, exp_a as u32, frac_a);
+            let mut u_a = Self::pack_to_ui(regime, exp_a as u32, frac_a);
             if bit_n_plus_one {
                 u_a += (u_a & 1) | (bits_more as u32);
             }
             u_a
         };
-        P32E2::from_bits(u_a.with_sign(sign))
+        Self::from_bits(u_a.with_sign(sign))
     }
 }

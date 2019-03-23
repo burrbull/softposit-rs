@@ -56,7 +56,7 @@ impl ops::Add for P32E2 {
         //Zero or infinity
         if (ui_a == 0) || (ui_b == 0) {
             // Not required but put here for speed
-            P32E2::from_bits(ui_a | ui_b)
+            Self::from_bits(ui_a | ui_b)
         } else if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) {
             INFINITY
         } else {
@@ -82,7 +82,7 @@ impl ops::Sub for P32E2 {
             INFINITY
         } else if (ui_a == 0) || (ui_b == 0) {
             //Zero
-            P32E2::from_bits(ui_a | ui_b.wrapping_neg())
+            Self::from_bits(ui_a | ui_b.wrapping_neg())
         } else {
             //different signs
             if ((ui_a ^ ui_b) >> 31) != 0 {
@@ -107,11 +107,11 @@ impl ops::Div for P32E2 {
         if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) || (ui_b == 0) {
             return INFINITY;
         } else if ui_a == 0 {
-            return P32E2::zero();
+            return Self::zero();
         }
 
-        let sign_a = P32E2::sign_ui(ui_a);
-        let sign_b = P32E2::sign_ui(ui_b);
+        let sign_a = Self::sign_ui(ui_a);
+        let sign_b = Self::sign_ui(ui_b);
         let sign_z = sign_a ^ sign_b;
 
         if sign_a {
@@ -121,11 +121,11 @@ impl ops::Div for P32E2 {
             ui_b = ui_b.wrapping_neg()
         };
 
-        let (mut k_a, mut exp_a, mut frac_a) = P32E2::separate_bits(ui_a);
+        let (mut k_a, mut exp_a, mut frac_a) = Self::separate_bits(ui_a);
 
         let frac64_a = (frac_a as u64) << 30;
 
-        let (k_b, exp_b, frac_b) = P32E2::separate_bits(ui_b);
+        let (k_b, exp_b, frac_b) = Self::separate_bits(ui_b);
         k_a -= k_b;
         exp_a -= exp_b;
 
@@ -149,7 +149,7 @@ impl ops::Div for P32E2 {
             }
         }
 
-        let (regime, reg_sa, reg_a) = P32E2::calculate_regime(k_a);
+        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
 
         if reg_a > 30 {
             //max or min pos. exp and frac does not matter.
@@ -186,13 +186,13 @@ impl ops::Div for P32E2 {
                 bits_more = true;
             }
 
-            u_z = P32E2::pack_to_ui(regime, exp_a as u32, frac_a);
+            u_z = Self::pack_to_ui(regime, exp_a as u32, frac_a);
             if bit_n_plus_one {
                 u_z += (u_z & 1) | (bits_more as u32);
             }
         }
 
-        P32E2::from_bits(u_z.with_sign(sign_z))
+        Self::from_bits(u_z.with_sign(sign_z))
     }
 }
 
@@ -207,11 +207,11 @@ impl ops::Mul for P32E2 {
         if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) {
             return INFINITY;
         } else if (ui_a == 0) || (ui_b == 0) {
-            return P32E2::zero();
+            return Self::zero();
         }
 
-        let sign_a = P32E2::sign_ui(ui_a);
-        let sign_b = P32E2::sign_ui(ui_b);
+        let sign_a = Self::sign_ui(ui_a);
+        let sign_b = Self::sign_ui(ui_b);
         let sign_z = sign_a ^ sign_b;
 
         if sign_a {
@@ -221,9 +221,9 @@ impl ops::Mul for P32E2 {
             ui_b = ui_b.wrapping_neg()
         };
 
-        let (mut k_a, mut exp_a, mut frac_a) = P32E2::separate_bits(ui_a);
+        let (mut k_a, mut exp_a, mut frac_a) = Self::separate_bits(ui_a);
 
-        let (k_b, exp_b, frac_b) = P32E2::separate_bits(ui_b);
+        let (k_b, exp_b, frac_b) = Self::separate_bits(ui_b);
         k_a += k_b;
         exp_a += exp_b;
         let mut frac64_z = (frac_a as u64) * (frac_b as u64);
@@ -242,7 +242,7 @@ impl ops::Mul for P32E2 {
             }
             frac64_z >>= 1;
         }
-        let (regime, reg_sa, reg_a) = P32E2::calculate_regime(k_a);
+        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
 
         let u_z = if reg_a > 30 {
             //max or min pos. exp and frac does not matter.
@@ -273,7 +273,7 @@ impl ops::Mul for P32E2 {
                 }
             }
             //sign is always zero
-            let mut u_z = P32E2::pack_to_ui(regime, exp_a as u32, frac_a);
+            let mut u_z = Self::pack_to_ui(regime, exp_a as u32, frac_a);
             //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
             if bit_n_plus_one {
                 let bits_more = (0x7FFF_FFFF & frac64_z) != 0;
@@ -282,7 +282,7 @@ impl ops::Mul for P32E2 {
             u_z
         };
 
-        P32E2::from_bits(u_z.with_sign(sign_z))
+        Self::from_bits(u_z.with_sign(sign_z))
     }
 }
 

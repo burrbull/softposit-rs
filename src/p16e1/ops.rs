@@ -235,7 +235,7 @@ impl ops::Add for P16E1 {
         //Zero or infinity
         if (ui_a == 0) || (ui_b == 0) {
             // Not required but put here for speed
-            P16E1::from_bits(ui_a | ui_b)
+            Self::from_bits(ui_a | ui_b)
         } else if (ui_a == 0x8000) || (ui_b == 0x8000) {
             INFINITY
         } else {
@@ -261,7 +261,7 @@ impl ops::Sub for P16E1 {
             INFINITY
         } else if (ui_a == 0) || (ui_b == 0) {
             //Zero
-            P16E1::from_bits(ui_a | ui_b.wrapping_neg())
+            Self::from_bits(ui_a | ui_b.wrapping_neg())
         } else {
             //different signs
             if ((ui_a ^ ui_b) >> 15) != 0 {
@@ -287,8 +287,8 @@ impl ops::Mul for P16E1 {
             return Self::zero();
         }
 
-        let sign_a = P16E1::sign_ui(ui_a);
-        let sign_b = P16E1::sign_ui(ui_b);
+        let sign_a = Self::sign_ui(ui_a);
+        let sign_b = Self::sign_ui(ui_b);
         let sign_z = sign_a ^ sign_b;
 
         if sign_a {
@@ -318,7 +318,7 @@ impl ops::Mul for P16E1 {
             frac32_z >>= 1;
         }
 
-        let (regime, reg_sa, reg_a) = P16E1::calculate_regime(k_a);
+        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
 
         let u_z = if reg_a > 14 {
             //max or min pos. exp and frac does not matter.
@@ -343,7 +343,7 @@ impl ops::Mul for P16E1 {
             }
 
             //sign is always zero
-            let mut u_z = P16E1::pack_to_ui(regime, reg_a, exp_a as u16, frac_a);
+            let mut u_z = Self::pack_to_ui(regime, reg_a, exp_a as u16, frac_a);
             //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
             if bit_n_plus_one {
                 let bits_more = (0x7FFF & frac32_z) != 0;
@@ -352,7 +352,7 @@ impl ops::Mul for P16E1 {
             u_z
         };
 
-        P16E1::from_bits(u_z.with_sign(sign_z))
+        Self::from_bits(u_z.with_sign(sign_z))
     }
 }
 
@@ -370,8 +370,8 @@ impl ops::Div for P16E1 {
             return Self::zero();
         }
 
-        let sign_a = P16E1::sign_ui(ui_a);
-        let sign_b = P16E1::sign_ui(ui_b);
+        let sign_a = Self::sign_ui(ui_a);
+        let sign_b = Self::sign_ui(ui_b);
         let sign_z = sign_a ^ sign_b;
 
         if sign_a {
@@ -381,9 +381,9 @@ impl ops::Div for P16E1 {
             ui_b = ui_b.wrapping_neg();
         }
 
-        let (mut k_a, mut exp_a, mut frac_a) = P16E1::separate_bits(ui_a);
+        let (mut k_a, mut exp_a, mut frac_a) = Self::separate_bits(ui_a);
         let frac32_a = (frac_a as u32) << 14;
-        let (k_b, exp_b, frac_b) = P16E1::separate_bits(ui_b);
+        let (k_b, exp_b, frac_b) = Self::separate_bits(ui_b);
         k_a -= k_b;
         exp_a -= exp_b;
 
@@ -405,7 +405,7 @@ impl ops::Div for P16E1 {
             }
         }
 
-        let (regime, reg_sa, reg_a) = P16E1::calculate_regime(k_a);
+        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
 
         let u_z = if reg_a > 14 {
             //max or min pos. exp and frac does not matter.
@@ -444,7 +444,7 @@ impl ops::Div for P16E1 {
             u_z
         };
 
-        P16E1::from_bits(u_z.with_sign(sign_z))
+        Self::from_bits(u_z.with_sign(sign_z))
     }
 }
 

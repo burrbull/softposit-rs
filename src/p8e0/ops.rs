@@ -56,7 +56,7 @@ impl ops::Add for P8E0 {
         //Zero or infinity
         if (ui_a == 0) || (ui_b == 0) {
             // Not required but put here for speed
-            P8E0::from_bits(ui_a | ui_b)
+            Self::from_bits(ui_a | ui_b)
         } else if (ui_a == 0x80) || (ui_b == 0x80) {
             INFINITY
         } else {
@@ -83,10 +83,10 @@ impl ops::Sub for P8E0 {
         }
         //Zero
         else if (ui_a == 0) || (ui_b == 0) {
-            P8E0::from_bits(ui_a | ui_b.wrapping_neg())
+            Self::from_bits(ui_a | ui_b.wrapping_neg())
         } else {
             //different signs
-            if P8E0::sign_ui(ui_a ^ ui_b) {
+            if Self::sign_ui(ui_a ^ ui_b) {
                 add_mags_p8(ui_a, ui_b.wrapping_neg())
             } else {
                 sub_mags_p8(ui_a, ui_b.wrapping_neg())
@@ -109,8 +109,8 @@ impl ops::Div for P8E0 {
             return Self::zero();
         }
 
-        let sign_a = P8E0::sign_ui(ui_a);
-        let sign_b = P8E0::sign_ui(ui_b);
+        let sign_a = Self::sign_ui(ui_a);
+        let sign_b = Self::sign_ui(ui_b);
         let sign_z = sign_a ^ sign_b;
         if sign_a {
             ui_a = ui_a.wrapping_neg();
@@ -119,8 +119,8 @@ impl ops::Div for P8E0 {
             ui_a = ui_a.wrapping_neg();
         }
 
-        let (mut k_a, frac_a) = P8E0::separate_bits(ui_a);
-        let (k_b, frac_b) = P8E0::separate_bits(ui_b);
+        let (mut k_a, frac_a) = Self::separate_bits(ui_a);
+        let (k_b, frac_b) = Self::separate_bits(ui_b);
         k_a -= k_b;
 
         let frac16_a = (frac_a as u16) << 7; //hidden bit 2nd bit
@@ -136,7 +136,7 @@ impl ops::Div for P8E0 {
             }
         }
 
-        let (regime, reg_sa, reg_a) = P8E0::calculate_regime(k_a);
+        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
 
         let u_z = if reg_a > 6 {
             //max or min pos. exp and frac does not matter.
@@ -151,7 +151,7 @@ impl ops::Div for P8E0 {
             let frac_a = (frac16_z >> (reg_a + 1)) as u8;
 
             let bit_n_plus_one = (0x1 & (frac16_z >> reg_a)) != 0;
-            let mut u_z = P8E0::pack_to_ui(regime, frac_a);
+            let mut u_z = Self::pack_to_ui(regime, frac_a);
 
             //u_z = (uint16_t) (regime) + ((uint16_t) (exp_a)<< (13-reg_a)) + ((uint16_t)(frac_a));
             if bit_n_plus_one {
@@ -166,7 +166,7 @@ impl ops::Div for P8E0 {
             u_z
         };
 
-        P8E0::from_bits(u_z.with_sign(sign_z))
+        Self::from_bits(u_z.with_sign(sign_z))
     }
 }
 
@@ -184,8 +184,8 @@ impl ops::Mul for P8E0 {
             return Self::zero();
         }
 
-        let sign_a = P8E0::sign_ui(ui_a);
-        let sign_b = P8E0::sign_ui(ui_b);
+        let sign_a = Self::sign_ui(ui_a);
+        let sign_b = Self::sign_ui(ui_b);
         let sign_z = sign_a ^ sign_b;
 
         if sign_a {
@@ -195,8 +195,8 @@ impl ops::Mul for P8E0 {
             ui_a = ui_a.wrapping_neg();
         }
 
-        let (mut k_a, frac_a) = P8E0::separate_bits(ui_a);
-        let (k_b, frac_b) = P8E0::separate_bits(ui_b);
+        let (mut k_a, frac_a) = Self::separate_bits(ui_a);
+        let (k_b, frac_b) = Self::separate_bits(ui_b);
         k_a += k_b;
 
         let mut frac16_z = (frac_a as u16) * (frac_b as u16);
@@ -207,7 +207,7 @@ impl ops::Mul for P8E0 {
             frac16_z >>= 1;
         }
 
-        let (regime, reg_sa, reg_a) = P8E0::calculate_regime(k_a);
+        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
 
         let u_z = if reg_a > 6 {
             //max or min pos. exp and frac does not matter.
@@ -221,7 +221,7 @@ impl ops::Mul for P8E0 {
             frac16_z = (frac16_z & 0x3FFF) >> reg_a;
             let frac_a = (frac16_z >> 8) as u8;
             let bit_n_plus_one = (0x80 & frac16_z) != 0;
-            let mut u_z = P8E0::pack_to_ui(regime, frac_a);
+            let mut u_z = Self::pack_to_ui(regime, frac_a);
 
             //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
             if bit_n_plus_one {
@@ -231,7 +231,7 @@ impl ops::Mul for P8E0 {
             u_z
         };
 
-        P8E0::from_bits(u_z.with_sign(sign_z))
+        Self::from_bits(u_z.with_sign(sign_z))
     }
 }
 
