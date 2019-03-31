@@ -184,6 +184,14 @@ impl num_traits::Num for P8E0 {
     }
 }
 
+impl core::str::FromStr for P8E0 {
+    type Err = core::num::ParseFloatError;
+    #[inline]
+    fn from_str(src: &str) -> Result<Self, core::num::ParseFloatError> {
+        Ok(Self::from(f64::from_str(src)?))
+    }
+}
+
 impl num_traits::One for P8E0 {
     fn one() -> Self {
         P8E0::new(0x_40)

@@ -213,6 +213,14 @@ impl num_traits::Num for P16E1 {
     }
 }
 
+impl core::str::FromStr for P16E1 {
+    type Err = core::num::ParseFloatError;
+    #[inline]
+    fn from_str(src: &str) -> Result<Self, core::num::ParseFloatError> {
+        Ok(Self::from(f64::from_str(src)?))
+    }
+}
+
 impl num_traits::ToPrimitive for P16E1 {
     fn to_i64(&self) -> Option<i64> {
         Some(i64::from(*self))

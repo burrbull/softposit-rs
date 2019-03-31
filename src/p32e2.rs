@@ -248,6 +248,14 @@ impl num_traits::Num for P32E2 {
     }
 }
 
+impl core::str::FromStr for P32E2 {
+    type Err = core::num::ParseFloatError;
+    #[inline]
+    fn from_str(src: &str) -> Result<Self, core::num::ParseFloatError> {
+        Ok(Self::from(f64::from_str(src)?))
+    }
+}
+
 use core::fmt;
 impl fmt::Display for P32E2 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
