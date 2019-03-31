@@ -259,10 +259,8 @@ impl From<P32E2> for f64 {
             }
             let (k_a, tmp) = P32E2::separate_bits_tmp(ui_a);
 
-            let mut exp_a = (tmp>>29) as u64; //to get 2 bits
-
             let frac_a = (((tmp as u64)<<3) & 0xFFFF_FFFF)<<20;
-            exp_a = ((((k_a as u64)<<2)+exp_a) + 1023) << 52;
+            let exp_a = ((((k_a as u64)<<2)+((tmp>>29) as u64)).wrapping_add(1023)) << 52;
 
             f64::from_bits(exp_a + frac_a + (((sign_a as u64)&0x1)<<63))
         }
