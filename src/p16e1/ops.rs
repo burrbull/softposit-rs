@@ -454,3 +454,39 @@ impl ops::Rem for P16E1 {
         unimplemented!()
     }
 }
+
+#[cfg(test)]
+fn test_ops(fun: fn(P16E1, P16E1, f64, f64) -> (P16E1, f64)) {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..10_000 {
+        let n_a = rng.gen_range(0_u16, 0x_ffff);
+        let n_b = rng.gen_range(0_u16, 0x_ffff);
+        let p_a = P16E1::from_bits(n_a);
+        let p_b = P16E1::from_bits(n_b);
+        let f_a = f64::from(p_a);
+        let f_b = f64::from(p_b);
+        let (p, f) = fun(p_a, p_b, f_a, f_b);
+        assert_eq!(p, P16E1::from(f));
+    }
+}
+
+#[test]
+fn add() {
+    test_ops(|p_a, p_b, f_a, f_b| (p_a + p_b, f_a + f_b));
+}
+
+#[test]
+fn sub() {
+    test_ops(|p_a, p_b, f_a, f_b| (p_a - p_b, f_a - f_b));
+}
+
+#[test]
+fn mul() {
+    test_ops(|p_a, p_b, f_a, f_b| (p_a * p_b, f_a * f_b));
+}
+
+#[test]
+fn div() {
+    test_ops(|p_a, p_b, f_a, f_b| (p_a / p_b, f_a / f_b));
+}

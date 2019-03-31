@@ -96,7 +96,7 @@ impl P16E1 {
 
     #[inline]
     fn pack_to_ui(regime: u16, reg_a: u8, exp_a: u16, frac_a: u16) -> u16 {
-        regime + (exp_a << (13 - reg_a)) + frac_a
+        regime + (exp_a.wrapping_shl(13_u16.wrapping_sub(reg_a as u16) as u32)) + frac_a
     }
 
     #[inline]

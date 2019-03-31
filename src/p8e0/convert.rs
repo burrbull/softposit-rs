@@ -603,3 +603,12 @@ impl From<Q8E0> for P8E0 {
         Self::from_bits(u_a.with_sign(sign))
     }
 }
+
+#[test]
+fn convert() {
+    for n in 0..255_u8 {
+        let p = P8E0::from_bits(n);
+        let f = f64::from(p);
+        assert_eq!(n, P8E0::from(f).to_bits());
+    }
+}

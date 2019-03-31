@@ -14,3 +14,6 @@ optional = true
 [features]
 default = ["float_convert"]
 float_convert = ["libm"]
+
+[dev-dependencies]
+rand = "0.6"

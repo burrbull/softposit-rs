@@ -705,3 +705,15 @@ impl From<Q32E2> for P32E2 {
         Self::from_bits(u_a.with_sign(sign))
     }
 }
+
+#[test]
+fn convert() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..100_000 {
+        let n = rng.gen_range(0_u32, 0x_ffff_ffff);
+        let p = P32E2::from_bits(n);
+        let f = f64::from(p);
+        assert_eq!(n, P32E2::from(f).to_bits());
+    }
+}

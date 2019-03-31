@@ -439,7 +439,7 @@ impl From<f64> for P16E1 {
                 } else {
                     let regime = ((1_u16 << reg) - 1) << 1;
                     let mut u_z = ((regime as u16) << (14 - reg))
-                        + ((exp as u16) << (13 - reg))
+                        + ((exp as u16).wrapping_shl(13_u16.wrapping_sub(reg) as u32))
                         + (frac as u16);
                     //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
                     if (reg == 14) && (exp != 0) {
@@ -493,7 +493,7 @@ impl From<f64> for P16E1 {
             } else {
                 let regime = 1_u16;
                 let mut u_z =
-                    ((regime as u16) << (14 - reg)) + ((exp as u16) << (13 - reg)) + (frac as u16);
+                    ((regime as u16) << (14 - reg)) + ((exp as u16).wrapping_shl(13_u16.wrapping_sub(reg) as u32)) + (frac as u16);
                 //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
                 if (reg == 14) && (exp != 0) {
                     bit_n_plus_one = true;
@@ -566,7 +566,7 @@ impl From<P16E1> for f64 {
         let exp = (tmp >> 14) as i8;
         let frac = (tmp & 0x3FFF) >> shift;
 
-        let fraction_max = libm::pow(2., (13 - reg) as f64);
+        let fraction_max = libm::pow(2., (13_u16.wrapping_sub(reg)) as f64);
         let mut d16 = libm::pow(4., k as f64)
             * libm::pow(2., exp as f64)
             * (1. + ((frac as f64) / fraction_max));
@@ -668,5 +668,14 @@ impl From<Q16E1> for P16E1 {
         };
 
         Self::from_bits(u_a.with_sign(sign))
+    }
+}
+
+#[test]
+fn convert() {
+    for n in 0..65_535_u16 {
+        let p = P16E1::from_bits(n);
+        let f = f64::from(p);
+        assert_eq!(n, P16E1::from(f).to_bits());
     }
 }
