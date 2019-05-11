@@ -76,12 +76,12 @@ impl P8E0 {
 impl P8E0 {
     #[inline]
     pub(crate) fn sign_ui(a: u8) -> bool {
-        (a >> 7) != 0
+        (a & 0x_80) != 0
     }
 
     #[inline]
     fn sign_reg_ui(a: u8) -> bool {
-        ((a >> 6) & 0x1) != 0
+        (a & 0x_40) != 0
     }
 
     #[inline]
@@ -100,13 +100,13 @@ impl P8E0 {
         let mut k = 0;
         let mut tmp = bits << 2;
         if Self::sign_reg_ui(bits) {
-            while (tmp >> 7) != 0 {
+            while (tmp & 0x_80) != 0 {
                 k += 1;
                 tmp <<= 1;
             }
         } else {
             k = -1;
-            while (tmp >> 7) == 0 {
+            while (tmp & 0x_80) == 0 {
                 k -= 1;
                 tmp <<= 1;
             }

@@ -150,7 +150,7 @@ impl From<P16E1> for P32E2 {
 
         exp_frac32_a >>= reg_a + 2; //2 because of sign and regime terminating bit
 
-        let u_z = (regime as u32) + exp_frac32_a;
+        let u_z = regime + exp_frac32_a;
 
         P32E2::from_bits(u_z.with_sign(sign))
     }

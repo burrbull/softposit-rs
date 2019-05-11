@@ -136,7 +136,7 @@ fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
     k_a += k_b;
     let mut frac16_z = (frac_a as u16) * (frac_b as u16);
 
-    let rcarry = (frac16_z >> 15) != 0; //1st bit of frac16_z
+    let rcarry = (frac16_z & 0x_8000) != 0; //1st bit of frac16_z
     if rcarry {
         k_a += 1;
         frac16_z >>= 1;
@@ -279,7 +279,7 @@ fn q8_fdp_add(q: Q8E0, p_a: P8E0, p_b: P8E0) -> Q8E0 {
 
     let mut frac32_z = ((frac_a * frac_b) as u32) << 16;
 
-    let rcarry = (frac32_z >> 31) != 0; //1st bit (position 2) of frac32_z, hidden bit is 4th bit (position 3)
+    let rcarry = (frac32_z & 0x8000_0000) != 0; //1st bit (position 2) of frac32_z, hidden bit is 4th bit (position 3)
     if rcarry {
         k_a += 1;
         frac32_z >>= 1;
@@ -341,7 +341,7 @@ fn q8_fdp_sub(q: Q8E0, p_a: P8E0, p_b: P8E0) -> Q8E0 {
 
     let mut frac32_z = ((frac_a * frac_b) as u32) << 16;
 
-    let rcarry = (frac32_z >> 31) != 0; //1st bit (position 2) of frac32_z, hidden bit is 4th bit (position 3)
+    let rcarry = (frac32_z & 0x8000_0000) != 0; //1st bit (position 2) of frac32_z, hidden bit is 4th bit (position 3)
     if rcarry {
         k_a += 1;
         frac32_z >>= 1;

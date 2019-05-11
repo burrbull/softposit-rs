@@ -77,7 +77,7 @@ fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1
         exp_a ^= 0x2;
     }
 
-    let rcarry = (frac32_z >> 31) != 0; //1st bit of frac32_z
+    let rcarry = (frac32_z & 0x8000_0000) != 0; //1st bit of frac32_z
     if rcarry {
         if exp_a != 0 {
             k_a += 1;
@@ -152,7 +152,7 @@ fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1
             exp_a //same here
         };
 
-        let rcarry = (0x8000_0000 & frac32_z) != 0; //first left bit
+        let rcarry = (frac32_z & 0x8000_0000) != 0; //first left bit
         if rcarry {
             if exp_z != 0 {
                 k_z += 1;
@@ -282,7 +282,7 @@ fn sqrt(p_a: P16E1) -> P16E1 {
     let mut ui_a = p_a.to_bits();
 
     // If sign bit is set, return NaR.
-    if (ui_a >> 15) != 0 {
+    if (ui_a & 0x_8000) != 0 {
         return INFINITY;
     }
     // If the argument is zero, return zero.
@@ -455,7 +455,7 @@ fn q16_fdp_add(q: Q16E1, p_a: P16E1, p_b: P16E1) -> Q16E1 {
     let rcarryb = b1 & b2;
     let mut u_z: [u64; 2] = [0, (u_z1[1] >> 1) + (u_z2[1] >> 1) + (rcarryb as u64)];
 
-    let rcarry_z = (u_z[1] >> 63) != 0;
+    let rcarry_z = (u_z[1] & 0x_8000_0000_0000_0000) != 0;
 
     u_z[1] = u_z[1] << 1 | ((b1 ^ b2) as u64);
 
@@ -567,7 +567,7 @@ fn q16_fdp_sub(q: Q16E1, p_a: P16E1, p_b: P16E1) -> Q16E1 {
     let rcarryb = b1 & b2;
     let mut u_z: [u64; 2] = [0, (u_z1[1] >> 1) + (u_z2[1] >> 1) + (rcarryb as u64)];
 
-    let rcarry_z = (u_z[1] >> 63) != 0;
+    let rcarry_z = (u_z[1] & 0x_8000_0000_0000_0000) != 0;
 
     u_z[1] = u_z[1] << 1 | ((b1 ^ b2) as u64);
 

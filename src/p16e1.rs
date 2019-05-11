@@ -86,12 +86,12 @@ impl P16E1 {
 impl P16E1 {
     #[inline]
     pub(crate) fn sign_ui(a: u16) -> bool {
-        (a >> 15) != 0
+        (a & 0x_8000) != 0
     }
 
     #[inline]
     fn sign_reg_ui(a: u16) -> bool {
-        ((a >> 14) & 0x1) != 0
+        (a & 0x_4000) != 0
     }
 
     #[inline]
@@ -109,13 +109,13 @@ impl P16E1 {
         let mut k = 0;
         let mut tmp = bits << 2;
         if Self::sign_reg_ui(bits) {
-            while (tmp >> 15) != 0 {
+            while (tmp & 0x_8000) != 0 {
                 k += 1;
                 tmp <<= 1;
             }
         } else {
             k = -1;
-            while (tmp >> 15) == 0 {
+            while (tmp & 0x_8000) == 0 {
                 k -= 1;
                 tmp <<= 1;
             }

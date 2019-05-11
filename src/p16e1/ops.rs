@@ -182,7 +182,7 @@ pub fn add_mags_p16(mut ui_a: u16, mut ui_b: u16) -> P16E1 {
         }
 
         frac32_a += frac32_b;
-        let rcarry = (0x8000_0000 & frac32_a) != 0; //first left bit
+        let rcarry = (frac32_a & 0x8000_0000) != 0; //first left bit
         if rcarry {
             if exp_a != 0 {
                 k_a += 1;
@@ -240,7 +240,7 @@ impl ops::Add for P16E1 {
             INFINITY
         } else {
             //different signs
-            if ((ui_a ^ ui_b) >> 15) != 0 {
+            if Self::sign_ui(ui_a ^ ui_b) {
                 sub_mags_p16(ui_a, ui_b)
             } else {
                 add_mags_p16(ui_a, ui_b)
@@ -264,7 +264,7 @@ impl ops::Sub for P16E1 {
             Self::from_bits(ui_a | ui_b.wrapping_neg())
         } else {
             //different signs
-            if ((ui_a ^ ui_b) >> 15) != 0 {
+            if Self::sign_ui(ui_a ^ ui_b) {
                 add_mags_p16(ui_a, ui_b.wrapping_neg())
             } else {
                 sub_mags_p16(ui_a, ui_b.wrapping_neg())

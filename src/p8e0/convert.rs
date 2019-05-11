@@ -220,7 +220,7 @@ impl From<P8E0> for f64 {
         let mut k = 0_i8;
         let mut tmp = u_z<<2 /* & 0xFF*/;
         let reg = if reg_s {
-            while (tmp >> 7) != 0 {
+            while (tmp & 0x_80) != 0 {
                 k += 1;
                 shift += 1;
                 tmp <<= 1 /* & 0xFF*/;
@@ -314,7 +314,7 @@ impl From<P8E0> for i64 {
             return -0x8000_0000_0000_0000;
         }
 
-        let sign = (ui_a >> 7) != 0;
+        let sign = (ui_a & 0x_80) != 0;
         if sign {
             ui_a = ui_a.wrapping_neg();
         }
@@ -459,7 +459,7 @@ impl From<u32> for P8E0 {
 impl From<i32> for P8E0 {
     #[inline]
     fn from(mut a: i32) -> Self {
-        let sign = (a >> 31) != 0;
+        let sign = a.is_negative();
         if sign {
             a = -a;
         }
@@ -477,7 +477,7 @@ impl From<u64> for P8E0 {
 impl From<i64> for P8E0 {
     #[inline]
     fn from(mut a: i64) -> Self {
-        let sign = (a >> 63) != 0;
+        let sign = a.is_negative();
         if sign {
             a = -a;
         }
@@ -556,7 +556,7 @@ impl From<Q8E0> for P8E0 {
 
         let mut u_z = q_a.to_bits();
 
-        let sign = (u_z >> 31) != 0;
+        let sign = (u_z & 0x8000_0000) != 0;
 
         if sign {
             u_z = u_z.wrapping_neg();

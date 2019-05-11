@@ -61,7 +61,7 @@ impl ops::Add for P32E2 {
             INFINITY
         } else {
             //different signs
-            if ((ui_a ^ ui_b) >> 31) != 0 {
+            if Self::sign_ui(ui_a ^ ui_b) {
                 sub_mags_p32(ui_a, ui_b)
             } else {
                 add_mags_p32(ui_a, ui_b)
@@ -85,7 +85,7 @@ impl ops::Sub for P32E2 {
             Self::from_bits(ui_a | ui_b.wrapping_neg())
         } else {
             //different signs
-            if ((ui_a ^ ui_b) >> 31) != 0 {
+            if Self::sign_ui(ui_a ^ ui_b) {
                 add_mags_p32(ui_a, ui_b.wrapping_neg())
             } else {
                 sub_mags_p32(ui_a, ui_b.wrapping_neg())

@@ -4,11 +4,14 @@ mod convert;
 mod math;
 mod ops;
 
+const UP_SIGN: u32 = 0x_8000_0000;
+const UP_REGSIGN: u32 = 0x_4000_0000;
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Hash)]
 pub struct P32E2(i32);
 
 /// Machine epsilon (7.450580596923828e-9).
-pub const EPSILON: P32E2 = P32E2::new(0x_a0_0000);
+pub const EPSILON: P32E2 = P32E2::new(0x_00a0_0000);
 
 /// Smallest finite value (-1.329227996_e36).
 pub const MIN: P32E2 = P32E2::new(-0x_7FFF_FFFF);
@@ -86,12 +89,12 @@ impl P32E2 {
 impl P32E2 {
     #[inline]
     pub(crate) fn sign_ui(a: u32) -> bool {
-        (a >> 31) != 0
+        (a & UP_SIGN) != 0
     }
 
     #[inline]
     fn sign_reg_ui(a: u32) -> bool {
-        ((a >> 30) & 0x1) != 0
+        (a & UP_REGSIGN) != 0
     }
 
     #[inline]
@@ -114,13 +117,13 @@ impl P32E2 {
         let mut k = 0;
         let mut tmp = bits << 2;
         if Self::sign_reg_ui(bits) {
-            while (tmp >> 31) != 0 {
+            while (tmp & 0x8000_0000) != 0 {
                 k += 1;
                 tmp <<= 1;
             }
         } else {
             k = -1;
-            while (tmp >> 31) == 0 {
+            while (tmp & 0x8000_0000) == 0 {
                 k -= 1;
                 tmp <<= 1;
             }
@@ -233,11 +236,13 @@ impl Zero for P32E2 {
 
 use num_traits::One;
 impl One for P32E2 {
+    #[inline]
     fn one() -> Self {
         P32E2::new(0x_4000_0000)
     }
+    #[inline]
     fn is_one(&self) -> bool {
-        *self == P32E2::new(0x_4000_0000)
+        *self == Self::one()
     }
 }
 

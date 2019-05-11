@@ -61,7 +61,7 @@ impl ops::Add for P8E0 {
             INFINITY
         } else {
             //different signs
-            if ((ui_a ^ ui_b) >> 7) != 0 {
+            if Self::sign_ui(ui_a ^ ui_b) {
                 sub_mags_p8(ui_a, ui_b)
             } else {
                 add_mags_p8(ui_a, ui_b)
@@ -153,7 +153,6 @@ impl ops::Div for P8E0 {
             let bit_n_plus_one = (0x1 & (frac16_z >> reg_a)) != 0;
             let mut u_z = Self::pack_to_ui(regime, frac_a);
 
-            //u_z = (uint16_t) (regime) + ((uint16_t) (exp_a)<< (13-reg_a)) + ((uint16_t)(frac_a));
             if bit_n_plus_one {
                 let bits_more = if rem != 0 {
                     true
@@ -201,7 +200,7 @@ impl ops::Mul for P8E0 {
 
         let mut frac16_z = (frac_a as u16) * (frac_b as u16);
 
-        let rcarry = (frac16_z >> 15) != 0; //1st bit of frac32Z
+        let rcarry = (frac16_z & 0x_8000) != 0; //1st bit of frac32Z
         if rcarry {
             k_a += 1;
             frac16_z >>= 1;

@@ -276,7 +276,7 @@ impl From<P32E2> for i32 {
 
         let mut ui_a = p_a.to_bits();
 
-        let sign = (ui_a >> 31) != 0;
+        let sign = (ui_a & 0x8000_0000) != 0;
         if sign {
             ui_a = ui_a.wrapping_neg();
         }
@@ -379,7 +379,7 @@ impl From<P32E2> for i64 {
             return (ui_a as i64) << 32;
         }
 
-        let sign = (ui_a >> 31) != 0;
+        let sign = (ui_a & 0x8000_0000) != 0;
         if sign {
             ui_a = ui_a.wrapping_neg();
         }
@@ -484,7 +484,7 @@ impl From<P32E2> for u64 {
 impl From<i32> for P32E2 {
     #[inline]
     fn from(mut a: i32) -> Self {
-        let sign = (a >> 31) != 0;
+        let sign = a.is_negative();
         if sign {
             a = -a; // &0xFFFF_FFFF;
         }
@@ -502,7 +502,7 @@ impl From<u32> for P32E2 {
 impl From<i64> for P32E2 {
     #[inline]
     fn from(mut a: i64) -> Self {
-        let sign = (a >> 63) != 0;
+        let sign = a.is_negative();
         if sign {
             a = -a;
         }
@@ -603,7 +603,7 @@ impl From<Q32E2> for P32E2 {
 
         let mut u_z = q_a.to_bits();
 
-        let sign = (u_z[0] >> 63) != 0;
+        let sign = (u_z[0] & 0x_8000_0000_0000_0000) != 0;
 
         if sign {
             let mut j = u_z.iter_mut().rev();

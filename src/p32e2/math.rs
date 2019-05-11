@@ -54,7 +54,7 @@ pub(super) fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddTyp
         exp_a &= 0x3; // -=4
     }
 
-    let rcarry = (frac64_z >> 63) != 0; //1st bit of frac64_z
+    let rcarry = (frac64_z & 0x_8000_0000_0000_0000) != 0; //1st bit of frac64_z
     if rcarry {
         exp_a += 1;
         if exp_a > 3 {
@@ -128,7 +128,7 @@ pub(super) fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddTyp
             k_z = k_a; // actually can be k_c too, no diff
             exp_a //same here
         };
-        let rcarry = (frac64_z >> 63) != 0; //first left bit
+        let rcarry = (frac64_z & 0x_8000_0000_0000_0000) != 0; //first left bit
 
         if rcarry {
             exp_z += 1;
@@ -213,7 +213,7 @@ pub(super) fn round(p_a: P32E2) -> P32E2 {
     let u_a: u32;
 
     let mut ui_a = p_a.to_bits();
-    let sign = (ui_a >> 31) != 0;
+    let sign = (ui_a & 0x8000_0000) != 0;
 
     // sign is True if pA > NaR.
     if sign {
