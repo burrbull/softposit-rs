@@ -2,6 +2,11 @@
 name = "softposit"
 version = "0.1.0"
 authors = ["Andrey Zgarbul <zgarbul.andrey@gmail.com>"]
+description = "Implementation of Posit numbers"
+repository = "https://gitlab.com/burrbull/softposit-rs"
+keywords = ["posit", "unum"]
+readme = "README.md"
+license = "MIT/Apache-2.0"
 edition = "2018"
 
 [dependencies]
