@@ -407,8 +407,5 @@ fn mul() {
 
 #[test]
 fn div() {
-    test_ops(|p_a, p_b, f_a, f_b| {
-        dbg!(p_a, p_b, f_a, f_b, f32::from(p_a / p_b), f_a / f_b);
-        (p_a / p_b, f_a / f_b)
-        });
+    test_ops(|p_a, p_b, f_a, f_b| (p_a / p_b, f_a / f_b));
 }
