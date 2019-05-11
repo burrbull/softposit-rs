@@ -100,7 +100,7 @@ impl ops::Div for P8E0 {
     #[inline]
     fn div(self, other: Self) -> Self {
         let mut ui_a = self.to_bits();
-        let ui_b = other.to_bits();
+        let mut ui_b = other.to_bits();
 
         //Zero or infinity
         if (ui_a == 0x80) || (ui_b == 0x80) || (ui_b == 0) {
@@ -116,7 +116,7 @@ impl ops::Div for P8E0 {
             ui_a = ui_a.wrapping_neg();
         }
         if sign_b {
-            ui_a = ui_a.wrapping_neg();
+            ui_b = ui_b.wrapping_neg();
         }
 
         let (mut k_a, frac_a) = Self::separate_bits(ui_a);
@@ -174,7 +174,7 @@ impl ops::Mul for P8E0 {
     #[inline]
     fn mul(self, other: Self) -> Self {
         let mut ui_a = self.to_bits();
-        let ui_b = other.to_bits();
+        let mut ui_b = other.to_bits();
 
         //NaR or Zero
         if (ui_a == 0x80) || (ui_b == 0x80) {
@@ -191,7 +191,7 @@ impl ops::Mul for P8E0 {
             ui_a = ui_a.wrapping_neg();
         }
         if sign_b {
-            ui_a = ui_a.wrapping_neg();
+            ui_b = ui_b.wrapping_neg();
         }
 
         let (mut k_a, frac_a) = Self::separate_bits(ui_a);
@@ -219,12 +219,12 @@ impl ops::Mul for P8E0 {
             //remove carry and rcarry bits and shift to correct position
             frac16_z = (frac16_z & 0x3FFF) >> reg_a;
             let frac_a = (frac16_z >> 8) as u8;
-            let bit_n_plus_one = (0x80 & frac16_z) != 0;
+            let bit_n_plus_one = (frac16_z & 0x80) != 0;
             let mut u_z = Self::pack_to_ui(regime, frac_a);
 
             //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
             if bit_n_plus_one {
-                let bits_more = (0x7F & frac16_z) != 0;
+                let bits_more = (frac16_z & 0x7F) != 0;
                 u_z += (u_z & 1) | (bits_more as u8);
             }
             u_z
@@ -380,6 +380,9 @@ fn test_ops(fun: fn(P8E0, P8E0, f64, f64) -> (P8E0, f64)) {
         let n_b = rng.gen_range(0_u8, 0x_ff);
         let p_a = P8E0::from_bits(n_a);
         let p_b = P8E0::from_bits(n_b);
+        if p_a.is_nan() || p_b.is_nan() {
+            continue;
+        }
         let f_a = f64::from(p_a);
         let f_b = f64::from(p_b);
         let (p, f) = fun(p_a, p_b, f_a, f_b);
@@ -404,5 +407,8 @@ fn mul() {
 
 #[test]
 fn div() {
-    test_ops(|p_a, p_b, f_a, f_b| (p_a / p_b, f_a / f_b));
+    test_ops(|p_a, p_b, f_a, f_b| {
+        dbg!(p_a, p_b, f_a, f_b, f32::from(p_a / p_b), f_a / f_b);
+        (p_a / p_b, f_a / f_b)
+        });
 }

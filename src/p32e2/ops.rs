@@ -489,6 +489,9 @@ fn test_ops(fun: fn(P32E2, P32E2, f64, f64) -> (P32E2, f64)) {
         let n_b = rng.gen_range(0_u32, 0x_ffff_ffff);
         let p_a = P32E2::from_bits(n_a);
         let p_b = P32E2::from_bits(n_b);
+        if p_a.is_nan() || p_b.is_nan() {
+            continue;
+        }
         let f_a = f64::from(p_a);
         let f_b = f64::from(p_b);
         let (p, f) = fun(p_a, p_b, f_a, f_b);
