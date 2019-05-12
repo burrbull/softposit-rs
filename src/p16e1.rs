@@ -26,6 +26,8 @@ pub const NAN: P16E1 = P16E1::new(-0x_8000);
 pub const INFINITY: P16E1 = P16E1::new(-0x_8000);
 
 impl P16E1 {
+    pub const ES: usize = 1;
+
     #[inline]
     pub const fn new(i: i16) -> Self {
         P16E1(i)
@@ -84,14 +86,17 @@ impl P16E1 {
 }
 
 impl P16E1 {
+    pub const SIGN_MASK: u16 = 0x_8000;
+    pub const REGIME_SIGN_MASK: u16 = 0x_4000;
+
     #[inline]
     pub(crate) fn sign_ui(a: u16) -> bool {
-        (a & 0x_8000) != 0
+        (a & Self::SIGN_MASK) != 0
     }
 
     #[inline]
     fn sign_reg_ui(a: u16) -> bool {
-        (a & 0x_4000) != 0
+        (a & Self::REGIME_SIGN_MASK) != 0
     }
 
     #[inline]

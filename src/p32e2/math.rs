@@ -170,13 +170,12 @@ pub(super) fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddTyp
         }
     } else {
         let mut bit_n_plus_one = false;
-        let mut frac_z: u32 = 0; // possibly uninitialized
-        if reg_z <= 28 {
+        let frac_z = if reg_z <= 28 {
             //remove hidden bits
             frac64_z &= 0x3FFF_FFFF_FFFF_FFFF;
-            frac_z = (frac64_z >> (reg_z + 34)) as u32; //frac32Z>>16;
-            bit_n_plus_one = (0x2_0000_0000 & (frac64_z >> reg_z)) != 0;
+            bit_n_plus_one = (0x0000_0002_0000_0000 & (frac64_z >> reg_z)) != 0;
             exp_z <<= 28 - reg_z;
+            (frac64_z >> (reg_z + 34)) as u32 //frac32Z>>16;
         } else {
             if reg_z == 30 {
                 bit_n_plus_one = (exp_z & 0x2) != 0;
@@ -186,17 +185,12 @@ pub(super) fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddTyp
                 bit_n_plus_one = (exp_z & 0x1) != 0;
                 exp_z >>= 1;
             }
-            if frac_z > 0 {
-                frac_z = 0;
-                bits_more = true;
-            }
-        }
+            0
+        };
         let mut u_z = P32E2::pack_to_ui(regime, exp_z as u32, frac_z);
 
         if bit_n_plus_one {
-            if (frac64_z << (32 - reg_z)) != 0
-            /* &0xFFFF_FFFF_FFFF_FFFF */
-            {
+            if (frac64_z << (32 - reg_z)) != 0 {
                 bits_more = true;
             }
             u_z += (u_z & 1) | (bits_more as u32);
@@ -321,7 +315,7 @@ pub(super) fn sqrt(p_a: P32E2) -> P32E2 {
     let sqr_sigma0 = (sigma0 * sigma0) >> 35;
     recip_sqrt += ((recip_sqrt + (recip_sqrt >> 2) - ((r0 as u64) << 19)) * sqr_sigma0) >> 46;
 
-    let mut frac_z = ((frac_a as u64) * recip_sqrt) >> 31;
+    let mut frac_z = ((frac_a as u64).wrapping_mul(recip_sqrt)) >> 31;
     if exp_a != 0 {
         frac_z >>= 1;
     }
@@ -585,3 +579,55 @@ fn q32_fdp_sub(q: Q32E2, p_a: P32E2, p_b: P32E2) -> Q32E2 {
         q_z
     }
 }
+
+#[test]
+fn test_mul_add() {
+    use num_traits::Float;
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..100_000 {
+        let n_a = rng.gen_range(-0x_7fff_ffff_i32, 0x_7fff_ffff);
+        let n_b = rng.gen_range(-0x_7fff_ffff_i32, 0x_7fff_ffff);
+        let n_c = rng.gen_range(-0x_7fff_ffff_i32, 0x_7fff_ffff);
+        let p_a = P32E2::new(n_a);
+        let p_b = P32E2::new(n_b);
+        let p_c = P32E2::new(n_c);
+        let f_a = f64::from(p_a);
+        let f_b = f64::from(p_b);
+        let f_c = f64::from(p_c);
+        let p = p_a.mul_add(p_b, p_c);
+        let f = f_a.mul_add(f_b, f_c);
+        assert_eq!(p, P32E2::from(f));
+    }
+}
+
+#[test]
+fn test_sqrt() {
+    use num_traits::Float;
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..100_000 {
+        let n_a = rng.gen_range(-0x_7fff_ffff_i32, 0x_7fff_ffff);
+        let p_a = P32E2::new(n_a);
+        let f_a = f64::from(p_a);
+        let p = p_a.sqrt();
+        let f = f_a.sqrt();
+        assert_eq!(p, P32E2::from(f));
+    }
+}
+
+#[test]
+fn test_round() {
+    use num_traits::Float;
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..100_000 {
+        let n_a = rng.gen_range(-0x_7fff_ffff_i32, 0x_7fff_ffff);
+        let p_a = P32E2::new(n_a);
+        let f_a = f64::from(p_a);
+        let p = p_a.round();
+        let f = f_a.round();
+        assert_eq!(p, P32E2::from(f));
+    }
+}
+

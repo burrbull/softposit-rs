@@ -370,3 +370,51 @@ fn q8_fdp_sub(q: Q8E0, p_a: P8E0, p_b: P8E0) -> Q8E0 {
         q_z
     }
 }
+
+#[test]
+fn test_mul_add() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..1_000 {
+        let n_a = rng.gen_range(-0x_7f_i8, 0x_7f);
+        let n_b = rng.gen_range(-0x_7f_i8, 0x_7f);
+        let n_c = rng.gen_range(-0x_7f_i8, 0x_7f);
+        let p_a = P8E0::new(n_a);
+        let p_b = P8E0::new(n_b);
+        let p_c = P8E0::new(n_c);
+        let f_a = f64::from(p_a);
+        let f_b = f64::from(p_b);
+        let f_c = f64::from(p_c);
+        let p = p_a.mul_add(p_b, p_c);
+        let f = f_a.mul_add(f_b, f_c);
+        assert_eq!(p, P8E0::from(f));
+    }
+}
+
+#[test]
+fn test_sqrt() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..1_000 {
+        let n_a = rng.gen_range(-0x_7f_i8, 0x_7f);
+        let p_a = P8E0::new(n_a);
+        let f_a = f64::from(p_a);
+        let p = p_a.sqrt();
+        let f = f_a.sqrt();
+        assert_eq!(p, P8E0::from(f));
+    }
+}
+
+#[test]
+fn test_round() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..1_000 {
+        let n_a = rng.gen_range(-0x_7f_i8, 0x_7f);
+        let p_a = P8E0::new(n_a);
+        let f_a = f64::from(p_a);
+        let p = p_a.round();
+        let f = f_a.round();
+        assert_eq!(p, P8E0::from(f));
+    }
+}

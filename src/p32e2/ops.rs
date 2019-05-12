@@ -485,13 +485,10 @@ fn test_ops(fun: fn(P32E2, P32E2, f64, f64) -> (P32E2, f64)) {
     use rand::Rng;
     let mut rng = rand::thread_rng();
     for _ in 0..100_000 {
-        let n_a = rng.gen_range(0_u32, 0x_ffff_ffff);
-        let n_b = rng.gen_range(0_u32, 0x_ffff_ffff);
-        let p_a = P32E2::from_bits(n_a);
-        let p_b = P32E2::from_bits(n_b);
-        if p_a.is_nan() || p_b.is_nan() {
-            continue;
-        }
+        let n_a = rng.gen_range(-0x_7fff_ffff_i32, 0x_7fff_ffff);
+        let n_b = rng.gen_range(-0x_7fff_ffff_i32, 0x_7fff_ffff);
+        let p_a = P32E2::new(n_a);
+        let p_b = P32E2::new(n_b);
         let f_a = f64::from(p_a);
         let f_b = f64::from(p_b);
         let (p, f) = fun(p_a, p_b, f_a, f_b);

@@ -90,7 +90,7 @@ fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1
     let mut exp_z: i8;
     //Add
     if ui_c != 0 {
-        let (k_c, exp_c, frac_c) = P16E1::separate_bits(ui_a);
+        let (k_c, exp_c, frac_c) = P16E1::separate_bits(ui_c);
         let mut frac32_c = (frac_c as u32) << 16;
 
         let mut shift_right: i16 = (((k_a - k_c) as i16) << 1) + ((exp_a - exp_c) as i16); //actually this is the scale
@@ -587,5 +587,53 @@ fn q16_fdp_sub(q: Q16E1, p_a: P16E1, p_b: P16E1) -> Q16E1 {
         Q16E1::new(0, 0)
     } else {
         q_z
+    }
+}
+
+#[test]
+fn test_mul_add() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..10_000 {
+        let n_a = rng.gen_range(-0x_7fff_i16, 0x_7fff);
+        let n_b = rng.gen_range(-0x_7fff_i16, 0x_7fff);
+        let n_c = rng.gen_range(-0x_7fff_i16, 0x_7fff);
+        let p_a = P16E1::new(n_a);
+        let p_b = P16E1::new(n_b);
+        let p_c = P16E1::new(n_c);
+        let f_a = f64::from(p_a);
+        let f_b = f64::from(p_b);
+        let f_c = f64::from(p_c);
+        let p = p_a.mul_add(p_b, p_c);
+        let f = f_a.mul_add(f_b, f_c);
+        assert_eq!(p, P16E1::from(f));
+    }
+}
+
+#[test]
+fn test_sqrt() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..10_000 {
+        let n_a = rng.gen_range(-0x_7fff_i16, 0x_7fff);
+        let p_a = P16E1::new(n_a);
+        let f_a = f64::from(p_a);
+        let p = p_a.sqrt();
+        let f = f_a.sqrt();
+        assert_eq!(p, P16E1::from(f));
+    }
+}
+
+#[test]
+fn test_round() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..10_000 {
+        let n_a = rng.gen_range(-0x_7fff_i16, 0x_7fff);
+        let p_a = P16E1::new(n_a);
+        let f_a = f64::from(p_a);
+        let p = p_a.round();
+        let f = f_a.round();
+        assert_eq!(p, P16E1::from(f));
     }
 }

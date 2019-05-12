@@ -26,6 +26,8 @@ pub const NAN: P8E0 = P8E0::new(-0x_80);
 pub const INFINITY: P8E0 = P8E0::new(-0x_80);
 
 impl P8E0 {
+    pub const ES: usize = 0;
+
     #[inline]
     pub const fn new(i: i8) -> Self {
         P8E0(i)
@@ -74,14 +76,17 @@ impl P8E0 {
 }
 
 impl P8E0 {
+    pub const SIGN_MASK: u8 = 0x_80;
+    pub const REGIME_SIGN_MASK: u8 = 0x_40;
+
     #[inline]
     pub(crate) fn sign_ui(a: u8) -> bool {
-        (a & 0x_80) != 0
+        (a & Self::SIGN_MASK) != 0
     }
 
     #[inline]
     fn sign_reg_ui(a: u8) -> bool {
-        (a & 0x_40) != 0
+        (a & Self::REGIME_SIGN_MASK) != 0
     }
 
     #[inline]

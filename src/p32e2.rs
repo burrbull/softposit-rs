@@ -4,9 +4,6 @@ mod convert;
 mod math;
 mod ops;
 
-const UP_SIGN: u32 = 0x_8000_0000;
-const UP_REGSIGN: u32 = 0x_4000_0000;
-
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Hash)]
 pub struct P32E2(i32);
 
@@ -29,6 +26,8 @@ pub const NAN: P32E2 = P32E2::new(-0x_8000_0000);
 pub const INFINITY: P32E2 = P32E2::new(-0x_8000_0000);
 
 impl P32E2 {
+    pub const ES: usize = 2;
+
     #[inline]
     pub const fn new(i: i32) -> Self {
         P32E2(i)
@@ -87,14 +86,17 @@ impl P32E2 {
 }
 
 impl P32E2 {
+    pub const SIGN_MASK: u32 = 0x_8000_0000;
+    pub const REGIME_SIGN_MASK: u32 = 0x_4000_0000;
+
     #[inline]
     pub(crate) fn sign_ui(a: u32) -> bool {
-        (a & UP_SIGN) != 0
+        (a & Self::SIGN_MASK) != 0
     }
 
     #[inline]
     fn sign_reg_ui(a: u32) -> bool {
-        (a & UP_REGSIGN) != 0
+        (a & Self::REGIME_SIGN_MASK) != 0
     }
 
     #[inline]
@@ -131,20 +133,6 @@ impl P32E2 {
         }
         (k, tmp)
     }
-
-    /* // Slower
-    #[inline]
-    pub(crate) fn separate_bits_tmp(bits: u32) -> (i16, u32) {
-        let tmp = bits << 1;
-        let lz = tmp.leading_zeros() as i16;
-        if lz == 0 {
-            let lo = (!tmp).leading_zeros() as i16;
-            (lo - 1, tmp << lo)
-        } else {
-            (-lz, (tmp << lz) & 0x7FFF_FFFF)
-        }
-    }
-    */
 
     #[inline]
     fn calculate_scale(mut bits: u32) -> (u32, u32) {

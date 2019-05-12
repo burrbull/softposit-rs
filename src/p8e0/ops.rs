@@ -376,13 +376,10 @@ fn test_ops(fun: fn(P8E0, P8E0, f64, f64) -> (P8E0, f64)) {
     use rand::Rng;
     let mut rng = rand::thread_rng();
     for _ in 0..1_000 {
-        let n_a = rng.gen_range(0_u8, 0x_ff);
-        let n_b = rng.gen_range(0_u8, 0x_ff);
-        let p_a = P8E0::from_bits(n_a);
-        let p_b = P8E0::from_bits(n_b);
-        if p_a.is_nan() || p_b.is_nan() {
-            continue;
-        }
+        let n_a = rng.gen_range(-0x_7f_i8, 0x_7f);
+        let n_b = rng.gen_range(-0x_7f_i8, 0x_7f);
+        let p_a = P8E0::new(n_a);
+        let p_b = P8E0::new(n_b);
         let f_a = f64::from(p_a);
         let f_b = f64::from(p_b);
         let (p, f) = fun(p_a, p_b, f_a, f_b);
