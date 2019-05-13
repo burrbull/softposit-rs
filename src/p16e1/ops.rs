@@ -1,5 +1,4 @@
-use super::*;
-use num_traits::Zero;
+use super::P16E1;
 use crate::WithSign;
 use core::ops;
 
@@ -59,7 +58,7 @@ pub fn sub_mags_p16(mut ui_a: u16, mut ui_b: u16) -> P16E1 {
 
     if ui_a == ui_b {
         //essential, if not need special handling
-        return P16E1::zero();
+        return P16E1::ZERO;
     }
     if ui_a < ui_b {
         ui_a ^= ui_b;
@@ -237,7 +236,7 @@ impl ops::Add for P16E1 {
             // Not required but put here for speed
             Self::from_bits(ui_a | ui_b)
         } else if (ui_a == 0x8000) || (ui_b == 0x8000) {
-            INFINITY
+            Self::INFINITY
         } else {
             //different signs
             if Self::sign_ui(ui_a ^ ui_b) {
@@ -258,7 +257,7 @@ impl ops::Sub for P16E1 {
 
         //infinity
         if (ui_a == 0x8000) || (ui_b == 0x8000) {
-            INFINITY
+            Self::INFINITY
         } else if (ui_a == 0) || (ui_b == 0) {
             //Zero
             Self::from_bits(ui_a | ui_b.wrapping_neg())
@@ -282,9 +281,9 @@ impl ops::Mul for P16E1 {
 
         //NaR or Zero
         if (ui_a == 0x8000) || (ui_b == 0x8000) {
-            return INFINITY;
+            return Self::INFINITY;
         } else if (ui_a == 0) || (ui_b == 0) {
-            return Self::zero();
+            return Self::ZERO;
         }
 
         let sign_a = Self::sign_ui(ui_a);
@@ -365,9 +364,9 @@ impl ops::Div for P16E1 {
 
         //NaR or Zero
         if (ui_a == 0x8000) || (ui_b == 0x8000) || (ui_b == 0) {
-            return INFINITY;
+            return Self::INFINITY;
         } else if ui_a == 0 {
-            return Self::zero();
+            return Self::ZERO;
         }
 
         let sign_a = Self::sign_ui(ui_a);
@@ -430,7 +429,7 @@ impl ops::Div for P16E1 {
             }
 
             //sign is always zero
-            let mut u_z = P16E1::pack_to_ui(regime, reg_a, exp_a as u16, frac_a);
+            let mut u_z = Self::pack_to_ui(regime, reg_a, exp_a as u16, frac_a);
 
             if bit_n_plus_one {
                 let bits_more = if rem != 0 {
@@ -459,7 +458,7 @@ impl ops::Rem for P16E1 {
 fn test_ops(fun: fn(P16E1, P16E1, f64, f64) -> (P16E1, f64)) {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    for _ in 0..10_000 {
+    for _ in 0..crate::NTESTS16 {
         let n_a = rng.gen_range(-0x_7fff_i16, 0x_7fff);
         let n_b = rng.gen_range(-0x_7fff_i16, 0x_7fff);
         let p_a = P16E1::new(n_a);

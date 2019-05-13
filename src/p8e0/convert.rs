@@ -1,5 +1,4 @@
-use super::*;
-use num_traits::Zero;
+use super::{P8E0, Q8E0};
 use crate::WithSign;
 use core::convert::From;
 use core::f64;
@@ -82,15 +81,15 @@ impl From<f64> for P8E0 {
         let mut bits_more = false;
 
         if float == 0. {
-            return Self::zero();
+            return Self::ZERO;
         } else if !float.is_finite() {
-            return INFINITY;
+            return Self::INFINITY;
         } else if float >= 64. {
             //maxpos
-            return MAX;
+            return Self::MAX;
         } else if float <= -64. {
             // -maxpos
-            return MIN;
+            return Self::MIN;
         }
 
         let sign = float < 0.;
@@ -207,7 +206,7 @@ impl From<P8E0> for f64 {
             return -64.;
         } else if u_z == 0x80 {
             //NaR
-            return f64::INFINITY;
+            return f64::NAN;
         }
 
         let sign = P8E0::sign_ui(u_z);
@@ -274,7 +273,7 @@ impl From<P8E0> for i32 {
         } else {
             let (scale, bits) = P8E0::calculate_scale(ui_a);
 
-            i_z = ((bits | 0x40) as i32) << 24; // Left-justify fraction in 32-bit result (one left bit padding)
+            i_z = (((bits as u32) | 0x40) << 24) as i32; // Left-justify fraction in 32-bit result (one left bit padding)
             let mut mask = 0x4000_0000_i32 >> scale; // Point to the last bit of the integer part.
 
             let bit_last = (i_z & mask) != 0; // Extract the bit, without shifting it.
@@ -292,7 +291,7 @@ impl From<P8E0> for i32 {
                 }
             }
 
-            i_z >>= 30 - scale; // Right-justify the integer.
+            i_z = ((i_z as u32) >> (30 - scale)) as i32; // Right-justify the integer.
         }
 
         if sign {
@@ -378,7 +377,7 @@ impl From<P8E0> for u32 {
         } else {
             let (scale, bits) = P8E0::calculate_scale(ui_a);
 
-            i_z = ((bits | 0x40) as u32) << 24; // Left-justify fraction in 32-bit result (one left bit padding)
+            i_z = ((bits as u32) | 0x40) << 24; // Left-justify fraction in 32-bit result (one left bit padding)
 
             let mut mask = 0x4000_0000_u32 >> scale; // Point to the last bit of the integer part.
 
@@ -549,9 +548,9 @@ impl From<Q8E0> for P8E0 {
     #[inline]
     fn from(q_a: Q8E0) -> Self {
         if q_a.is_zero() {
-            return Self::zero();
+            return Self::ZERO;
         } else if q_a.is_nan() {
-            return NAN;
+            return Self::NAN;
         }
 
         let mut u_z = q_a.to_bits();

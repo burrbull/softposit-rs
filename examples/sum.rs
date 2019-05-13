@@ -4,5 +4,5 @@ fn main() {
     let a = P32::from(12.3);
     let b = P32::from(154.);
     let c = a + b;
-    println!("c = {}", c);
+    println!("c = {0} or c = {0:?}", c);
 }

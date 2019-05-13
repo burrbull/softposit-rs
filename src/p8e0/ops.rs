@@ -1,5 +1,4 @@
-use super::*;
-use num_traits::Zero;
+use super::P8E0;
 use crate::WithSign;
 use core::ops;
 
@@ -58,7 +57,7 @@ impl ops::Add for P8E0 {
             // Not required but put here for speed
             Self::from_bits(ui_a | ui_b)
         } else if (ui_a == 0x80) || (ui_b == 0x80) {
-            INFINITY
+            Self::INFINITY
         } else {
             //different signs
             if Self::sign_ui(ui_a ^ ui_b) {
@@ -79,7 +78,7 @@ impl ops::Sub for P8E0 {
 
         //infinity
         if (ui_a == 0x80) || (ui_b == 0x80) {
-            INFINITY
+            Self::INFINITY
         }
         //Zero
         else if (ui_a == 0) || (ui_b == 0) {
@@ -104,9 +103,9 @@ impl ops::Div for P8E0 {
 
         //Zero or infinity
         if (ui_a == 0x80) || (ui_b == 0x80) || (ui_b == 0) {
-            return INFINITY;
+            return Self::INFINITY;
         } else if ui_a == 0 {
-            return Self::zero();
+            return Self::ZERO;
         }
 
         let sign_a = Self::sign_ui(ui_a);
@@ -178,9 +177,9 @@ impl ops::Mul for P8E0 {
 
         //NaR or Zero
         if (ui_a == 0x80) || (ui_b == 0x80) {
-            return INFINITY;
+            return Self::INFINITY;
         } else if (ui_a == 0) || (ui_b == 0) {
-            return Self::zero();
+            return Self::ZERO;
         }
 
         let sign_a = Self::sign_ui(ui_a);
@@ -306,7 +305,7 @@ fn sub_mags_p8(mut ui_a: u8, mut ui_b: u8) -> P8E0 {
     }
     if ui_a == ui_b {
         //essential, if not need special handling
-        return P8E0::zero();
+        return P8E0::ZERO;
     }
     if ui_a < ui_b {
         ui_a ^= ui_b;
@@ -375,7 +374,7 @@ impl ops::Rem for P8E0 {
 fn test_ops(fun: fn(P8E0, P8E0, f64, f64) -> (P8E0, f64)) {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    for _ in 0..1_000 {
+    for _ in 0..crate::NTESTS8 {
         let n_a = rng.gen_range(-0x_7f_i8, 0x_7f);
         let n_b = rng.gen_range(-0x_7f_i8, 0x_7f);
         let p_a = P8E0::new(n_a);

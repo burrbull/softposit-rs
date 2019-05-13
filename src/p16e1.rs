@@ -2,35 +2,44 @@ use core::mem;
 
 mod convert;
 mod math;
+#[cfg(feature = "num-traits")]
+mod num;
 mod ops;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Hash)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Hash)]
 pub struct P16E1(i16);
 
-/// Machine epsilon (2.44140625e-4).
-pub const EPSILON: P16E1 = P16E1::new(0x_100);
-
-/// Smallest finite value (-268435456).
-pub const MIN: P16E1 = P16E1::new(-0x_7FFF);
-
-/// Smallest positive normal value (3.725290298_e-9).
-pub const MIN_POSITIVE: P16E1 = P16E1::new(0x_1);
-
-/// Largest finite value (268435456).
-pub const MAX: P16E1 = P16E1::new(0x_7FFF);
-
-/// Not a Number (NaN).
-pub const NAN: P16E1 = P16E1::new(-0x_8000);
-
-/// Infinity (∞).
-pub const INFINITY: P16E1 = P16E1::new(-0x_8000);
-
 impl P16E1 {
+    pub const SIZE: usize = 16;
     pub const ES: usize = 1;
+
+    /// Machine epsilon (2.44140625e-4).
+    pub const EPSILON: Self = Self::new(0x_100);
+
+    /// Smallest finite value (-268435456).
+    pub const MIN: Self = Self::new(-0x_7FFF);
+
+    /// Smallest positive normal value (3.725290298_e-9).
+    pub const MIN_POSITIVE: Self = Self::new(0x_1);
+
+    /// Largest finite value (268435456).
+    pub const MAX: Self = Self::new(0x_7FFF);
+
+    /// Not a Number (NaN).
+    pub const NAN: Self = Self::new(-0x_8000);
+
+    /// Infinity (∞).
+    pub const INFINITY: Self = Self::new(-0x_8000);
+
+    /// Zero.
+    pub const ZERO: Self = Self::new(0);
+
+    /// Identity.
+    pub const ONE: Self = Self::new(0x_4000);
 
     #[inline]
     pub const fn new(i: i16) -> Self {
-        P16E1(i)
+        Self(i)
     }
     #[inline]
     pub fn from_bits(v: u16) -> Self {
@@ -47,23 +56,23 @@ impl P16E1 {
     }
     #[inline]
     pub fn is_nan(self) -> bool {
-        self == NAN
+        self == Self::NAN
     }
     #[inline]
     pub fn is_infinite(self) -> bool {
-        self == INFINITY
+        self == Self::INFINITY
     }
     #[inline]
     pub fn is_finite(self) -> bool {
         !self.is_nan()
     }
     #[inline]
-    pub fn to_degrees(self) -> P16E1 {
+    pub fn to_degrees(self) -> Self {
         const PIS_IN_180: P16E1 = P16E1::new(0x_7729);
         self * PIS_IN_180
     }
     #[inline]
-    pub fn to_radians(self) -> P16E1 {
+    pub fn to_radians(self) -> Self {
         const PIS_O_180: P16E1 = P16E1::new(0x_0878);
         self * PIS_O_180
     }
@@ -101,7 +110,13 @@ impl P16E1 {
 
     #[inline]
     fn pack_to_ui(regime: u16, reg_a: u8, exp_a: u16, frac_a: u16) -> u16 {
-        regime + (exp_a.wrapping_shl(13_u16.wrapping_sub(reg_a as u16) as u32)) + frac_a
+        regime
+            + (if reg_a == 14 {
+                0
+            } else {
+                exp_a << (13 - reg_a)
+            })
+            + frac_a
     }
 
     #[inline]
@@ -193,31 +208,6 @@ impl Q16E1 {
     }
 }
 
-impl num_traits::Zero for P16E1 {
-    fn zero() -> Self {
-        P16E1::new(0)
-    }
-    fn is_zero(&self) -> bool {
-        *self == P16E1::new(0)
-    }
-}
-
-impl num_traits::One for P16E1 {
-    fn one() -> Self {
-        P16E1::new(0x_4000)
-    }
-    fn is_one(&self) -> bool {
-        *self == P16E1::new(0x_4000)
-    }
-}
-
-impl num_traits::Num for P16E1 {
-    type FromStrRadixErr = num_traits::ParseFloatError;
-    fn from_str_radix(src: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
-        Ok(Self::from(f64::from_str_radix(src, radix)?))
-    }
-}
-
 impl core::str::FromStr for P16E1 {
     type Err = core::num::ParseFloatError;
     #[inline]
@@ -226,21 +216,16 @@ impl core::str::FromStr for P16E1 {
     }
 }
 
-impl num_traits::ToPrimitive for P16E1 {
-    fn to_i64(&self) -> Option<i64> {
-        Some(i64::from(*self))
-    }
-    fn to_u64(&self) -> Option<u64> {
-        Some(u64::from(*self))
-    }
-    fn to_f64(&self) -> Option<f64> {
-        Some(f64::from(*self))
+use core::fmt;
+impl fmt::Display for P16E1 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", f64::from(*self))
     }
 }
 
-impl num_traits::NumCast for P16E1 {
-    fn from<N: num_traits::ToPrimitive>(n: N) -> Option<Self> {
-        n.to_f64().map(|x| x.into())
+impl fmt::Debug for P16E1 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "P16E1({})", self.0)
     }
 }
 

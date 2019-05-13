@@ -1,5 +1,4 @@
-use super::*;
-use num_traits::Zero;
+use super::{P32E2, Q32E2};
 use crate::WithSign;
 use core::convert::From;
 use core::f64;
@@ -82,15 +81,15 @@ impl From<f64> for P32E2 {
         let mut bits_more = false;
 
         if float == 0. {
-            return Self::zero();
+            return Self::ZERO;
         } else if !float.is_finite() {
-            return INFINITY;
+            return Self::INFINITY;
         } else if float >= 1.329_227_995_784_916_e36 {
             //maxpos
-            return MAX;
+            return Self::MAX;
         } else if float <= -1.329_227_995_784_916_e36 {
             // -maxpos
-            return MIN;
+            return Self::MIN;
         }
 
         let sign = float < 0.;
@@ -248,21 +247,21 @@ impl From<P32E2> for f64 {
     fn from(p_a: P32E2) -> Self {
         let mut ui_a = p_a.to_bits();
 
-        if p_a.is_zero() {
+        if p_a == P32E2::ZERO {
             0.
         } else if p_a.is_infinite() {
             f64::NAN
         } else {
-            let sign_a = P32E2::sign_ui( ui_a );
+            let sign_a = P32E2::sign_ui(ui_a);
             if sign_a {
                 ui_a = ui_a.wrapping_neg();
             }
             let (k_a, tmp) = P32E2::separate_bits_tmp(ui_a);
 
-            let frac_a = (((tmp as u64)<<3) & 0xFFFF_FFFF)<<20;
-            let exp_a = ((((k_a as u64)<<2)+((tmp>>29) as u64)).wrapping_add(1023)) << 52;
+            let frac_a = (((tmp as u64) << 3) & 0xFFFF_FFFF) << 20;
+            let exp_a = ((((k_a as u64) << 2) + ((tmp >> 29) as u64)).wrapping_add(1023)) << 52;
 
-            f64::from_bits(exp_a + frac_a + (((sign_a as u64)&0x1)<<63))
+            f64::from_bits(exp_a + frac_a + (((sign_a as u64) & 0x1) << 63))
         }
     }
 }
@@ -289,11 +288,15 @@ impl From<P32E2> for i32 {
             2 // 3/2 <= x <= 5/2 rounds to 2. // For speed. Can be commented out
         } else if ui_a > 0x7FAF_FFFF {
             //overflow so return max integer value
-            0x7FFF_FFFF
+            if sign {
+                -2147483648
+            } else {
+                0x7FFF_FFFF
+            }
         } else {
             let (scale, bits) = P32E2::calculate_scale(ui_a);
 
-            let mut i_z64 = (((bits | 0x1000_0000) & 0x1FFF_FFFF) as u64) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
+            let mut i_z64 = (((bits as u64) | 0x1000_0000) & 0x1FFF_FFFF) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
             let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
 
             let bit_last = i_z64 & mask; // Extract the bit, without shifting it.
@@ -347,7 +350,7 @@ impl From<P32E2> for u32 {
         } else {
             let (scale, bits) = P32E2::calculate_scale(ui_a);
 
-            let mut i_z64 = (((bits | 0x1000_0000) & 0x1FFF_FFFF) as u64) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
+            let mut i_z64 = (((bits as u64) | 0x1000_0000) & 0x1FFF_FFFF) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
             let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
 
             let bit_last = i_z64 & mask; // Extract the bit, without shifting it.
@@ -390,16 +393,17 @@ impl From<P32E2> for i64 {
         let i_z: i64 = if ui_a < 0x4400_0000 {
             1 // 1/2 < x < 3/2 rounds to 1.
         } else if ui_a <= 0x4A00_0000 {
-            2 // 3/2 <= x <= 5/2 rounds to 2. // For speed. Can be commented out
-              //}else if ui_a < 0x4E00_0000  {3        // 5/2 < x < 7/2 rounds to 3
-              //} else if ui_a <= 0x5100_0000  { i_z = 4
-              //overflow so return max integer value
+            2 // 3/2 <= x <= 5/2 rounds to 2.
         } else if ui_a > 0x7FFF_AFFF {
-            0x7FFF_FFFF_FFFF_FFFF
+            if sign {
+                -9223372036854775808
+            } else {
+                0x7FFF_FFFF_FFFF_FFFF
+            }
         } else {
             let (scale, bits) = P32E2::calculate_scale(ui_a);
 
-            let mut i_z = (((bits | 0x1000_0000) & 0x1FFF_FFFF) as u64) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
+            let mut i_z = (((bits as u64) | 0x1000_0000) & 0x1FFF_FFFF) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
 
             if scale < 62 {
                 let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
@@ -420,7 +424,7 @@ impl From<P32E2> for i64 {
                 }
                 i_z = (i_z as u64) >> (62 - scale); // Right-justify the integer.
             } else if scale > 62 {
-                i_z <<= scale - 62;
+                i_z = (i_z as u64) << (scale - 62);
             }
             i_z as i64
         };
@@ -453,7 +457,7 @@ impl From<P32E2> for u64 {
         } else {
             let (scale, bits) = P32E2::calculate_scale(ui_a);
 
-            let mut i_z: u64 = (((bits | 0x1000_0000) & 0x1FFF_FFFF) as u64) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
+            let mut i_z: u64 = (((bits as u64) | 0x1000_0000) & 0x1FFF_FFFF) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
 
             if scale < 62 {
                 let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
@@ -530,7 +534,7 @@ fn convert_u32_to_p32bits(a: u32) -> u32 {
     } else {
         let mut frac_a = a;
         // length of bit (e.g. 4294966271) in int
-        // (32 but because we have only 32 bits, so one bit off to accomdate that fact)
+        // (32 but because we have only 32 bits, so one bit off to accommodate that fact)
         let mut log2 = 31_i8;
         while (frac_a & mask) == 0 {
             log2 -= 1;
@@ -596,9 +600,9 @@ impl From<Q32E2> for P32E2 {
         let mut frac64_a = 0_u64;
 
         if q_a.is_zero() {
-            return Self::zero();
+            return Self::ZERO;
         } else if q_a.is_nan() {
-            return NAN;
+            return Self::NAN;
         }
 
         let mut u_z = q_a.to_bits();

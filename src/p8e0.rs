@@ -2,35 +2,44 @@ use core::mem;
 
 mod convert;
 mod math;
+#[cfg(feature = "num-traits")]
+mod num;
 mod ops;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Hash)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Hash)]
 pub struct P8E0(i8);
 
-/// Machine epsilon (3.125e-2).
-pub const EPSILON: P8E0 = P8E0::new(0x_2);
-
-/// Smallest finite value (-64).
-pub const MIN: P8E0 = P8E0::new(-0x_7F);
-
-/// Smallest positive normal value (0.015625).
-pub const MIN_POSITIVE: P8E0 = P8E0::new(0x_1);
-
-/// Largest finite value (64).
-pub const MAX: P8E0 = P8E0::new(0x_7F);
-
-/// Not a Number (NaN).
-pub const NAN: P8E0 = P8E0::new(-0x_80);
-
-/// Infinity (∞).
-pub const INFINITY: P8E0 = P8E0::new(-0x_80);
-
 impl P8E0 {
+    pub const SIZE: usize = 8;
     pub const ES: usize = 0;
+
+    /// Machine epsilon (3.125e-2).
+    pub const EPSILON: Self = Self::new(0x_2);
+
+    /// Smallest finite value (-64).
+    pub const MIN: Self = Self::new(-0x_7F);
+
+    /// Smallest positive normal value (0.015625).
+    pub const MIN_POSITIVE: Self = Self::new(0x_1);
+
+    /// Largest finite value (64).
+    pub const MAX: Self = Self::new(0x_7F);
+
+    /// Not a Number (NaN).
+    pub const NAN: Self = Self::new(-0x_80);
+
+    /// Infinity (∞).
+    pub const INFINITY: Self = Self::new(-0x_80);
+
+    /// Zero.
+    pub const ZERO: Self = Self::new(0);
+
+    /// Identity.
+    pub const ONE: Self = Self::new(0x_40);
 
     #[inline]
     pub const fn new(i: i8) -> Self {
-        P8E0(i)
+        Self(i)
     }
     #[inline]
     pub fn from_bits(v: u8) -> Self {
@@ -47,11 +56,11 @@ impl P8E0 {
     }
     #[inline]
     pub fn is_nan(self) -> bool {
-        self == NAN
+        self == Self::NAN
     }
     #[inline]
     pub fn is_infinite(self) -> bool {
-        self == INFINITY
+        self == Self::INFINITY
     }
     #[inline]
     pub fn is_finite(self) -> bool {
@@ -173,22 +182,6 @@ impl Q8E0 {
     }
 }
 
-impl num_traits::Zero for P8E0 {
-    fn zero() -> Self {
-        P8E0::new(0)
-    }
-    fn is_zero(&self) -> bool {
-        *self == P8E0::new(0)
-    }
-}
-
-impl num_traits::Num for P8E0 {
-    type FromStrRadixErr = num_traits::ParseFloatError;
-    fn from_str_radix(src: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
-        Ok(Self::from(f64::from_str_radix(src, radix)?))
-    }
-}
-
 impl core::str::FromStr for P8E0 {
     type Err = core::num::ParseFloatError;
     #[inline]
@@ -197,29 +190,15 @@ impl core::str::FromStr for P8E0 {
     }
 }
 
-impl num_traits::One for P8E0 {
-    fn one() -> Self {
-        P8E0::new(0x_40)
-    }
-    fn is_one(&self) -> bool {
-        *self == P8E0::new(0x_40)
+use core::fmt;
+impl fmt::Display for P8E0 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", f64::from(*self))
     }
 }
 
-impl num_traits::ToPrimitive for P8E0 {
-    fn to_i64(&self) -> Option<i64> {
-        Some(i64::from(*self))
-    }
-    fn to_u64(&self) -> Option<u64> {
-        Some(u64::from(*self))
-    }
-    fn to_f64(&self) -> Option<f64> {
-        Some(f64::from(*self))
-    }
-}
-
-impl num_traits::NumCast for P8E0 {
-    fn from<N: num_traits::ToPrimitive>(n: N) -> Option<Self> {
-        n.to_f64().map(|x| x.into())
+impl fmt::Debug for P8E0 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "P8E0({})", self.0)
     }
 }

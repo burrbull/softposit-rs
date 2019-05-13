@@ -1,5 +1,4 @@
-use super::*;
-use num_traits::Zero;
+use super::{P8E0, Q8E0};
 use crate::{MulAddType, WithSign};
 
 impl P8E0 {
@@ -45,7 +44,7 @@ fn round(p_a: P8E0) -> P8E0 {
     }
     if ui_a <= 0x20 {
         // 0 <= |p_a| <= 1/2 rounds to zero.
-        return P8E0::zero();
+        return P8E0::ZERO;
     } else if ui_a < 0x50 {
         // 1/2 < x < 3/2 rounds to 1.
         u_a = 0x40;
@@ -93,7 +92,7 @@ fn sqrt(p_a: P8E0) -> P8E0 {
     let ui_a = p_a.to_bits();
 
     if ui_a >= 0x80 {
-        INFINITY
+        P8E0::INFINITY
     } else {
         P8E0::from_bits(P8E0_SQRT[ui_a as usize])
     }
@@ -107,7 +106,7 @@ fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
 
     //NaR
     if (ui_a == 0x80) || (ui_b == 0x80) || (ui_c == 0x80) {
-        return INFINITY;
+        return P8E0::INFINITY;
     } else if (ui_a == 0) || (ui_b == 0) {
         return match op {
             MulAddType::SubC => P8E0::from_bits(ui_c.wrapping_neg()),
@@ -190,7 +189,7 @@ fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
         } else {
             if (frac16_c == frac16_z) && (sign_z != sign_c) {
                 //check if same number
-                return P8E0::zero();
+                return P8E0::ZERO;
             } else if sign_z == sign_c {
                 frac16_z += frac16_c;
             } else if frac16_z < frac16_c {
@@ -375,7 +374,7 @@ fn q8_fdp_sub(q: Q8E0, p_a: P8E0, p_b: P8E0) -> Q8E0 {
 fn test_mul_add() {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    for _ in 0..1_000 {
+    for _ in 0..crate::NTESTS8 {
         let n_a = rng.gen_range(-0x_7f_i8, 0x_7f);
         let n_b = rng.gen_range(-0x_7f_i8, 0x_7f);
         let n_c = rng.gen_range(-0x_7f_i8, 0x_7f);
@@ -395,7 +394,7 @@ fn test_mul_add() {
 fn test_sqrt() {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    for _ in 0..1_000 {
+    for _ in 0..crate::NTESTS8 {
         let n_a = rng.gen_range(-0x_7f_i8, 0x_7f);
         let p_a = P8E0::new(n_a);
         let f_a = f64::from(p_a);
@@ -409,12 +408,15 @@ fn test_sqrt() {
 fn test_round() {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    for _ in 0..1_000 {
+    for _ in 0..crate::NTESTS8 {
         let n_a = rng.gen_range(-0x_7f_i8, 0x_7f);
         let p_a = P8E0::new(n_a);
         let f_a = f64::from(p_a);
         let p = p_a.round();
         let f = f_a.round();
+        if (f - f_a).abs() == 0.5 {
+            continue;
+        }
         assert_eq!(p, P8E0::from(f));
     }
 }

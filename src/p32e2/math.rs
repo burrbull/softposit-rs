@@ -1,6 +1,23 @@
-use super::*;
-use num_traits::Zero;
+use super::{P32E2, Q32E2};
 use crate::{MulAddType, WithSign};
+
+impl P32E2 {
+    #[inline]
+    pub fn mul_add(self, b: Self, c: Self) -> Self {
+        let ui_a = self.to_bits();
+        let ui_b = b.to_bits();
+        let ui_c = c.to_bits();
+        mul_add(ui_a, ui_b, ui_c, crate::MulAddType::Add)
+    }
+    #[inline]
+    pub fn round(self) -> Self {
+        round(self)
+    }
+    #[inline]
+    pub fn sqrt(self) -> Self {
+        sqrt(self)
+    }
+}
 
 impl Q32E2 {
     #[inline]
@@ -17,7 +34,7 @@ pub(super) fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddTyp
     let mut bits_more = false;
     //NaR
     if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) || (ui_c == 0x8000_0000) {
-        return INFINITY;
+        return P32E2::INFINITY;
     } else if (ui_a == 0) || (ui_b == 0) {
         return match op {
             MulAddType::SubC => P32E2::from_bits(ui_c.wrapping_neg()),
@@ -116,7 +133,7 @@ pub(super) fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddTyp
         } else {
             if (frac64_c == frac64_z) && (sign_z != sign_c) {
                 //check if same number
-                return P32E2::zero();
+                return P32E2::ZERO;
             } else if sign_z == sign_c {
                 frac64_z += frac64_c;
             } else if frac64_z < frac64_c {
@@ -215,7 +232,7 @@ pub(super) fn round(p_a: P32E2) -> P32E2 {
     } // A is now |A|.
     if ui_a <= 0x3800_0000 {
         // 0 <= |pA| <= 1/2 rounds to zero.
-        return P32E2::zero();
+        return P32E2::ZERO;
     } else if ui_a < 0x4400_0000 {
         // 1/2 < x < 3/2 rounds to 1.
         u_a = 0x4000_0000;
@@ -268,7 +285,7 @@ pub(super) fn sqrt(p_a: P32E2) -> P32E2 {
 
     // If NaR or a negative number, return NaR.
     if (ui_a & 0x8000_0000) != 0 {
-        return INFINITY;
+        return P32E2::INFINITY;
     }
     // If the argument is zero, return zero.
     else if ui_a == 0 {
@@ -384,38 +401,37 @@ fn q32_fdp_add(q: Q32E2, p_a: P32E2, p_b: P32E2) -> Q32E2 {
     exp_a += exp_b;
     let mut frac64_z = (frac_a as u64) * (frac_b as u64);
 
-    if exp_a>3 {
+    if exp_a > 3 {
         k_a += 1;
-        exp_a&=0x3; // -=4
+        exp_a &= 0x3; // -=4
     }
     //Will align frac64_z such that hidden bit is the first bit on the left.
-    let rcarry = (frac64_z>>63) != 0;//1st bit of frac64_z
+    let rcarry = (frac64_z >> 63) != 0; //1st bit of frac64_z
     if rcarry {
         exp_a += 1;
-        if exp_a>3 {
+        if exp_a > 3 {
             k_a += 1;
-            exp_a&=0x3;
+            exp_a &= 0x3;
         }
-        //frac64_z>>=1;
-    }
-    else {
-        frac64_z<<=1;
+    //frac64_z>>=1;
+    } else {
+        frac64_z <<= 1;
     }
 
     //default dot is between bit 271 and 272, extreme left bit is bit 0. Last right bit is bit 512.
     //Minpos is 120 position to the right of binary point (dot)
     //Scale = 2^es * k + e  => 2k + e
-    let first_pos = 271 - ((k_a<<2) as i32) - exp_a;
+    let first_pos = 271 - ((k_a << 2) as i32) - exp_a;
 
     //Moving in chunk of 64. If it is in first chunk, a part might be in the chunk right to it. Simply have to handle that.
     let mut u_z2: [u64; 8] = [0; 8];
     for i in 0usize..8 {
-        if first_pos < ((i+1)*64) as i32 {
+        if first_pos < ((i + 1) * 64) as i32 {
             //Need to check how much of the fraction is in the next 64 bits
-            let shift_right = (first_pos - ((i*64) as i32)) as i16;
+            let shift_right = (first_pos - ((i * 64) as i32)) as i16;
             u_z2[i] = frac64_z >> shift_right;
             if (i != 7) && (shift_right != 0) {
-                u_z2[i+1] = frac64_z << (64 - shift_right);
+                u_z2[i + 1] = frac64_z << (64 - shift_right);
             }
             break;
         }
@@ -437,22 +453,23 @@ fn q32_fdp_add(q: Q32E2, p_a: P32E2, p_b: P32E2) -> Q32E2 {
     //Subtraction
     let mut u_z: [u64; 8] = [0; 8];
     let mut rcarry_z = false;
-    for (i, (u, (u1, u2))) in (0..8).rev().zip(u_z.iter_mut().rev()
-                                 .zip(u_z1.iter().rev().zip(u_z2.iter().rev())))
-    {
+    for (i, (u, (u1, u2))) in (0..8).rev().zip(
+        u_z.iter_mut()
+            .rev()
+            .zip(u_z1.iter().rev().zip(u_z2.iter().rev())),
+    ) {
         let b1 = (*u1 & 0x1) != 0;
         let b2 = (*u2 & 0x1) != 0;
-        if i==7 {
+        if i == 7 {
             let rcarryb = b1 & b2;
-            *u = (*u1>>1) + (*u2>>1) + (rcarryb as u64);
-            rcarry_z = *u>>63 != 0;
-            *u = (*u<<1) | ((b1^b2) as u64);
-        }
-        else{
-            let rcarryb3 =  (b1 as i8) + (b2 as i8) + (rcarry_z as i8);
-            *u = (*u1>>1) + (*u2>>1) + ((rcarryb3>>1) as u64);
-            rcarry_z = *u>>63 != 0;
-            *u = (*u<<1) | ((rcarryb3 & 0x1) as u64);
+            *u = (*u1 >> 1) + (*u2 >> 1) + (rcarryb as u64);
+            rcarry_z = *u >> 63 != 0;
+            *u = (*u << 1) | ((b1 ^ b2) as u64);
+        } else {
+            let rcarryb3 = (b1 as i8) + (b2 as i8) + (rcarry_z as i8);
+            *u = (*u1 >> 1) + (*u2 >> 1) + ((rcarryb3 >> 1) as u64);
+            rcarry_z = *u >> 63 != 0;
+            *u = (*u << 1) | ((rcarryb3 & 0x1) as u64);
         }
     }
 
@@ -464,7 +481,6 @@ fn q32_fdp_add(q: Q32E2, p_a: P32E2, p_b: P32E2) -> Q32E2 {
         q_z
     }
 }
-
 
 fn q32_fdp_sub(q: Q32E2, p_a: P32E2, p_b: P32E2) -> Q32E2 {
     let u_z1 = q.to_bits();
@@ -497,43 +513,41 @@ fn q32_fdp_sub(q: Q32E2, p_a: P32E2, p_b: P32E2) -> Q32E2 {
     exp_a += exp_b;
     let mut frac64_z = (frac_a as u64) * (frac_b as u64);
 
-    if exp_a>3 {
+    if exp_a > 3 {
         k_a += 1;
-        exp_a&=0x3; // -=4
+        exp_a &= 0x3; // -=4
     }
     //Will align frac64_z such that hidden bit is the first bit on the left.
-    let rcarry = (frac64_z>>63) != 0;//1st bit of frac64_z
+    let rcarry = (frac64_z >> 63) != 0; //1st bit of frac64_z
     if rcarry {
         exp_a += 1;
-        if exp_a>3 {
+        if exp_a > 3 {
             k_a += 1;
-            exp_a&=0x3;
+            exp_a &= 0x3;
         }
-        //frac64_z>>=1;
-    }
-    else {
-        frac64_z<<=1;
+    //frac64_z>>=1;
+    } else {
+        frac64_z <<= 1;
     }
 
     //default dot is between bit 271 and 272, extreme left bit is bit 0. Last right bit is bit 512.
     //Minpos is 120 position to the right of binary point (dot)
     //Scale = 2^es * k + e  => 2k + e
-    let first_pos = 271 - ((k_a<<2) as i32) - exp_a;
+    let first_pos = 271 - ((k_a << 2) as i32) - exp_a;
 
     //Moving in chunk of 64. If it is in first chunk, a part might be in the chunk right to it. Simply have to handle that.
     let mut u_z2: [u64; 8] = [0; 8];
     for i in 0usize..8 {
-        if first_pos < ((i+1)*64) as i32 {
+        if first_pos < ((i + 1) * 64) as i32 {
             //Need to check how much of the fraction is in the next 64 bits
-            let shift_right = (first_pos - ((i*64) as i32)) as i16;
+            let shift_right = (first_pos - ((i * 64) as i32)) as i16;
             u_z2[i] = frac64_z >> shift_right;
             if (i != 7) && (shift_right != 0) {
-                u_z2[i+1] = frac64_z << (64 - shift_right);
+                u_z2[i + 1] = frac64_z << (64 - shift_right);
             }
             break;
         }
     }
-
 
     //This is the only difference from ADD (sign_z2) and (!sign_z2)
     if !sign_z2 {
@@ -552,22 +566,23 @@ fn q32_fdp_sub(q: Q32E2, p_a: P32E2, p_b: P32E2) -> Q32E2 {
     //Subtraction
     let mut u_z: [u64; 8] = [0; 8];
     let mut rcarry_z = false;
-    for (i, (u, (u1, u2))) in (0..8).rev().zip(u_z.iter_mut().rev()
-                                 .zip(u_z1.iter().rev().zip(u_z2.iter().rev())))
-    {
+    for (i, (u, (u1, u2))) in (0..8).rev().zip(
+        u_z.iter_mut()
+            .rev()
+            .zip(u_z1.iter().rev().zip(u_z2.iter().rev())),
+    ) {
         let b1 = (*u1 & 0x1) != 0;
         let b2 = (*u2 & 0x1) != 0;
-        if i==7 {
+        if i == 7 {
             let rcarryb = b1 & b2;
-            *u = (*u1>>1) + (*u2>>1) + (rcarryb as u64);
-            rcarry_z = *u>>63 != 0;
-            *u = (*u<<1) | ((b1^b2) as u64);
-        }
-        else{
-            let rcarryb3 =  (b1 as i8) + (b2 as i8) + (rcarry_z as i8);
-            *u = (*u1>>1) + (*u2>>1) + ((rcarryb3>>1) as u64);
-            rcarry_z = *u>>63 != 0;
-            *u = (*u<<1) | ((rcarryb3 & 0x1) as u64);
+            *u = (*u1 >> 1) + (*u2 >> 1) + (rcarryb as u64);
+            rcarry_z = *u >> 63 != 0;
+            *u = (*u << 1) | ((b1 ^ b2) as u64);
+        } else {
+            let rcarryb3 = (b1 as i8) + (b2 as i8) + (rcarry_z as i8);
+            *u = (*u1 >> 1) + (*u2 >> 1) + ((rcarryb3 >> 1) as u64);
+            rcarry_z = *u >> 63 != 0;
+            *u = (*u << 1) | ((rcarryb3 & 0x1) as u64);
         }
     }
 
@@ -582,10 +597,9 @@ fn q32_fdp_sub(q: Q32E2, p_a: P32E2, p_b: P32E2) -> Q32E2 {
 
 #[test]
 fn test_mul_add() {
-    use num_traits::Float;
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    for _ in 0..100_000 {
+    for _ in 0..crate::NTESTS32 {
         let n_a = rng.gen_range(-0x_7fff_ffff_i32, 0x_7fff_ffff);
         let n_b = rng.gen_range(-0x_7fff_ffff_i32, 0x_7fff_ffff);
         let n_c = rng.gen_range(-0x_7fff_ffff_i32, 0x_7fff_ffff);
@@ -603,10 +617,9 @@ fn test_mul_add() {
 
 #[test]
 fn test_sqrt() {
-    use num_traits::Float;
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    for _ in 0..100_000 {
+    for _ in 0..crate::NTESTS32 {
         let n_a = rng.gen_range(-0x_7fff_ffff_i32, 0x_7fff_ffff);
         let p_a = P32E2::new(n_a);
         let f_a = f64::from(p_a);
@@ -618,16 +631,17 @@ fn test_sqrt() {
 
 #[test]
 fn test_round() {
-    use num_traits::Float;
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    for _ in 0..100_000 {
+    for _ in 0..crate::NTESTS32 {
         let n_a = rng.gen_range(-0x_7fff_ffff_i32, 0x_7fff_ffff);
         let p_a = P32E2::new(n_a);
         let f_a = f64::from(p_a);
         let p = p_a.round();
         let f = f_a.round();
+        if (f - f_a).abs() == 0.5 {
+            continue;
+        }
         assert_eq!(p, P32E2::from(f));
     }
 }
-

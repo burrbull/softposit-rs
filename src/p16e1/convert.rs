@@ -1,5 +1,4 @@
-use super::*;
-use num_traits::Zero;
+use super::{P16E1, Q16E1};
 use crate::WithSign;
 use core::convert::From;
 use core::f64;
@@ -98,7 +97,7 @@ impl From<P16E1> for i32 {
         } else {
             let (scale, bits) = P16E1::calculate_scale(ui_a);
 
-            i_z = ((bits | 0x2000) as i32) << 17; // Left-justify fraction in 32-bit result (one left bit padding)
+            i_z = (((bits as u32) | 0x2000) << 17) as i32; // Left-justify fraction in 32-bit result (one left bit padding)
             let mut mask: i32 = 0x4000_0000 >> scale; // Point to the last bit of the integer part.
 
             let bit_last = i_z & mask; // Extract the bit, without shifting it.
@@ -116,7 +115,7 @@ impl From<P16E1> for i32 {
                 }
             }
 
-            i_z >>= 30 - scale; // Right-justify the integer.
+            i_z = ((i_z as u32) >> (30 - scale)) as i32; // Right-justify the integer.
         }
 
         if sign {
@@ -226,7 +225,7 @@ impl From<P16E1> for u32 {
         } else {
             let (scale, bits) = P16E1::calculate_scale(ui_a);
 
-            let mut i_z = ((bits | 0x2000) as u32) << 17; // Left-justify fraction in 32-bit result (one left bit padding)
+            let mut i_z = ((bits as u32) | 0x2000) << 17; // Left-justify fraction in 32-bit result (one left bit padding)
             let mut mask = 0x4000_0000_u32 >> scale; // Point to the last bit of the integer part.
 
             let bit_last = (i_z & mask) != 0; // Extract the bit, without shifting it.
@@ -371,15 +370,15 @@ impl From<f64> for P16E1 {
         let mut exp = 0_i8;
 
         if float == 0. {
-            return Self::zero();
+            return Self::ZERO;
         } else if !float.is_finite() {
-            return INFINITY;
+            return Self::INFINITY;
         } else if float >= 268_435_456. {
             //maxpos
-            return MAX;
+            return Self::MAX;
         } else if float <= -268_435_456. {
             // -maxpos
-            return MIN;
+            return Self::MIN;
         }
 
         let sign = float < 0.;
@@ -438,9 +437,12 @@ impl From<f64> for P16E1 {
                     0x7FFF
                 } else {
                     let regime = ((1_u16 << reg) - 1) << 1;
-                    let mut u_z = ((regime as u16) << (14 - reg))
-                        + ((exp as u16).wrapping_shl(13_u16.wrapping_sub(reg) as u32))
-                        + (frac as u16);
+                    let ex = if reg == 14 {
+                        0
+                    } else {
+                        (exp as u16) << (13 - reg)
+                    };
+                    let mut u_z = ((regime as u16) << (14 - reg)) + ex + frac;
                     //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
                     if (reg == 14) && (exp != 0) {
                         bit_n_plus_one = true;
@@ -492,8 +494,12 @@ impl From<f64> for P16E1 {
                 0x1
             } else {
                 let regime = 1_u16;
-                let mut u_z =
-                    ((regime as u16) << (14 - reg)) + ((exp as u16).wrapping_shl(13_u16.wrapping_sub(reg) as u32)) + (frac as u16);
+                let ex = if reg == 14 {
+                    0
+                } else {
+                    (exp as u16) << (13 - reg)
+                };
+                let mut u_z = ((regime as u16) << (14 - reg)) + ex + frac;
                 //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
                 if (reg == 14) && (exp != 0) {
                     bit_n_plus_one = true;
@@ -535,7 +541,7 @@ impl From<P16E1> for f64 {
             return -268_435_456.;
         } else if u_z == 0x8000 {
             //NaR -> 32768
-            return f64::INFINITY;
+            return f64::NAN;
         }
 
         let sign = P16E1::sign_ui(u_z);
@@ -581,9 +587,9 @@ impl From<P16E1> for f64 {
 impl From<Q16E1> for P16E1 {
     fn from(q_a: Q16E1) -> Self {
         if q_a.is_zero() {
-            return Self::zero();
+            return Self::ZERO;
         } else if q_a.is_nan() {
-            return NAN;
+            return Self::NAN;
         }
 
         let mut u_z = q_a.to_bits();

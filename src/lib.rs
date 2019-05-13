@@ -123,6 +123,12 @@ pub trait MathConsts {
     /// log<sub>2</sub>(10)
     const LOG2_10: Self;
     /// log<sub>10</sub>(2)
-    const LOG10_2: Self ;
+    const LOG10_2: Self;
 }
 
+#[cfg(test)]
+const NTESTS32: usize = 1000_000;
+#[cfg(test)]
+const NTESTS16: usize = 100_000;
+#[cfg(test)]
+const NTESTS8: usize = 1_000;
