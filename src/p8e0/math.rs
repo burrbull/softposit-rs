@@ -1,4 +1,4 @@
-use super::{P8E0, Q8E0};
+use super::P8E0;
 use crate::{MulAddType, WithSign};
 
 impl P8E0 {
@@ -16,17 +16,6 @@ impl P8E0 {
     #[inline]
     pub fn sqrt(self) -> Self {
         sqrt(self)
-    }
-}
-
-impl Q8E0 {
-    #[inline]
-    pub fn fdp_add(self, p_a: P8E0, p_b: P8E0) -> Self {
-        q8_fdp_add(self, p_a, p_b)
-    }
-    #[inline]
-    pub fn fdp_sub(self, p_a: P8E0, p_b: P8E0) -> Self {
-        q8_fdp_sub(self, p_a, p_b)
     }
 }
 
@@ -245,129 +234,6 @@ fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
         u_z
     };
     P8E0::from_bits(u_z.with_sign(sign_z))
-}
-
-fn q8_fdp_add(q: Q8E0, p_a: P8E0, p_b: P8E0) -> Q8E0 {
-    let uq_z1 = q.to_bits();
-
-    let mut ui_a = p_a.to_bits();
-    let mut ui_b = p_b.to_bits();
-
-    if q.is_nan() || p_a.is_nan() || p_b.is_nan() {
-        return Q8E0::new(-0x8000_0000);
-    } else if (ui_a == 0) || (ui_b == 0) {
-        return q;
-    }
-
-    //max pos (sign plus and minus)
-    let sign_a = P8E0::sign_ui(ui_a);
-    let sign_b = P8E0::sign_ui(ui_b);
-    let sign_z2 = sign_a ^ sign_b;
-
-    if sign_a {
-        ui_a = ui_a.wrapping_neg();
-    }
-    if sign_b {
-        ui_b = ui_b.wrapping_neg();
-    }
-
-    let (mut k_a, frac_a) = P8E0::separate_bits(ui_a);
-
-    let (k_b, frac_b) = P8E0::separate_bits(ui_b);
-    k_a += k_b;
-
-    let mut frac32_z = ((frac_a * frac_b) as u32) << 16;
-
-    let rcarry = (frac32_z & 0x8000_0000) != 0; //1st bit (position 2) of frac32_z, hidden bit is 4th bit (position 3)
-    if rcarry {
-        k_a += 1;
-        frac32_z >>= 1;
-    }
-
-    //default dot is between bit 19 and 20, extreme left bit is bit 0. Last right bit is bit 31.
-    //Scale = 2^es * k + e  => 2k + e // firstPost = 19-k_a, shift = firstPos -1 (because frac32_z start from 2nd bit)
-    //int firstPos = 19 - k_a;
-    let shift_right = 18 - k_a;
-
-    let mut uq_z2 = frac32_z >> shift_right;
-
-    if sign_z2 {
-        uq_z2 = uq_z2.wrapping_neg();
-    }
-
-    //Addition
-    let uq_z = uq_z2 + uq_z1;
-
-    //Exception handling
-    let q_z = Q8E0::from_bits(uq_z);
-    if q_z.is_nan() {
-        Q8E0::new(0)
-    } else {
-        q_z
-    }
-}
-
-//q - (p_a*p_b)
-
-fn q8_fdp_sub(q: Q8E0, p_a: P8E0, p_b: P8E0) -> Q8E0 {
-    let uq_z1 = q.to_bits();
-
-    let mut ui_a = p_a.to_bits();
-    let mut ui_b = p_b.to_bits();
-
-    if q.is_nan() || p_a.is_nan() || p_b.is_nan() {
-        return Q8E0::new(-0x8000_0000);
-    } else if (ui_a == 0) || (ui_b == 0) {
-        return q;
-    }
-
-    //max pos (sign plus and minus)
-    let sign_a = P8E0::sign_ui(ui_a);
-    let sign_b = P8E0::sign_ui(ui_b);
-    let sign_z2 = sign_a ^ sign_b;
-
-    if sign_a {
-        ui_a = ui_a.wrapping_neg();
-    }
-    if sign_b {
-        ui_b = ui_b.wrapping_neg();
-    }
-
-    let (mut k_a, frac_a) = P8E0::separate_bits(ui_a);
-
-    let (k_b, frac_b) = P8E0::separate_bits(ui_b);
-    k_a += k_b;
-
-    let mut frac32_z = ((frac_a * frac_b) as u32) << 16;
-
-    let rcarry = (frac32_z & 0x8000_0000) != 0; //1st bit (position 2) of frac32_z, hidden bit is 4th bit (position 3)
-    if rcarry {
-        k_a += 1;
-        frac32_z >>= 1;
-    }
-
-    //default dot is between bit 19 and 20, extreme left bit is bit 0. Last right bit is bit 31.
-    //Scale = 2^es * k + e  => 2k + e // firstPost = 19-k_a, shift = firstPos -1 (because frac32_z start from 2nd bit)
-    //int firstPos = 19 - k_a;
-    let shift_right = 18 - k_a;
-
-    let mut uq_z2 = frac32_z >> shift_right;
-
-    //This is the only difference from ADD (sign_z2) and (!sign_z2)
-    if !sign_z2 {
-        uq_z2 = uq_z2.wrapping_neg();
-    }
-
-    //Addition
-    let uq_z = uq_z2 + uq_z1;
-
-    //Exception handling
-    let q_z = Q8E0::from_bits(uq_z);
-    if q_z.is_nan() {
-        Q8E0::new(0)
-    } else {
-        q_z
-    }
 }
 
 #[test]

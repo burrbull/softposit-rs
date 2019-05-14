@@ -156,29 +156,56 @@ impl P8E0 {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Debug)]
 pub struct Q8E0(i32);
 
 impl Q8E0 {
+    pub const ZERO: Self = Self(0);
+    pub const NAN: Self = Self(-0x8000_0000);
+
     #[inline]
-    pub const fn new(i: i32) -> Self {
-        Q8E0(i)
+    pub const fn new() -> Self {
+        Self::ZERO
     }
+
     #[inline]
     pub fn from_bits(v: u32) -> Self {
         unsafe { mem::transmute(v) }
     }
+
     #[inline]
-    pub fn to_bits(self) -> u32 {
-        unsafe { mem::transmute(self) }
+    pub fn to_bits(&self) -> u32 {
+        unsafe { mem::transmute(self.clone()) }
     }
+
     #[inline]
-    pub fn is_zero(self) -> bool {
+    pub fn is_zero(&self) -> bool {
         self.to_bits() == 0
     }
+
     #[inline]
-    pub fn is_nan(self) -> bool {
+    pub fn is_nan(&self) -> bool {
         self.to_bits() == 0x8000_0000
+    }
+
+    #[inline]
+    pub fn qma(&mut self, p_a: P8E0, p_b: P8E0) {
+        ops::q8_fdp_add(self, p_a, p_b);
+    }
+
+    #[inline]
+    pub fn qms(&mut self, p_a: P8E0, p_b: P8E0) {
+        ops::q8_fdp_sub(self, p_a, p_b);
+    }
+
+    #[inline]
+    pub fn roundp(self) -> P8E0 {
+        P8E0::from(self)
+    }
+
+    #[inline]
+    pub fn clear(&mut self) {
+        *self = Self::ZERO;
     }
 }
 
@@ -194,6 +221,12 @@ use core::fmt;
 impl fmt::Display for P8E0 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", f64::from(*self))
+    }
+}
+
+impl fmt::Display for Q8E0 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", f64::from(self.clone().roundp()))
     }
 }
 

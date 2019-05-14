@@ -3,14 +3,17 @@
 pub mod p8e0;
 pub use self::p8e0::{P8E0, Q8E0};
 pub type P8 = P8E0;
+pub type Q8 = Q8E0;
 
 pub mod p16e1;
-pub use self::p16e1::P16E1;
+pub use self::p16e1::{P16E1, Q16E1};
 pub type P16 = P16E1;
+pub type Q16 = Q16E1;
 
 pub mod p32e2;
-pub use self::p32e2::P32E2;
+pub use self::p32e2::{P32E2, Q32E2};
 pub type P32 = P32E2;
+pub type Q32 = Q32E2;
 
 mod convert;
 

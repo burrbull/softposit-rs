@@ -182,29 +182,56 @@ impl P16E1 {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Debug)]
 pub struct Q16E1(i64, u64);
 
 impl Q16E1 {
+    pub const ZERO: Self = Self(0, 0);
+    pub const NAN: Self = Self(-0x8000_0000_0000_0000, 0);
+
     #[inline]
-    pub const fn new(i: i64, u: u64) -> Self {
-        Q16E1(i, u)
+    pub const fn new() -> Self {
+        Self::ZERO
     }
+
     #[inline]
     pub fn from_bits(v: [u64; 2]) -> Self {
         unsafe { mem::transmute(v) }
     }
+
     #[inline]
-    pub fn to_bits(self) -> [u64; 2] {
-        unsafe { mem::transmute(self) }
+    pub fn to_bits(&self) -> [u64; 2] {
+        unsafe { mem::transmute(self.clone()) }
     }
+
     #[inline]
-    pub fn is_zero(self) -> bool {
+    pub fn is_zero(&self) -> bool {
         self.to_bits() == [0, 0]
     }
+
     #[inline]
-    pub fn is_nan(self) -> bool {
+    pub fn is_nan(&self) -> bool {
         self.to_bits() == [0x8000_0000, 0]
+    }
+
+    #[inline]
+    pub fn qma(&mut self, p_a: P16E1, p_b: P16E1) {
+        ops::q16_fdp_add(self, p_a, p_b);
+    }
+
+    #[inline]
+    pub fn qms(&mut self, p_a: P16E1, p_b: P16E1) {
+        ops::q16_fdp_sub(self, p_a, p_b);
+    }
+
+    #[inline]
+    pub fn roundp(self) -> P16E1 {
+        P16E1::from(self)
+    }
+
+    #[inline]
+    pub fn clear(&mut self) {
+        *self = Self::ZERO;
     }
 }
 
@@ -220,6 +247,12 @@ use core::fmt;
 impl fmt::Display for P16E1 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", f64::from(*self))
+    }
+}
+
+impl fmt::Display for Q16E1 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", f64::from(self.clone().roundp()))
     }
 }
 
