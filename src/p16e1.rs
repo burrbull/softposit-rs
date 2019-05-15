@@ -233,6 +233,11 @@ impl Q16E1 {
     pub fn clear(&mut self) {
         *self = Self::ZERO;
     }
+
+    #[inline]
+    pub fn neg(&mut self) {
+        self.0 = -(self.0);
+    }
 }
 
 impl core::str::FromStr for P16E1 {

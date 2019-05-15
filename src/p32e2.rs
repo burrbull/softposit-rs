@@ -237,6 +237,11 @@ impl Q32E2 {
     pub fn clear(&mut self) {
         *self = Self::ZERO;
     }
+
+    #[inline]
+    pub fn neg(&mut self) {
+        self.0 = -(self.0);
+    }
 }
 
 impl core::str::FromStr for P32E2 {
