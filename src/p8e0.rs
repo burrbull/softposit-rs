@@ -247,37 +247,37 @@ impl crate::Quire for P8E0 {
 
 impl crate::Poly for P8E0 {
     #[inline]
-    fn poly1k(x: Self, c: &[Self]) -> Self {
+    fn poly1k(x: Self, c0: Self, c1: Self) -> Self {
         let mut q = Q8E0::new(); // QCLR.S
-        q += (c[1], x); // QMADD.S
-        q += (c[0], Self::ONE);
+        q += (c0, x); // QMADD.S
+        q += (c1, Self::ONE);
         q.into() // QROUND.S
     }
     #[inline]
-    fn poly2k(x: Self, x2: Self, c: &[Self], p: Self) -> Self {
+    fn poly2k(x: Self, x2: Self, c0: Self, c: &[Self]) -> Self {
         let mut q = Q8E0::new();
-        q += (p, x2);
-        q += (c[1], x);
-        q += (c[0], Self::ONE);
+        q += (c0, x2);
+        q += (c[0], x);
+        q += (c[1], Self::ONE);
         q.into()
     }
     #[inline]
-    fn poly3k(x: Self, x2: Self, x3: Self, c: &[Self], p: Self) -> Self {
+    fn poly3k(x: Self, x2: Self, x3: Self, c0: Self, c: &[Self]) -> Self {
         let mut q = Q8E0::new();
-        q += (p, x3);
-        q += (c[2], x2);
+        q += (c0, x3);
+        q += (c[0], x2);
         q += (c[1], x);
-        q += (c[0], Self::ONE);
+        q += (c[2], Self::ONE);
         q.into()
     }
     #[inline]
-    fn poly4k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self {
+    fn poly4k(x: Self, x2: Self, x3: Self, x4: Self, c0: Self, c: &[Self]) -> Self {
         let mut q = Q8E0::new();
-        q += (p, x4);
-        q += (c[3], x3);
-        q += (c[2], x2);
-        q += (c[1], x);
-        q += (c[0], Self::ONE);
+        q += (c0, x4);
+        q += (c[0], x3);
+        q += (c[1], x2);
+        q += (c[2], x);
+        q += (c[3], Self::ONE);
         q.into()
     }
 }

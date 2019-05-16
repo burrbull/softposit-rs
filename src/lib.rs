@@ -141,79 +141,79 @@ pub trait Quire {
 }
 
 pub trait Poly: Copy {
-    fn poly1k(x: Self, c: &[Self]) -> Self;
-    fn poly2k(x: Self, x2: Self, c: &[Self], p: Self) -> Self;
-    fn poly3k(x: Self, x2: Self, x3: Self, c: &[Self], p: Self) -> Self;
-    fn poly4k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self;
+    fn poly1k(x: Self, c0: Self, c1: Self) -> Self;
+    fn poly2k(x: Self, x2: Self, p: Self, c: &[Self]) -> Self;
+    fn poly3k(x: Self, x2: Self, x3: Self, p: Self, c: &[Self]) -> Self;
+    fn poly4k(x: Self, x2: Self, x3: Self, x4: Self, p: Self, c: &[Self]) -> Self;
     #[inline]
-    fn poly5k(x: Self, x2: Self, x3: Self, c: &[Self], p: Self) -> Self {
-        let p = Self::poly2k(x, x2, &c[3..5], p);
-        Self::poly3k(x, x2, x3, &c[..3], p)
+    fn poly5k(x: Self, x2: Self, x3: Self, p: Self, c: &[Self]) -> Self {
+        let p = Self::poly2k(x, x2, p, &c[..2]);
+        Self::poly3k(x, x2, x3, p, &c[2..])
     }
     #[inline]
-    fn poly6k(x: Self, x2: Self, x3: Self, c: &[Self], p: Self) -> Self {
-        let p = Self::poly3k(x, x2, x3, &c[3..6], p);
-        Self::poly3k(x, x2, x3, &c[..3], p)
+    fn poly6k(x: Self, x2: Self, x3: Self, p: Self, c: &[Self]) -> Self {
+        let p = Self::poly3k(x, x2, x3, p, &c[..3]);
+        Self::poly3k(x, x2, x3, p, &c[3..])
     }
     #[inline]
-    fn poly7k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self {
-        let p = Self::poly3k(x, x2, x3, &c[4..7], p);
-        Self::poly4k(x, x2, x3, x4, &c[..4], p)
+    fn poly7k(x: Self, x2: Self, x3: Self, x4: Self, p: Self, c: &[Self]) -> Self {
+        let p = Self::poly3k(x, x2, x3, p, &c[..3]);
+        Self::poly4k(x, x2, x3, x4, p, &c[3..])
     }
     #[inline]
-    fn poly8k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self {
-        let p = Self::poly4k(x, x2, x3, x4, &c[4..8], p);
-        Self::poly4k(x, x2, x3, x4, &c[..4], p)
+    fn poly8k(x: Self, x2: Self, x3: Self, x4: Self, p: Self, c: &[Self]) -> Self {
+        let p = Self::poly4k(x, x2, x3, x4, p, &c[..4]);
+        Self::poly4k(x, x2, x3, x4, p, &c[4..])
     }
     #[inline]
-    fn poly9k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self {
-        let p = Self::poly5k(x, x2, x3, &c[4..9], p);
-        Self::poly4k(x, x2, x3, x4, &c[..4], p)
+    fn poly9k(x: Self, x2: Self, x3: Self, x4: Self, p: Self, c: &[Self]) -> Self {
+        let p = Self::poly5k(x, x2, x3, p, &c[..5]);
+        Self::poly4k(x, x2, x3, x4, p, &c[5..])
     }
     #[inline]
-    fn poly10k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self {
-        let p = Self::poly6k(x, x2, x3, &c[4..10], p);
-        Self::poly4k(x, x2, x3, x4, &c[..4], p)
+    fn poly10k(x: Self, x2: Self, x3: Self, x4: Self, p: Self, c: &[Self]) -> Self {
+        let p = Self::poly6k(x, x2, x3, p, &c[..6]);
+        Self::poly4k(x, x2, x3, x4, p, &c[6..])
     }
     #[inline]
-    fn poly11k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self {
-        let p = Self::poly7k(x, x2, x3, x4, &c[4..11], p);
-        Self::poly4k(x, x2, x3, x4, &c[..4], p)
+    fn poly11k(x: Self, x2: Self, x3: Self, x4: Self, p: Self, c: &[Self]) -> Self {
+        let p = Self::poly7k(x, x2, x3, x4, p, &c[..7]);
+        Self::poly4k(x, x2, x3, x4, p, &c[7..])
     }
     #[inline]
-    fn poly12k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self {
-        let p = Self::poly8k(x, x2, x3, x4, &c[4..12], p);
-        Self::poly4k(x, x2, x3, x4, &c[..4], p)
+    fn poly12k(x: Self, x2: Self, x3: Self, x4: Self, p: Self, c: &[Self]) -> Self {
+        let p = Self::poly8k(x, x2, x3, x4, p, &c[..8]);
+        Self::poly4k(x, x2, x3, x4, p, &c[8..])
     }
     #[inline]
-    fn poly13k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self {
-        let p = Self::poly9k(x, x2, x3, x4, &c[4..13], p);
-        Self::poly4k(x, x2, x3, x4, &c[..4], p)
+    fn poly13k(x: Self, x2: Self, x3: Self, x4: Self, p: Self, c: &[Self]) -> Self {
+        let p = Self::poly9k(x, x2, x3, x4, p, &c[..9]);
+        Self::poly4k(x, x2, x3, x4, p, &c[9..])
     }
     #[inline]
-    fn poly14k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self {
-        let p = Self::poly10k(x, x2, x3, x4, &c[4..14], p);
-        Self::poly4k(x, x2, x3, x4, &c[..4], p)
+    fn poly14k(x: Self, x2: Self, x3: Self, x4: Self, p: Self, c: &[Self]) -> Self {
+        let p = Self::poly10k(x, x2, x3, x4, p, &c[..10]);
+        Self::poly4k(x, x2, x3, x4, p, &c[10..])
     }
     #[inline]
-    fn poly15k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self {
-        let p = Self::poly11k(x, x2, x3, x4, &c[4..15], p);
-        Self::poly4k(x, x2, x3, x4, &c[..4], p)
+    fn poly15k(x: Self, x2: Self, x3: Self, x4: Self, p: Self, c: &[Self]) -> Self {
+        let p = Self::poly11k(x, x2, x3, x4, p, &c[..11]);
+        Self::poly4k(x, x2, x3, x4, p, &c[11..])
     }
     #[inline]
-    fn poly16k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self {
-        let p = Self::poly12k(x, x2, x3, x4, &c[4..16], p);
-        Self::poly4k(x, x2, x3, x4, &c[..4], p)
+    fn poly16k(x: Self, x2: Self, x3: Self, x4: Self, p: Self, c: &[Self]) -> Self {
+        let p = Self::poly12k(x, x2, x3, x4, p, &c[..12]);
+        Self::poly4k(x, x2, x3, x4, p, &c[12..])
     }
     #[inline]
-    fn poly17k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self {
-        let p = Self::poly13k(x, x2, x3, x4, &c[4..17], p);
-        Self::poly4k(x, x2, x3, x4, &c[..4], p)
+    fn poly17k(x: Self, x2: Self, x3: Self, x4: Self, p: Self, c: &[Self]) -> Self {
+        let p = Self::poly13k(x, x2, x3, x4, p, &c[..13]);
+        Self::poly4k(x, x2, x3, x4, p, &c[13..])
     }
     #[inline]
-    fn poly18k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self {
-        let p = Self::poly14k(x, x2, x3, x4, &c[4..18], p);
-        Self::poly4k(x, x2, x3, x4, &c[..4], p)
+    fn poly18k(x: Self, x2: Self, x3: Self, x4: Self, p: Self, c: &[Self]) -> Self {
+        let p = Self::poly14k(x, x2, x3, x4, p, &c[..14]);
+        Self::poly4k(x, x2, x3, x4, p, &c[14..])
     }
 }
 
@@ -221,20 +221,20 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
     // Quire1 = 1
     fn poly1(self, c: &[Self]) -> Self {
         assert_eq!(c.len(), 2);
-        Self::poly1k(self, c)
+        Self::poly1k(self, c[0], c[1])
     }
     // Quire1 + (x2=x*x) = 2
     fn poly2(self, c: &[Self]) -> Self {
         assert_eq!(c.len(), 3);
         let x2 = self * self;
-        Self::poly2k(self, x2, &c[..2], c[2])
+        Self::poly2k(self, x2, c[0], &c[1..])
     }
     // Quire1 + (x2, x3=x2*x) = 3, faster
     fn poly3(self, c: &[Self]) -> Self {
         assert_eq!(c.len(), 4);
         let x2 = self * self;
         let x3 = x2 * self;
-        Self::poly3k(self, x2, x3, &c[..3], c[3])
+        Self::poly3k(self, x2, x3, c[0], &c[1..])
     }
     // Quire1 + (x2, x3, x4=x2*x2) = 4, faster
     #[inline]
@@ -243,7 +243,7 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
-        Self::poly4k(self, x2, x3, x4, &c[..4], c[4])
+        Self::poly4k(self, x2, x3, x4, c[0], &c[1..])
     }
     // Quire2 + (x2, x3) = 4
     #[inline]
@@ -251,7 +251,7 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         assert_eq!(c.len(), 6);
         let x2 = self * self;
         let x3 = x2 * self;
-        Self::poly5k(self, x2, x3, &c[..5], c[5])
+        Self::poly5k(self, x2, x3, c[0], &c[1..])
     }
     // Quire2 + (x2, x3) = 4
     #[inline]
@@ -259,7 +259,7 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         assert_eq!(c.len(), 7);
         let x2 = self * self;
         let x3 = x2 * self;
-        Self::poly6k(self, x2, x3, &c[..6], c[6])
+        Self::poly6k(self, x2, x3, c[0], &c[1..])
     }
     // Quire2 + (x2, x3, x4) = 5
     #[inline]
@@ -268,7 +268,7 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
-        Self::poly7k(self, x2, x3, x4, &c[..7], c[7])
+        Self::poly7k(self, x2, x3, x4, c[0], &c[1..])
     }
     // Quire2 + (x2, x3, x4) = 5
     #[inline]
@@ -277,7 +277,7 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
-        Self::poly8k(self, x2, x3, x4, &c[..8], c[8])
+        Self::poly8k(self, x2, x3, x4, c[0], &c[1..])
     }
     // Quire3 + (x2, x3, x4) = 6
     #[inline]
@@ -286,7 +286,7 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
-        Self::poly9k(self, x2, x3, x4, &c[..9], c[9])
+        Self::poly9k(self, x2, x3, x4, c[0], &c[1..])
     }
     // Quire3 + (x2, x3, x4) = 6
     #[inline]
@@ -295,7 +295,7 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
-        Self::poly10k(self, x2, x3, x4, &c[..10], c[10])
+        Self::poly10k(self, x2, x3, x4, c[0], &c[1..])
     }
     // Quire3 + (x2, x3, x4) = 6
     #[inline]
@@ -304,7 +304,7 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
-        Self::poly11k(self, x2, x3, x4, &c[..11], c[11])
+        Self::poly11k(self, x2, x3, x4, c[0], &c[1..])
     }
     // Quire3 + (x2, x3, x4) = 6
     #[inline]
@@ -313,7 +313,7 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
-        Self::poly12k(self, x2, x3, x4, &c[..12], c[12])
+        Self::poly12k(self, x2, x3, x4, c[0], &c[1..])
     }
     // Quire4 + (x2, x3, x4) = 7
     #[inline]
@@ -322,7 +322,7 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
-        Self::poly13k(self, x2, x3, x4, &c[..13], c[13])
+        Self::poly13k(self, x2, x3, x4, c[0], &c[1..])
     }
     // Quire4 + (x2, x3, x4) = 7
     #[inline]
@@ -331,7 +331,7 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
-        Self::poly14k(self, x2, x3, x4, &c[..14], c[14])
+        Self::poly14k(self, x2, x3, x4, c[0], &c[1..])
     }
     // Quire4 + (x2, x3, x4) = 7
     #[inline]
@@ -340,7 +340,7 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
-        Self::poly15k(self, x2, x3, x4, &c[..15], c[15])
+        Self::poly15k(self, x2, x3, x4, c[0], &c[1..])
     }
     // Quire4 + (x2, x3, x4) = 7
     #[inline]
@@ -349,7 +349,7 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
-        Self::poly16k(self, x2, x3, x4, &c[..16], c[16])
+        Self::poly16k(self, x2, x3, x4, c[0], &c[1..])
     }
     // Quire5 + (x2, x3, x4) = 8
     #[inline]
@@ -358,7 +358,7 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
-        Self::poly17k(self, x2, x3, x4, &c[..17], c[17])
+        Self::poly17k(self, x2, x3, x4, c[0], &c[1..])
     }
     // Quire5 + (x2, x3, x4) = 8
     #[inline]
@@ -367,22 +367,22 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
-        Self::poly18k(self, x2, x3, x4, &c[..18], c[18])
+        Self::poly18k(self, x2, x3, x4, c[0], &c[1..])
     }
     // Quire2 + (x2) = 3, more accurate
     #[inline]
     fn poly3a(self, c: &[Self]) -> Self {
         assert_eq!(c.len(), 4);
         let x2 = self * self;
-        let p = Self::poly1k(self, &c[2..]);
-        Self::poly2k(self, x2, &c[..2], p)
+        let p = Self::poly1k(self, c[0], c[1]);
+        Self::poly2k(self, x2, p, &c[2..])
     }
     // Quire2 + (x2) = 3, more accurate
     #[inline]
     fn poly4a(self, c: &[Self]) -> Self {
         assert_eq!(c.len(), 5);
         let x2 = self * self;
-        let p = Self::poly2k(self, x2, &c[2..4], c[4]);
-        Self::poly2k(self, x2, &c[..2], p)
+        let p = Self::poly2k(self, x2, c[0], &c[1..3]);
+        Self::poly2k(self, x2, p, &c[3..])
     }
 }
