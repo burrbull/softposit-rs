@@ -166,15 +166,11 @@ impl P16E1 {
         let reg;
         if k < 0 {
             reg = (-k) as u8;
-            (if reg > 15 { 0 } else { 0x4000_u16 >> reg }, false, reg)
+            (0x4000_u16.checked_shr(reg as u32).unwrap_or(0), false, reg)
         } else {
             reg = (k + 1) as u8;
             (
-                if reg > 15 {
-                    0x7FFF
-                } else {
-                    0x7FFF - (0x7FFF >> reg)
-                },
+                0x7fff - 0x7fff_u16.checked_shr(reg as u32).unwrap_or(0),
                 true,
                 reg,
             )

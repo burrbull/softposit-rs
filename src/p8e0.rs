@@ -148,10 +148,14 @@ impl P8E0 {
         let reg;
         if k < 0 {
             reg = (-k) as u8;
-            (if reg > 7 { 0 } else { 0x40 >> reg }, false, reg)
+            (0x40_u8.checked_shr(reg as u32).unwrap_or(0), false, reg)
         } else {
             reg = (k + 1) as u8;
-            (if reg > 7 { 0x7F } else { 0x7F - (0x7F >> reg) }, true, reg)
+            (
+                0x7f - 0x7f_u8.checked_shr(reg as u32).unwrap_or(0),
+                true,
+                reg,
+            )
         }
     }
 }

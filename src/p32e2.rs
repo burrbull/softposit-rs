@@ -167,18 +167,14 @@ impl P32E2 {
         if k < 0 {
             reg = (-k) as u8;
             (
-                if reg > 31 { 0 } else { 0x4000_0000_u32 >> reg },
+                0x4000_0000_u32.checked_shr(reg as u32).unwrap_or(0),
                 false,
                 reg,
             )
         } else {
             reg = (k + 1) as u8;
             (
-                if reg > 31 {
-                    0x7FFF_FFFF
-                } else {
-                    0x7FFF_FFFF - (0x7FFF_FFFF >> reg)
-                },
+                0x7fff_ffff - 0x7fff_ffff_u32.checked_shr(reg as u32).unwrap_or(0),
                 true,
                 reg,
             )

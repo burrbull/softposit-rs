@@ -1,6 +1,6 @@
 [package]
 name = "softposit"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Andrey Zgarbul <zgarbul.andrey@gmail.com>"]
 description = "Implementation of Posit numbers"
 repository = "https://gitlab.com/burrbull/softposit-rs"

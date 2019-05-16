@@ -677,7 +677,7 @@ impl From<Q32E2> for P32E2 {
 
             let shift = reg_a + 35; //2 es bit, 1 sign bit and 1 r terminating bit , 31+4
 
-            let mut frac_a = (frac64_a >> shift) as u32;
+            let mut frac_a = frac64_a.checked_shr(shift as u32).unwrap_or(0) as u32;
             let mut bit_n_plus_one = false;
             if reg_a <= 28 {
                 bit_n_plus_one = ((frac64_a >> (shift - 1)) & 0x1) != 0;

@@ -538,7 +538,9 @@ pub(super) fn q16_fdp_add(q: &mut Q16E1, p_a: P16E1, p_b: P16E1) {
             u_z2[0] = (frac32_z as u64) << -shift_right;
         } else {
             u_z2[0] = (frac32_z as u64) >> shift_right;
-            u_z2[1] = (frac32_z as u64) << (64 - shift_right); // TODO: shift left with overflow
+            u_z2[1] = (frac32_z as u64)
+                .checked_shl((64 - shift_right) as u32)
+                .unwrap_or(0);
         }
     }
 
@@ -646,7 +648,9 @@ pub(super) fn q16_fdp_sub(q: &mut Q16E1, p_a: P16E1, p_b: P16E1) {
             u_z2[0] = (frac32_z as u64) << -shift_right;
         } else {
             u_z2[0] = (frac32_z as u64) >> shift_right;
-            u_z2[1] = (frac32_z as u64) << (64 - shift_right);
+            u_z2[1] = (frac32_z as u64)
+                .checked_shl((64 - shift_right) as u32)
+                .unwrap_or(0);
         }
     }
 
