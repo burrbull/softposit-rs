@@ -219,17 +219,20 @@ pub trait Poly: Copy {
 
 pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
     // Quire1 = 1
+    #[inline]
     fn poly1(self, c: &[Self]) -> Self {
         assert_eq!(c.len(), 2);
         Self::poly1k(self, c[0], c[1])
     }
     // Quire1 + (x2=x*x) = 2
+    #[inline]
     fn poly2(self, c: &[Self]) -> Self {
         assert_eq!(c.len(), 3);
         let x2 = self * self;
         Self::poly2k(self, x2, c[0], &c[1..])
     }
     // Quire1 + (x2, x3=x2*x) = 3, faster
+    #[inline]
     fn poly3(self, c: &[Self]) -> Self {
         assert_eq!(c.len(), 4);
         let x2 = self * self;
