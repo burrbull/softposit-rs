@@ -291,3 +291,46 @@ impl crate::MathConsts for P32E2 {
     const LOG2_10: Self = Self::new(0x_4d49_a785);
     const LOG10_2: Self = Self::new(0x_31a2_09a8);
 }
+
+impl crate::Quire for P32E2 {
+    type Q = Q32E2;
+}
+
+impl crate::Poly for P32E2 {
+    #[inline]
+    fn poly1k(x: Self, c: &[Self]) -> Self {
+        let mut q = Q32E2::new(); // QCLR.S
+        q += (c[1], x); // QMADD.S
+        q += (c[0], Self::ONE);
+        q.into() // QROUND.S
+    }
+    #[inline]
+    fn poly2k(x: Self, x2: Self, c: &[Self], p: Self) -> Self {
+        let mut q = Q32E2::new();
+        q += (p, x2);
+        q += (c[1], x);
+        q += (c[0], Self::ONE);
+        q.into()
+    }
+    #[inline]
+    fn poly3k(x: Self, x2: Self, x3: Self, c: &[Self], p: Self) -> Self {
+        let mut q = Q32E2::new();
+        q += (p, x3);
+        q += (c[2], x2);
+        q += (c[1], x);
+        q += (c[0], Self::ONE);
+        q.into()
+    }
+    #[inline]
+    fn poly4k(x: Self, x2: Self, x3: Self, x4: Self, c: &[Self], p: Self) -> Self {
+        let mut q = Q32E2::new();
+        q += (p, x4);
+        q += (c[3], x3);
+        q += (c[2], x2);
+        q += (c[1], x);
+        q += (c[0], Self::ONE);
+        q.into()
+    }
+}
+
+impl crate::Polynom for P32E2 {}
