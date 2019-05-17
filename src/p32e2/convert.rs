@@ -711,13 +711,12 @@ impl From<Q32E2> for P32E2 {
 }
 
 #[test]
-fn convert() {
+fn convert_p32_f64() {
     use rand::Rng;
     let mut rng = rand::thread_rng();
     for _ in 0..100_000 {
-        let n = rng.gen_range(0_u32, 0x_ffff_ffff);
-        let p = P32E2::from_bits(n);
+        let p: P32E2 = rng.gen();
         let f = f64::from(p);
-        assert_eq!(n, P32E2::from(f).to_bits());
+        assert_eq!(p, P32E2::from(f));
     }
 }

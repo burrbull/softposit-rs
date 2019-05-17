@@ -605,9 +605,9 @@ impl From<Q8E0> for P8E0 {
 
 #[test]
 fn convert() {
-    for n in 0..255_u8 {
-        let p = P8E0::from_bits(n);
+    for n in -0x_80_i8..0x_7f {
+        let p = P8E0::new(n);
         let f = f64::from(p);
-        assert_eq!(n, P8E0::from(f).to_bits());
+        assert_eq!(p, P8E0::from(f));
     }
 }

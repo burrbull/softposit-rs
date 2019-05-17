@@ -1,6 +1,8 @@
 use core::mem;
 
 mod convert;
+#[cfg(feature = "linalg")]
+mod linalg;
 mod math;
 #[cfg(feature = "num-traits")]
 mod num;
@@ -327,3 +329,10 @@ impl crate::Poly for P16E1 {
 }
 
 impl crate::Polynom for P16E1 {}
+
+impl rand::distributions::Distribution<P16E1> for rand::distributions::Standard {
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> P16E1 {
+        let s = rng.gen_range(-0x_7fff_i16, 0x_7fff);
+        P16E1::new(s)
+    }
+}

@@ -360,12 +360,9 @@ fn test_mul_add() {
     use rand::Rng;
     let mut rng = rand::thread_rng();
     for _ in 0..crate::NTESTS16 {
-        let n_a = rng.gen_range(-0x_7fff_i16, 0x_7fff);
-        let n_b = rng.gen_range(-0x_7fff_i16, 0x_7fff);
-        let n_c = rng.gen_range(-0x_7fff_i16, 0x_7fff);
-        let p_a = P16E1::new(n_a);
-        let p_b = P16E1::new(n_b);
-        let p_c = P16E1::new(n_c);
+        let p_a: P16E1 = rng.gen();
+        let p_b: P16E1 = rng.gen();
+        let p_c: P16E1 = rng.gen();
         let f_a = f64::from(p_a);
         let f_b = f64::from(p_b);
         let f_c = f64::from(p_c);
@@ -380,8 +377,7 @@ fn test_sqrt() {
     use rand::Rng;
     let mut rng = rand::thread_rng();
     for _ in 0..crate::NTESTS16 {
-        let n_a = rng.gen_range(-0x_7fff_i16, 0x_7fff);
-        let p_a = P16E1::new(n_a);
+        let p_a: P16E1 = rng.gen();
         let f_a = f64::from(p_a);
         let p = p_a.sqrt();
         let f = f_a.sqrt();
@@ -394,8 +390,7 @@ fn test_round() {
     use rand::Rng;
     let mut rng = rand::thread_rng();
     for _ in 0..crate::NTESTS16 {
-        let n_a = rng.gen_range(-0x_7fff_i16, 0x_7fff);
-        let p_a = P16E1::new(n_a);
+        let p_a: P16E1 = rng.gen();
         let f_a = f64::from(p_a);
         let p = p_a.round();
         let f = f_a.round();

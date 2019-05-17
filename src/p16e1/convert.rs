@@ -678,10 +678,10 @@ impl From<Q16E1> for P16E1 {
 }
 
 #[test]
-fn convert() {
-    for n in 0..65_535_u16 {
-        let p = P16E1::from_bits(n);
+fn convert_p16_f64() {
+    for n in -0x_8000_i16..0x_7fff {
+        let p = P16E1::new(n);
         let f = f64::from(p);
-        assert_eq!(n, P16E1::from(f).to_bits());
+        assert_eq!(p, P16E1::from(f));
     }
 }

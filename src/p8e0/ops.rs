@@ -506,12 +506,9 @@ fn test_quire_mul_add() {
     use rand::Rng;
     let mut rng = rand::thread_rng();
     for _ in 0..crate::NTESTS8 {
-        let n_a = rng.gen_range(-0x_7f_i8, 0x_7f);
-        let n_b = rng.gen_range(-0x_7f_i8, 0x_7f);
-        let n_c = rng.gen_range(-0x_7f_i8, 0x_7f);
-        let p_a = P8E0::new(n_a);
-        let p_b = P8E0::new(n_b);
-        let p_c = P8E0::new(n_c);
+        let p_a: P8E0 = rng.gen();
+        let p_b: P8E0 = rng.gen();
+        let p_c: P8E0 = rng.gen();
         let f_a = f64::from(p_a);
         let f_b = f64::from(p_b);
         let f_c = f64::from(p_c);
@@ -529,12 +526,9 @@ fn test_quire_mul_sub() {
     use rand::Rng;
     let mut rng = rand::thread_rng();
     for _ in 0..crate::NTESTS8 {
-        let n_a = rng.gen_range(-0x_7f_i8, 0x_7f);
-        let n_b = rng.gen_range(-0x_7f_i8, 0x_7f);
-        let n_c = rng.gen_range(-0x_7f_i8, 0x_7f);
-        let p_a = P8E0::new(n_a);
-        let p_b = P8E0::new(n_b);
-        let p_c = P8E0::new(n_c);
+        let p_a: P8E0 = rng.gen();
+        let p_b: P8E0 = rng.gen();
+        let p_c: P8E0 = rng.gen();
         let f_a = f64::from(p_a);
         let f_b = f64::from(p_b);
         let f_c = f64::from(p_c);
@@ -552,10 +546,8 @@ fn test_ops(fun: fn(P8E0, P8E0, f64, f64) -> (P8E0, f64)) {
     use rand::Rng;
     let mut rng = rand::thread_rng();
     for _ in 0..crate::NTESTS8 {
-        let n_a = rng.gen_range(-0x_7f_i8, 0x_7f);
-        let n_b = rng.gen_range(-0x_7f_i8, 0x_7f);
-        let p_a = P8E0::new(n_a);
-        let p_b = P8E0::new(n_b);
+        let p_a: P8E0 = rng.gen();
+        let p_b: P8E0 = rng.gen();
         let f_a = f64::from(p_a);
         let f_b = f64::from(p_b);
         let (p, f) = fun(p_a, p_b, f_a, f_b);

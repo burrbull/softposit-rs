@@ -1,6 +1,8 @@
 use core::mem;
 
 mod convert;
+#[cfg(feature = "linalg")]
+mod linalg;
 mod math;
 #[cfg(feature = "num-traits")]
 mod num;
@@ -330,3 +332,10 @@ impl crate::Poly for P32E2 {
 }
 
 impl crate::Polynom for P32E2 {}
+
+impl rand::distributions::Distribution<P32E2> for rand::distributions::Standard {
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> P32E2 {
+        let s = rng.gen_range(-0x_7fff_ffff_i32, 0x_7fff_ffff);
+        P32E2::new(s)
+    }
+}

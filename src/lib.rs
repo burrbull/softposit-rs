@@ -389,3 +389,9 @@ pub trait Polynom: Poly + core::ops::Mul<Output = Self> {
         Self::poly2k(self, x2, p, &c[3..])
     }
 }
+
+#[cfg(feature = "linalg")]
+pub trait QuireDot<T> {
+    type Output;
+    fn quire_dot(&self, rhs: T) -> Self::Output;
+}
