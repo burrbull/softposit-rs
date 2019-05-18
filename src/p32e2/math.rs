@@ -1,6 +1,30 @@
 use super::P32E2;
 use crate::{MulAddType, WithSign};
 
+const HALF: P32E2 = P32E2::new(0x_3800_0000);
+const TWO: P32E2 = P32E2::new(0x_4800_0000);
+
+impl crate::MathConsts for P32E2 {
+    const E: Self = Self::new(0x_4adf_8546);
+    const FRAC_1_PI: Self = Self::new(0x_322f_9837);
+    const FRAC_1_SQRT_2: Self = Self::new(0x_3b50_4f33);
+    const FRAC_2_PI: Self = Self::new(0x_3a2f_9837);
+    const FRAC_2_SQRT_PI: Self = Self::new(0x_4106_eba8);
+    const FRAC_PI_2: Self = Self::new(0x_4490_fdaa);
+    const FRAC_PI_3: Self = Self::new(0x_4060_a91c);
+    const FRAC_PI_4: Self = Self::new(0x_3c90_fdaa);
+    const FRAC_PI_6: Self = Self::new(0x_3860_a91c);
+    const FRAC_PI_8: Self = Self::new(0x_3490_fdaa);
+    const LN_10: Self = Self::new(0x_4935_d8de);
+    const LN_2: Self = Self::new(0x_3b17_217f);
+    const LOG10_E: Self = Self::new(0x_35e5_bd8b);
+    const LOG2_E: Self = Self::new(0x_438a_a3b3);
+    const PI: Self = Self::new(0x_4c90_fdaa);
+    const SQRT_2: Self = Self::new(0x_4350_4f33);
+    const LOG2_10: Self = Self::new(0x_4d49_a785);
+    const LOG10_2: Self = Self::new(0x_31a2_09a8);
+}
+
 impl P32E2 {
     #[inline]
     pub fn mul_add(self, b: Self, c: Self) -> Self {
@@ -10,12 +34,161 @@ impl P32E2 {
         mul_add(ui_a, ui_b, ui_c, crate::MulAddType::Add)
     }
     #[inline]
+    pub fn floor(self) -> Self {
+        (self - HALF).round()
+    }
+    #[inline]
+    pub fn ceil(self) -> Self {
+        (self + HALF).round()
+    }
+    #[inline]
     pub fn round(self) -> Self {
         round(self)
+    }
+    // TODO: optimize
+    #[inline]
+    pub fn trunc(self) -> Self {
+        if self > Self::ZERO {
+            self.floor()
+        } else {
+            self.ceil()
+        }
+    }
+    #[inline]
+    pub fn fract(self) -> Self {
+        self - self.trunc()
+    }
+    #[inline]
+    pub fn div_euclid(self, rhs: Self) -> Self {
+        let q = (self / rhs).trunc();
+        if self % rhs < Self::ZERO {
+            return if rhs > Self::ZERO { q - Self::ONE } else { q + Self::ONE }
+        }
+        q
+    }
+    #[inline]
+    pub fn rem_euclid(self, rhs: Self) -> Self {
+        let r = self % rhs;
+        if r < Self::ZERO {
+            r + rhs.abs()
+        } else {
+            r
+        }
+    }
+    #[inline]
+    pub fn powi(self, _n: i32) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn powf(self, _n: Self) -> Self {
+        unimplemented!()
     }
     #[inline]
     pub fn sqrt(self) -> Self {
         sqrt(self)
+    }
+    #[inline]
+    pub fn exp(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn exp2(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn ln(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn log(self, _base: Self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn log2(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn log10(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn cbrt(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn hypot(self, _other: Self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn sin(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn cos(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn tan(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn asin(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn acos(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn atan(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn atan2(self, _other: Self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn sin_cos(self) -> (Self, Self) {
+        (self.sin(), self.cos())
+    }
+    #[inline]
+    pub fn exp_m1(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn ln_1p(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn sinh(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn cosh(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn tanh(self) -> Self {
+        unimplemented!()
+    }
+    #[inline]
+    pub fn asinh(self) -> Self {
+        if self.is_nan() {
+            self
+        } else {
+            (self + ((self * self) + Self::ONE).sqrt()).ln()
+        }
+    }
+    #[inline]
+    pub fn acosh(self) -> Self {
+        match self {
+            x if x < Self::ONE => Self::NAN,
+            x => (x + ((x * x) - Self::ONE).sqrt()).ln(),
+        }
+    }
+    #[inline]
+    pub fn atanh(self) -> Self {
+        HALF * ((TWO * self) / (Self::ONE - self)).ln_1p()
     }
 }
 

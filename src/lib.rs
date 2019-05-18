@@ -17,6 +17,8 @@ pub type Q32 = Q32E2;
 
 mod convert;
 
+mod macros;
+
 trait WithSign {
     fn with_sign(self, sign: bool) -> Self;
 }
@@ -91,41 +93,41 @@ enum MulAddType {
 }
 
 pub trait MathConsts {
-    /// Euler's number (e)
+    /// Euler's number (e) = 2.7182818284590452353602874713526625
     const E: Self;
-    /// 1/π
+    /// 1/π = 0.318309886183790671537767526745028724
     const FRAC_1_PI: Self;
-    /// 1/sqrt(2)
+    /// 1/sqrt(2) = 0.707106781186547524400844362104849039
     const FRAC_1_SQRT_2: Self;
-    /// 2/π
+    /// 2/π = 0.636619772367581343075535053490057448
     const FRAC_2_PI: Self;
-    /// 2/sqrt(π)
+    /// 2/sqrt(π) = 1.12837916709551257389615890312154517
     const FRAC_2_SQRT_PI: Self;
-    /// π/2
+    /// π/2 = 1.57079632679489661923132169163975144
     const FRAC_PI_2: Self;
-    /// π/3
+    /// π/3 = 1.04719755119659774615421446109316763
     const FRAC_PI_3: Self;
-    /// π/4
+    /// π/4 = 0.785398163397448309615660845819875721
     const FRAC_PI_4: Self;
-    /// π/6
+    /// π/6 = 0.52359877559829887307710723054658381
     const FRAC_PI_6: Self;
-    /// π/8
+    /// π/8 = 0.39269908169872415480783042290993786
     const FRAC_PI_8: Self;
-    /// ln(10)
+    /// ln(10) = 2.30258509299404568401799145468436421
     const LN_10: Self;
-    /// ln(2)
+    /// ln(2) = 0.693147180559945309417232121458176568
     const LN_2: Self;
-    /// log<sub>10</sub>(e)
+    /// log<sub>10</sub>(e) = 0.434294481903251827651128918916605082
     const LOG10_E: Self;
-    /// log<sub>2</sub>(e)
+    /// log<sub>2</sub>(e) = 1.44269504088896340735992468100189214
     const LOG2_E: Self;
-    /// Archimedes' constant (π)
+    /// Archimedes' constant (π) = 3.14159265358979323846264338327950288
     const PI: Self;
-    /// sqrt(2)
+    /// sqrt(2) = 1.41421356237309504880168872420969808
     const SQRT_2: Self;
-    /// log<sub>2</sub>(10)
+    /// log<sub>2</sub>(10) = 3.32192809488736234787031942948939018
     const LOG2_10: Self;
-    /// log<sub>10</sub>(2)
+    /// log<sub>10</sub>(2) = 0.301029995663981195213738894724493027
     const LOG10_2: Self;
 }
 

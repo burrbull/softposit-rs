@@ -1,14 +1,25 @@
 use core::mem;
 
 mod convert;
-#[cfg(feature = "linalg")]
-mod linalg;
 mod math;
-#[cfg(feature = "num-traits")]
-mod num;
 mod ops;
+#[cfg(feature = "num-traits")]
+crate::impl_num_traits!(P8E0);
+#[cfg(feature = "linalg")]
+crate::impl_quire_dot!(P8E0, Q8E0);
+#[cfg(feature = "alga")]
+crate::impl_lattice!(P8E0);
+#[cfg(feature = "approx")]
+crate::impl_ulps_eq!(P8E0, i8);
+#[cfg(feature = "approx")]
+use approx::AbsDiffEq;
+#[cfg(feature = "approx")]
+crate::impl_signed_abs_diff_eq!(P8E0, P8E0::ZERO);
+//crate::impl_signed_abs_diff_eq!(P8E0, P8E0::EPSILON);
+#[cfg(feature = "approx")]
+crate::impl_relative_eq!(P8E0, i8);
 
-#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Hash)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct P8E0(i8);
 
 impl P8E0 {
@@ -27,11 +38,14 @@ impl P8E0 {
     /// Largest finite value (64).
     pub const MAX: Self = Self::new(0x_7F);
 
+    /// Not a Real (NaR).
+    pub const NAR: Self = Self::new(-0x_80);
+
     /// Not a Number (NaN).
-    pub const NAN: Self = Self::new(-0x_80);
+    pub const NAN: Self = Self::NAR;
 
     /// Infinity (∞).
-    pub const INFINITY: Self = Self::new(-0x_80);
+    pub const INFINITY: Self = Self::NAR;
 
     /// Zero.
     pub const ZERO: Self = Self::new(0);
@@ -53,36 +67,70 @@ impl P8E0 {
     }
     #[inline]
     pub fn abs(self) -> Self {
-        let i = self.to_bits() as i8;
-        Self::from_bits((if i < 0 { -i } else { i }) as u8)
+        if self.is_sign_negative() {
+            -self
+        } else {
+            self
+        }
+    }
+    #[inline]
+    pub fn is_nar(self) -> bool {
+        self == Self::NAR
     }
     #[inline]
     pub fn is_nan(self) -> bool {
-        self == Self::NAN
+        self.is_nar()
     }
     #[inline]
     pub fn is_infinite(self) -> bool {
-        self == Self::INFINITY
+        self.is_nar()
     }
     #[inline]
     pub fn is_finite(self) -> bool {
-        !self.is_nan()
+        !self.is_nar()
     }
     #[inline]
-    pub fn max(self, other: Self) -> Self {
-        if self.is_nan() || (self < other) {
-            other
+    pub fn is_normal(self) -> bool {
+        !self.is_nar()
+    }
+    #[inline]
+    pub fn classify(self) -> core::num::FpCategory {
+        use core::num::FpCategory::*;
+        match self {
+            Self::ZERO => Zero,
+            Self::NAN => Nan,
+            _ => Normal,
+        }
+    }
+    #[inline]
+    fn is_sign_positive(self) -> bool {
+        !self.is_sign_negative()
+    }
+    #[inline]
+    fn is_sign_negative(self) -> bool {
+        self < Self::ZERO
+    }
+    #[inline]
+    pub fn copysign(self, other: Self) -> Self {
+        if ((self.to_bits() ^ other.to_bits()) & Self::SIGN_MASK) != 0 {
+            -self
         } else {
             self
         }
     }
     #[inline]
-    pub fn min(self, other: Self) -> Self {
-        if other.is_nan() || (self < other) {
-            self
-        } else {
-            other
+    pub fn signum(self) -> Self {
+        match self.0 {
+            n if n == Self::NAN.0 => Self::NAN,
+            n if n > 0 =>  Self::ONE,
+            0          =>  Self::ZERO,
+            _          => -Self::ONE,
         }
+    }
+    #[inline]
+    // TODO: optimize
+    pub fn recip(self) -> Self {
+        Self::ONE / self
     }
 }
 
@@ -216,7 +264,7 @@ impl Q8E0 {
 
     #[inline]
     pub fn neg(&mut self) {
-        self.0 = -(self.0);
+        self.0 = self.0.wrapping_neg();
     }
 }
 

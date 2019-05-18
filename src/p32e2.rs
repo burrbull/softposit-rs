@@ -1,14 +1,25 @@
 use core::mem;
 
 mod convert;
-#[cfg(feature = "linalg")]
-mod linalg;
 mod math;
-#[cfg(feature = "num-traits")]
-mod num;
 mod ops;
+#[cfg(feature = "num-traits")]
+crate::impl_num_traits!(P32E2);
+#[cfg(feature = "linalg")]
+crate::impl_quire_dot!(P32E2, Q32E2);
+#[cfg(feature = "alga")]
+crate::impl_lattice!(P32E2);
+#[cfg(feature = "approx")]
+crate::impl_ulps_eq!(P32E2, i32);
+#[cfg(feature = "approx")]
+use approx::AbsDiffEq;
+#[cfg(feature = "approx")]
+crate::impl_signed_abs_diff_eq!(P32E2, P32E2::ZERO);
+//crate::impl_signed_abs_diff_eq!(P32E2, P32E2::EPSILON);
+#[cfg(feature = "approx")]
+crate::impl_relative_eq!(P32E2, i32);
 
-#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Hash)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct P32E2(i32);
 
 impl P32E2 {
@@ -27,11 +38,14 @@ impl P32E2 {
     /// Largest finite value (1.329227996_e36).
     pub const MAX: Self = Self::new(0x_7FFF_FFFF);
 
+    /// Not a Real (NaR).
+    pub const NAR: Self = Self::new(-0x_8000_0000);
+
     /// Not a Number (NaN).
-    pub const NAN: Self = Self::new(-0x_8000_0000);
+    pub const NAN: Self = Self::NAR;
 
     /// Infinity (∞).
-    pub const INFINITY: Self = Self::new(-0x_8000_0000);
+    pub const INFINITY: Self = Self::NAR;
 
     /// Zero.
     pub const ZERO: Self = Self::new(0);
@@ -53,20 +67,70 @@ impl P32E2 {
     }
     #[inline]
     pub fn abs(self) -> Self {
-        let i = self.to_bits() as i32;
-        Self::from_bits((if i < 0 { -i } else { i }) as u32)
+        if self.is_sign_negative() {
+            -self
+        } else {
+            self
+        }
+    }
+    #[inline]
+    pub fn is_nar(self) -> bool {
+        self == Self::NAR
     }
     #[inline]
     pub fn is_nan(self) -> bool {
-        self == Self::NAN
+        self.is_nar()
     }
     #[inline]
     pub fn is_infinite(self) -> bool {
-        self == Self::INFINITY
+        self.is_nar()
     }
     #[inline]
     pub fn is_finite(self) -> bool {
-        !self.is_nan()
+        !self.is_nar()
+    }
+    #[inline]
+    pub fn is_normal(self) -> bool {
+        !self.is_nar()
+    }
+    #[inline]
+    pub fn classify(self) -> core::num::FpCategory {
+        use core::num::FpCategory::*;
+        match self {
+            Self::ZERO => Zero,
+            Self::NAN => Nan,
+            _ => Normal,
+        }
+    }
+    #[inline]
+    fn is_sign_positive(self) -> bool {
+        !self.is_sign_negative()
+    }
+    #[inline]
+    fn is_sign_negative(self) -> bool {
+        self < Self::ZERO
+    }
+    #[inline]
+    pub fn copysign(self, other: Self) -> Self {
+        if ((self.to_bits() ^ other.to_bits()) & Self::SIGN_MASK) != 0 {
+            -self
+        } else {
+            self
+        }
+    }
+    #[inline]
+    pub fn signum(self) -> Self {
+        match self.0 {
+            n if n == Self::NAN.0 => Self::NAN,
+            n if n > 0 =>  Self::ONE,
+            0          =>  Self::ZERO,
+            _          => -Self::ONE,
+        }
+    }
+    // TODO: optimize
+    #[inline]
+    pub fn recip(self) -> Self {
+        Self::ONE / self
     }
     #[inline]
     pub fn to_degrees(self) -> Self {
@@ -77,22 +141,6 @@ impl P32E2 {
     pub fn to_radians(self) -> Self {
         let value: Self = crate::MathConsts::PI;
         self * (value / Self::new(0x_6da0_0000))
-    }
-    #[inline]
-    pub fn max(self, other: Self) -> Self {
-        if self.is_nan() || (self < other) {
-            other
-        } else {
-            self
-        }
-    }
-    #[inline]
-    pub fn min(self, other: Self) -> Self {
-        if other.is_nan() || (self < other) {
-            self
-        } else {
-            other
-        }
     }
 }
 
@@ -238,7 +286,7 @@ impl Q32E2 {
 
     #[inline]
     pub fn neg(&mut self) {
-        self.0 = -(self.0);
+        self.0 = self.0.wrapping_neg();
     }
 }
 
@@ -267,27 +315,6 @@ impl fmt::Debug for P32E2 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "P32E2({})", self.0)
     }
-}
-
-impl crate::MathConsts for P32E2 {
-    const E: Self = Self::new(0x_4adf_8546);
-    const FRAC_1_PI: Self = Self::new(0x_322f_9837);
-    const FRAC_1_SQRT_2: Self = Self::new(0x_3b50_4f33);
-    const FRAC_2_PI: Self = Self::new(0x_3a2f_9837);
-    const FRAC_2_SQRT_PI: Self = Self::new(0x_4106_eba8);
-    const FRAC_PI_2: Self = Self::new(0x_4490_fdaa);
-    const FRAC_PI_3: Self = Self::new(0x_4060_a91c);
-    const FRAC_PI_4: Self = Self::new(0x_3c90_fdaa);
-    const FRAC_PI_6: Self = Self::new(0x_3860_a91c);
-    const FRAC_PI_8: Self = Self::new(0x_3490_fdaa);
-    const LN_10: Self = Self::new(0x_4935_d8de);
-    const LN_2: Self = Self::new(0x_3b17_217f);
-    const LOG10_E: Self = Self::new(0x_35e5_bd8b);
-    const LOG2_E: Self = Self::new(0x_438a_a3b3);
-    const PI: Self = Self::new(0x_4c90_fdaa);
-    const SQRT_2: Self = Self::new(0x_4350_4f33);
-    const LOG2_10: Self = Self::new(0x_4d49_a785);
-    const LOG10_2: Self = Self::new(0x_31a2_09a8);
 }
 
 impl crate::Quire for P32E2 {

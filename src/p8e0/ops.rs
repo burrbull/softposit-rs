@@ -6,7 +6,7 @@ impl ops::Neg for P8E0 {
     type Output = Self;
     #[inline]
     fn neg(self) -> Self {
-        Self::new(-self.0)
+        Self::new(self.0.wrapping_neg())
     }
 }
 

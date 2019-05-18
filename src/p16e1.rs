@@ -1,14 +1,25 @@
 use core::mem;
 
 mod convert;
-#[cfg(feature = "linalg")]
-mod linalg;
 mod math;
-#[cfg(feature = "num-traits")]
-mod num;
 mod ops;
+#[cfg(feature = "num-traits")]
+crate::impl_num_traits!(P16E1);
+#[cfg(feature = "linalg")]
+crate::impl_quire_dot!(P16E1, Q16E1);
+#[cfg(feature = "alga")]
+crate::impl_lattice!(P16E1);
+#[cfg(feature = "approx")]
+crate::impl_ulps_eq!(P16E1, i16);
+#[cfg(feature = "approx")]
+use approx::AbsDiffEq;
+#[cfg(feature = "approx")]
+crate::impl_signed_abs_diff_eq!(P16E1, P16E1::ZERO);
+//crate::impl_signed_abs_diff_eq!(P16E1, P16E1::EPSILON);
+#[cfg(feature = "approx")]
+crate::impl_relative_eq!(P16E1, i16);
 
-#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Hash)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct P16E1(i16);
 
 impl P16E1 {
@@ -27,11 +38,14 @@ impl P16E1 {
     /// Largest finite value (268435456).
     pub const MAX: Self = Self::new(0x_7FFF);
 
+    /// Not a Real (NaR).
+    pub const NAR: Self = Self::new(-0x_8000);
+
     /// Not a Number (NaN).
-    pub const NAN: Self = Self::new(-0x_8000);
+    pub const NAN: Self = Self::NAR;
 
     /// Infinity (∞).
-    pub const INFINITY: Self = Self::new(-0x_8000);
+    pub const INFINITY: Self = Self::NAR;
 
     /// Zero.
     pub const ZERO: Self = Self::new(0);
@@ -53,20 +67,70 @@ impl P16E1 {
     }
     #[inline]
     pub fn abs(self) -> Self {
-        let i = self.to_bits() as i16;
-        Self::from_bits((if i < 0 { -i } else { i }) as u16)
+        if self.is_sign_negative() {
+            -self
+        } else {
+            self
+        }
+    }
+    #[inline]
+    pub fn is_nar(self) -> bool {
+        self == Self::NAR
     }
     #[inline]
     pub fn is_nan(self) -> bool {
-        self == Self::NAN
+        self.is_nar()
     }
     #[inline]
     pub fn is_infinite(self) -> bool {
-        self == Self::INFINITY
+        self.is_nar()
     }
     #[inline]
     pub fn is_finite(self) -> bool {
-        !self.is_nan()
+        !self.is_nar()
+    }
+    #[inline]
+    pub fn is_normal(self) -> bool {
+        !self.is_nar()
+    }
+    #[inline]
+    pub fn classify(self) -> core::num::FpCategory {
+        use core::num::FpCategory::*;
+        match self {
+            Self::ZERO => Zero,
+            Self::NAN => Nan,
+            _ => Normal,
+        }
+    }
+    #[inline]
+    fn is_sign_positive(self) -> bool {
+        !self.is_sign_negative()
+    }
+    #[inline]
+    fn is_sign_negative(self) -> bool {
+        self < Self::ZERO
+    }
+    #[inline]
+    pub fn copysign(self, other: Self) -> Self {
+        if ((self.to_bits() ^ other.to_bits()) & Self::SIGN_MASK) != 0 {
+            -self
+        } else {
+            self
+        }
+    }
+    #[inline]
+    pub fn signum(self) -> Self {
+        match self.0 {
+            n if n == Self::NAN.0 => Self::NAN,
+            n if n > 0 =>  Self::ONE,
+            0          =>  Self::ZERO,
+            _          => -Self::ONE,
+        }
+    }
+    // TODO: optimize
+    #[inline]
+    pub fn recip(self) -> Self {
+        Self::ONE / self
     }
     #[inline]
     pub fn to_degrees(self) -> Self {
@@ -77,22 +141,6 @@ impl P16E1 {
     pub fn to_radians(self) -> Self {
         const PIS_O_180: P16E1 = P16E1::new(0x_0878);
         self * PIS_O_180
-    }
-    #[inline]
-    pub fn max(self, other: Self) -> Self {
-        if self.is_nan() || (self < other) {
-            other
-        } else {
-            self
-        }
-    }
-    #[inline]
-    pub fn min(self, other: Self) -> Self {
-        if other.is_nan() || (self < other) {
-            self
-        } else {
-            other
-        }
     }
 }
 
@@ -234,7 +282,7 @@ impl Q16E1 {
 
     #[inline]
     pub fn neg(&mut self) {
-        self.0 = -(self.0);
+        self.0 = self.0.wrapping_neg();
     }
 }
 
@@ -263,28 +311,6 @@ impl fmt::Debug for P16E1 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "P16E1({})", self.0)
     }
-}
-
-use crate::MathConsts;
-impl MathConsts for P16E1 {
-    const E: Self = Self::new(0x_55bf);
-    const FRAC_1_PI: Self = Self::new(0x_245f);
-    const FRAC_1_SQRT_2: Self = Self::new(0x_36a1);
-    const FRAC_2_PI: Self = Self::new(0x_345f);
-    const FRAC_2_SQRT_PI: Self = Self::new(0x_420e);
-    const FRAC_PI_2: Self = Self::new(0x_4922);
-    const FRAC_PI_3: Self = Self::new(0x_40c1);
-    const FRAC_PI_4: Self = Self::new(0x_3922);
-    const FRAC_PI_6: Self = Self::new(0x_30c1);
-    const FRAC_PI_8: Self = Self::new(0x_2922);
-    const LN_10: Self = Self::new(0x_526c);
-    const LN_2: Self = Self::new(0x_362e);
-    const LOG10_E: Self = Self::new(0x_2bcb);
-    const LOG2_E: Self = Self::new(0x_2344);
-    const PI: Self = Self::new(0x_5922);
-    const SQRT_2: Self = Self::new(0x_46a1);
-    const LOG2_10: Self = Self::new(0x_5a93);
-    const LOG10_2: Self = Self::new(0x_2344);
 }
 
 impl crate::Quire for P16E1 {
@@ -336,3 +362,4 @@ impl rand::distributions::Distribution<P16E1> for rand::distributions::Standard 
         P16E1::new(s)
     }
 }
+

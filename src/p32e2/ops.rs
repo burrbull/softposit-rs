@@ -6,7 +6,7 @@ impl ops::Neg for P32E2 {
     type Output = Self;
     #[inline]
     fn neg(self) -> Self {
-        Self::new(-self.0)
+        Self::new(self.0.wrapping_neg())
     }
 }
 
@@ -474,8 +474,8 @@ fn sub_mags_p32(mut ui_a: u32, mut ui_b: u32) -> P32E2 {
 
 impl ops::Rem for P32E2 {
     type Output = Self;
-    fn rem(self, _other: Self) -> Self {
-        unimplemented!()
+    fn rem(self, other: Self) -> Self {
+        self - (self / other).trunc() * other
     }
 }
 
