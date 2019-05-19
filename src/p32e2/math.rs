@@ -62,7 +62,11 @@ impl P32E2 {
     pub fn div_euclid(self, rhs: Self) -> Self {
         let q = (self / rhs).trunc();
         if self % rhs < Self::ZERO {
-            return if rhs > Self::ZERO { q - Self::ONE } else { q + Self::ONE }
+            return if rhs > Self::ZERO {
+                q - Self::ONE
+            } else {
+                q + Self::ONE
+            };
         }
         q
     }

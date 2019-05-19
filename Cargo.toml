@@ -1,6 +1,6 @@
 [package]
 name = "softposit"
-version = "0.1.8"
+version = "0.2.0"
 authors = ["Andrey Zgarbul <zgarbul.andrey@gmail.com>"]
 description = "Implementation of Posit numbers"
 repository = "https://gitlab.com/burrbull/softposit-rs"
@@ -25,6 +25,10 @@ optional = true
 version = "0.9"
 optional = true
 
+[dependencies.alga_derive]
+version = "0.9"
+optional = true
+
 [dependencies.approx]
 version = "0.3"
 optional = true
@@ -34,7 +38,7 @@ version = "0.6"
 optional = true
 
 [features]
-default = ["float_convert", "rand"]
+default = ["float_convert", "rand", "linalg"]
 float_convert = ["libm"]
-linalg = ["nalgebra", "num-traits", "alga", "approx"]
+linalg = ["nalgebra", "num-traits", "alga", "approx", "alga_derive"]
 

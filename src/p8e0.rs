@@ -7,8 +7,7 @@ mod ops;
 crate::impl_num_traits!(P8E0);
 #[cfg(feature = "linalg")]
 crate::impl_quire_dot!(P8E0, Q8E0);
-#[cfg(feature = "alga")]
-crate::impl_lattice!(P8E0);
+
 #[cfg(feature = "approx")]
 crate::impl_ulps_eq!(P8E0, i8);
 #[cfg(feature = "approx")]
@@ -19,6 +18,19 @@ crate::impl_signed_abs_diff_eq!(P8E0, P8E0::ZERO);
 #[cfg(feature = "approx")]
 crate::impl_relative_eq!(P8E0, i8);
 
+#[cfg(feature = "alga")]
+crate::impl_lattice!(P8E0);
+#[cfg(feature = "alga")]
+crate::impl_real!(P8E0);
+#[cfg(feature = "alga")]
+crate::impl_complex!(P8E0);
+#[cfg(feature = "alga")]
+crate::impl_alga!(P8E0);
+#[cfg(feature = "alga")]
+use alga::general::{Additive, Multiplicative};
+
+#[cfg_attr(feature = "alga", derive(alga_derive::Alga))]
+#[cfg_attr(feature = "alga", alga_traits(Field(Additive, Multiplicative)))]
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct P8E0(i8);
 
@@ -103,11 +115,11 @@ impl P8E0 {
         }
     }
     #[inline]
-    fn is_sign_positive(self) -> bool {
+    pub fn is_sign_positive(self) -> bool {
         !self.is_sign_negative()
     }
     #[inline]
-    fn is_sign_negative(self) -> bool {
+    pub fn is_sign_negative(self) -> bool {
         self < Self::ZERO
     }
     #[inline]
@@ -122,9 +134,9 @@ impl P8E0 {
     pub fn signum(self) -> Self {
         match self.0 {
             n if n == Self::NAN.0 => Self::NAN,
-            n if n > 0 =>  Self::ONE,
-            0          =>  Self::ZERO,
-            _          => -Self::ONE,
+            n if n > 0 => Self::ONE,
+            0 => Self::ZERO,
+            _ => -Self::ONE,
         }
     }
     #[inline]
@@ -338,6 +350,7 @@ impl crate::Poly for P8E0 {
 
 impl crate::Polynom for P8E0 {}
 
+#[cfg(any(feature = "rand", test))]
 impl rand::distributions::Distribution<P8E0> for rand::distributions::Standard {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> P8E0 {
         let s = rng.gen_range(-0x_7f_i8, 0x_7f);

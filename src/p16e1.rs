@@ -7,8 +7,7 @@ mod ops;
 crate::impl_num_traits!(P16E1);
 #[cfg(feature = "linalg")]
 crate::impl_quire_dot!(P16E1, Q16E1);
-#[cfg(feature = "alga")]
-crate::impl_lattice!(P16E1);
+
 #[cfg(feature = "approx")]
 crate::impl_ulps_eq!(P16E1, i16);
 #[cfg(feature = "approx")]
@@ -19,6 +18,19 @@ crate::impl_signed_abs_diff_eq!(P16E1, P16E1::ZERO);
 #[cfg(feature = "approx")]
 crate::impl_relative_eq!(P16E1, i16);
 
+#[cfg(feature = "alga")]
+crate::impl_lattice!(P16E1);
+#[cfg(feature = "alga")]
+crate::impl_real!(P16E1);
+#[cfg(feature = "alga")]
+crate::impl_complex!(P16E1);
+#[cfg(feature = "alga")]
+crate::impl_alga!(P16E1);
+#[cfg(feature = "alga")]
+use alga::general::{Additive, Multiplicative};
+
+#[cfg_attr(feature = "alga", derive(alga_derive::Alga))]
+#[cfg_attr(feature = "alga", alga_traits(Field(Additive, Multiplicative)))]
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct P16E1(i16);
 
@@ -103,11 +115,11 @@ impl P16E1 {
         }
     }
     #[inline]
-    fn is_sign_positive(self) -> bool {
+    pub fn is_sign_positive(self) -> bool {
         !self.is_sign_negative()
     }
     #[inline]
-    fn is_sign_negative(self) -> bool {
+    pub fn is_sign_negative(self) -> bool {
         self < Self::ZERO
     }
     #[inline]
@@ -122,9 +134,9 @@ impl P16E1 {
     pub fn signum(self) -> Self {
         match self.0 {
             n if n == Self::NAN.0 => Self::NAN,
-            n if n > 0 =>  Self::ONE,
-            0          =>  Self::ZERO,
-            _          => -Self::ONE,
+            n if n > 0 => Self::ONE,
+            0 => Self::ZERO,
+            _ => -Self::ONE,
         }
     }
     // TODO: optimize
@@ -356,10 +368,10 @@ impl crate::Poly for P16E1 {
 
 impl crate::Polynom for P16E1 {}
 
+#[cfg(any(feature = "rand", test))]
 impl rand::distributions::Distribution<P16E1> for rand::distributions::Standard {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> P16E1 {
         let s = rng.gen_range(-0x_7fff_i16, 0x_7fff);
         P16E1::new(s)
     }
 }
-
