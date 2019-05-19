@@ -938,30 +938,103 @@ macro_rules! impl_subset_into(
     }
 );
 
-#[cfg(feature = "alga")]
 #[macro_export]
-macro_rules! impl_subset_as_into(
-    ($($subset: ty, $temp: ty as $( $superset: ty),+ );* $(;)*) => {
-        $($(
-        impl alga::general::SubsetOf<$superset> for $subset {
+macro_rules! impl_convert {
+    ($posit:ty, $quire:ty) => {
+        impl From<$posit> for $quire {
             #[inline]
-            fn to_superset(&self) -> $superset {
-                (*self as $temp).into()
-            }
-
-            #[inline]
-            unsafe fn from_superset_unchecked(element: &$superset) -> $subset {
-                <$temp>::from(*element) as $subset
-            }
-
-            #[inline]
-            fn is_in_subset(_: &$superset) -> bool {
-                true
+            fn from(a: $posit) -> Self {
+                let mut q = Self::ZERO;
+                q += (a, <$posit>::ONE);
+                q
             }
         }
-        )+)*
-    }
-);
+
+        impl From<i8> for $posit {
+            #[inline]
+            fn from(a: i8) -> Self {
+                Self::from(a as i32)
+            }
+        }
+
+        impl From<$posit> for i8 {
+            #[inline]
+            fn from(a: $posit) -> Self {
+                i32::from(a) as i8
+            }
+        }
+
+        impl From<i16> for $posit {
+            #[inline]
+            fn from(a: i16) -> Self {
+                Self::from(a as i32)
+            }
+        }
+
+        impl From<$posit> for i16 {
+            #[inline]
+            fn from(a: $posit) -> Self {
+                i32::from(a) as i16
+            }
+        }
+
+        impl From<isize> for $posit {
+            #[inline]
+            fn from(a: isize) -> Self {
+                Self::from(a as i64)
+            }
+        }
+
+        impl From<$posit> for isize {
+            #[inline]
+            fn from(a: $posit) -> Self {
+                i64::from(a) as isize
+            }
+        }
+
+        impl From<u8> for $posit {
+            #[inline]
+            fn from(a: u8) -> Self {
+                Self::from(a as u32)
+            }
+        }
+
+        impl From<$posit> for u8 {
+            #[inline]
+            fn from(a: $posit) -> Self {
+                u32::from(a) as u8
+            }
+        }
+
+        impl From<u16> for $posit {
+            #[inline]
+            fn from(a: u16) -> Self {
+                Self::from(a as u32)
+            }
+        }
+
+        impl From<$posit> for u16 {
+            #[inline]
+            fn from(a: $posit) -> Self {
+                u32::from(a) as u16
+            }
+        }
+
+        impl From<usize> for $posit {
+            #[inline]
+            fn from(a: usize) -> Self {
+                Self::from(a as u64)
+            }
+        }
+
+        impl From<$posit> for usize {
+            #[inline]
+            fn from(a: $posit) -> Self {
+                u64::from(a) as usize
+            }
+        }
+    };
+}
 
 #[cfg(feature = "alga")]
 #[macro_export]

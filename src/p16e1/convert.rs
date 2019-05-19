@@ -3,12 +3,14 @@ use crate::WithSign;
 use core::convert::From;
 use core::f64;
 
+crate::impl_convert!(P16E1, Q16E1);
+
 impl From<i32> for P16E1 {
     #[inline]
     fn from(mut a: i32) -> Self {
         let sign = a.is_negative();
         if sign {
-            a = -a; // &0xFFFF_FFFF;
+            a = -a;
         }
         Self::from_bits(convert_u32_to_p16bits(a as u32).with_sign(sign))
     }

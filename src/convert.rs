@@ -334,11 +334,17 @@ impl From<P32E2> for P8E0 {
 
 #[cfg(feature = "alga")]
 crate::impl_subset_into!(
+    u8 as P8E0, P16E1, P32E2;
+    u16 as P8E0, P16E1, P32E2;
     u32 as P8E0, P16E1, P32E2;
     u64 as P8E0, P16E1, P32E2;
+    usize as P8E0, P16E1, P32E2;
 
+    i8 as P8E0, P16E1, P32E2;
+    i16 as P8E0, P16E1, P32E2;
     i32 as P8E0, P16E1, P32E2;
     i64 as P8E0, P16E1, P32E2;
+    isize as P8E0, P16E1, P32E2;
 
     f32 as P8E0, P16E1, P32E2;
     f64 as P8E0, P16E1, P32E2;
@@ -346,15 +352,4 @@ crate::impl_subset_into!(
     P8E0  as P8E0, P16E1, P32E2;
     P16E1 as P8E0, P16E1, P32E2;
     P32E2 as P8E0, P16E1, P32E2;
-);
-
-#[cfg(feature = "alga")]
-crate::impl_subset_as_into!(
-    u8,    u32 as P8E0, P16E1, P32E2;
-    u16,   u32 as P8E0, P16E1, P32E2;
-    usize, u32 as P8E0, P16E1, P32E2;
-
-    i8,    i32 as P8E0, P16E1, P32E2;
-    i16,   i32 as P8E0, P16E1, P32E2;
-    isize, i32 as P8E0, P16E1, P32E2;
 );

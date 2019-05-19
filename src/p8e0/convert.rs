@@ -3,6 +3,8 @@ use crate::WithSign;
 use core::convert::From;
 use core::f64;
 
+crate::impl_convert!(P8E0, Q8E0);
+
 fn check_extra_two_bits_p8(
     mut float: f64,
     mut temp: f64,
@@ -604,7 +606,7 @@ impl From<Q8E0> for P8E0 {
 }
 
 #[test]
-fn convert() {
+fn convert_p8_f64() {
     for n in -0x_80_i8..0x_7f {
         let p = P8E0::new(n);
         let f = f64::from(p);

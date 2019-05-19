@@ -3,6 +3,8 @@ use crate::WithSign;
 use core::convert::From;
 use core::f64;
 
+crate::impl_convert!(P32E2, Q32E2);
+
 fn check_extra_p32_two_bits(
     mut float: f64,
     mut temp: f64,
@@ -490,7 +492,7 @@ impl From<i32> for P32E2 {
     fn from(mut a: i32) -> Self {
         let sign = a.is_negative();
         if sign {
-            a = -a; // &0xFFFF_FFFF;
+            a = -a;
         }
         Self::from_bits(convert_u32_to_p32bits(a as u32).with_sign(sign))
     }
