@@ -57,7 +57,7 @@ impl ops::Add for P8E0 {
             // Not required but put here for speed
             Self::from_bits(ui_a | ui_b)
         } else if (ui_a == 0x80) || (ui_b == 0x80) {
-            Self::INFINITY
+            Self::NAR
         } else {
             //different signs
             if Self::sign_ui(ui_a ^ ui_b) {
@@ -78,7 +78,7 @@ impl ops::Sub for P8E0 {
 
         //infinity
         if (ui_a == 0x80) || (ui_b == 0x80) {
-            Self::INFINITY
+            Self::NAR
         }
         //Zero
         else if (ui_a == 0) || (ui_b == 0) {
@@ -103,7 +103,7 @@ impl ops::Div for P8E0 {
 
         //Zero or infinity
         if (ui_a == 0x80) || (ui_b == 0x80) || (ui_b == 0) {
-            return Self::INFINITY;
+            return Self::NAR;
         } else if ui_a == 0 {
             return Self::ZERO;
         }
@@ -177,7 +177,7 @@ impl ops::Mul for P8E0 {
 
         //NaR or Zero
         if (ui_a == 0x80) || (ui_b == 0x80) {
-            return Self::INFINITY;
+            return Self::NAR;
         } else if (ui_a == 0) || (ui_b == 0) {
             return Self::ZERO;
         }
@@ -390,8 +390,8 @@ pub(super) fn q8_fdp_add(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
     let mut ui_a = p_a.to_bits();
     let mut ui_b = p_b.to_bits();
 
-    if q.is_nan() || p_a.is_nan() || p_b.is_nan() {
-        *q = Q8E0::NAN;
+    if q.is_nar() || p_a.is_nar() || p_b.is_nar() {
+        *q = Q8E0::NAR;
         return;
     } else if (ui_a == 0) || (ui_b == 0) {
         return;
@@ -438,7 +438,7 @@ pub(super) fn q8_fdp_add(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
 
     //Exception handling
     let q_z = Q8E0::from_bits(uq_z);
-    *q = if q_z.is_nan() { Q8E0::ZERO } else { q_z }
+    *q = if q_z.is_nar() { Q8E0::ZERO } else { q_z }
 }
 
 //q - (p_a*p_b)
@@ -449,8 +449,8 @@ pub(super) fn q8_fdp_sub(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
     let mut ui_a = p_a.to_bits();
     let mut ui_b = p_b.to_bits();
 
-    if q.is_nan() || p_a.is_nan() || p_b.is_nan() {
-        *q = Q8E0::NAN;
+    if q.is_nar() || p_a.is_nar() || p_b.is_nar() {
+        *q = Q8E0::NAR;
         return;
     } else if (ui_a == 0) || (ui_b == 0) {
         return;
@@ -498,7 +498,7 @@ pub(super) fn q8_fdp_sub(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
 
     //Exception handling
     let q_z = Q8E0::from_bits(uq_z);
-    *q = if q_z.is_nan() { Q8E0::ZERO } else { q_z }
+    *q = if q_z.is_nar() { Q8E0::ZERO } else { q_z }
 }
 
 #[test]
@@ -512,10 +512,10 @@ fn test_quire_mul_add() {
         let f_a = f64::from(p_a);
         let f_b = f64::from(p_b);
         let f_c = f64::from(p_c);
-        let mut q = Q8E0::new();
+        let mut q = Q8E0::init();
         q += (p_a, p_b);
         q += (p_c, P8E0::ONE);
-        let p = q.roundp();
+        let p = q.to_posit();
         let f = f_a.mul_add(f_b, f_c);
         assert_eq!(p, P8E0::from(f));
     }
@@ -532,10 +532,10 @@ fn test_quire_mul_sub() {
         let f_a = f64::from(p_a);
         let f_b = f64::from(p_b);
         let f_c = f64::from(p_c);
-        let mut q = Q8E0::new();
+        let mut q = Q8E0::init();
         q -= (p_a, p_b);
         q += (p_c, P8E0::ONE);
-        let p = q.roundp();
+        let p = q.to_posit();
         let f = (-f_a).mul_add(f_b, f_c);
         assert_eq!(p, P8E0::from(f));
     }

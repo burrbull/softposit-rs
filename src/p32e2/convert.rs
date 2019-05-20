@@ -85,7 +85,7 @@ impl From<f64> for P32E2 {
         if float == 0. {
             return Self::ZERO;
         } else if !float.is_finite() {
-            return Self::INFINITY;
+            return Self::NAR;
         } else if float >= 1.329_227_995_784_916_e36 {
             //maxpos
             return Self::MAX;
@@ -603,8 +603,8 @@ impl From<Q32E2> for P32E2 {
 
         if q_a.is_zero() {
             return Self::ZERO;
-        } else if q_a.is_nan() {
-            return Self::NAN;
+        } else if q_a.is_nar() {
+            return Self::NAR;
         }
 
         let mut u_z = q_a.to_bits();

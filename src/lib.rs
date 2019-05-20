@@ -138,8 +138,24 @@ const NTESTS16: usize = 100_000;
 #[cfg(test)]
 const NTESTS8: usize = 1_000;
 
-pub trait Quire {
+pub trait AssociatedQuire {
     type Q;
+}
+
+pub trait Quire {
+    type Posit;
+    type Bits;
+    fn init() -> Self;
+    fn from_posit(p: Self::Posit) -> Self;
+    fn to_posit(self) -> Self::Posit;
+    fn from_bits(v: Self::Bits) -> Self;
+    fn to_bits(&self) -> Self::Bits;
+    fn is_zero(&self) -> bool;
+    fn is_nar(&self) -> bool;
+    fn add_product(&mut self, p_a: Self::Posit, p_b: Self::Posit);
+    fn sub_product(&mut self, p_a: Self::Posit, p_b: Self::Posit);
+    fn clear(&mut self);
+    fn neg(&mut self);
 }
 
 pub trait Poly: Copy {

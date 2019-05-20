@@ -116,13 +116,13 @@ macro_rules! impl_num_traits {
 
         impl num_traits::Float for $posit {
             fn nan() -> Self {
-                Self::NAN
+                Self::NAR
             }
             fn infinity() -> Self {
-                Self::INFINITY
+                Self::NAR
             }
             fn neg_infinity() -> Self {
-                Self::INFINITY
+                Self::NAR
             }
             fn neg_zero() -> Self {
                 Self::ZERO
@@ -137,16 +137,16 @@ macro_rules! impl_num_traits {
                 Self::MAX
             }
             fn is_nan(self) -> bool {
-                self == Self::NAN
+                self == Self::NAR
             }
             fn is_infinite(self) -> bool {
-                self == Self::INFINITY
+                self == Self::NAR
             }
             fn is_finite(self) -> bool {
-                !self.is_nan()
+                !self.is_nar()
             }
             fn is_normal(self) -> bool {
-                !self.is_nan()
+                !self.is_nar()
             }
             fn classify(self) -> core::num::FpCategory {
                 Self::classify(self)
@@ -370,7 +370,7 @@ macro_rules! impl_quire_dot {
                 };
                 for (i, mut row) in out.row_iter_mut().enumerate() {
                     for (j, elem) in row.iter_mut().enumerate() {
-                        let mut quire = <$quire>::new();
+                        let mut quire = <$quire>::init();
                         for (a, b) in self.row(i).iter().zip(rhs.column(j).iter()) {
                             quire += (*a, *b);
                         }

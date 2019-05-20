@@ -177,7 +177,7 @@ impl P16E1 {
     }
     #[inline]
     pub fn asinh(self) -> Self {
-        if self.is_nan() {
+        if self.is_nar() {
             self
         } else {
             (self + ((self * self) + Self::ONE).sqrt()).ln()
@@ -186,7 +186,7 @@ impl P16E1 {
     #[inline]
     pub fn acosh(self) -> Self {
         match self {
-            x if x < Self::ONE => Self::NAN,
+            x if x < Self::ONE => Self::NAR,
             x => (x + ((x * x) - Self::ONE).sqrt()).ln(),
         }
     }
@@ -204,7 +204,7 @@ fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1
 
     //NaR
     if (ui_a == 0x8000) || (ui_b == 0x8000) || (ui_c == 0x8000) {
-        return P16E1::INFINITY;
+        return P16E1::NAR;
     } else if (ui_a == 0) || (ui_b == 0) {
         return match op {
             MulAddType::SubC => P16E1::from_bits(ui_c.wrapping_neg()),
@@ -448,7 +448,7 @@ fn sqrt(p_a: P16E1) -> P16E1 {
 
     // If sign bit is set, return NaR.
     if (ui_a & 0x_8000) != 0 {
-        return P16E1::INFINITY;
+        return P16E1::NAR;
     }
     // If the argument is zero, return zero.
     if ui_a == 0 {

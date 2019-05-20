@@ -551,8 +551,8 @@ impl From<Q8E0> for P8E0 {
     fn from(q_a: Q8E0) -> Self {
         if q_a.is_zero() {
             return Self::ZERO;
-        } else if q_a.is_nan() {
-            return Self::NAN;
+        } else if q_a.is_nar() {
+            return Self::NAR;
         }
 
         let mut u_z = q_a.to_bits();

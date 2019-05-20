@@ -177,7 +177,7 @@ impl P8E0 {
     }
     #[inline]
     pub fn asinh(self) -> Self {
-        if self.is_nan() {
+        if self.is_nar() {
             self
         } else {
             (self + ((self * self) + Self::ONE).sqrt()).ln()
@@ -186,7 +186,7 @@ impl P8E0 {
     #[inline]
     pub fn acosh(self) -> Self {
         match self {
-            x if x < Self::ONE => Self::NAN,
+            x if x < Self::ONE => Self::NAR,
             x => (x + ((x * x) - Self::ONE).sqrt()).ln(),
         }
     }
@@ -258,7 +258,7 @@ fn sqrt(p_a: P8E0) -> P8E0 {
     let ui_a = p_a.to_bits();
 
     if ui_a >= 0x80 {
-        P8E0::INFINITY
+        P8E0::NAR
     } else {
         P8E0::from_bits(P8E0_SQRT[ui_a as usize])
     }
@@ -272,7 +272,7 @@ fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
 
     //NaR
     if (ui_a == 0x80) || (ui_b == 0x80) || (ui_c == 0x80) {
-        return P8E0::INFINITY;
+        return P8E0::NAR;
     } else if (ui_a == 0) || (ui_b == 0) {
         return match op {
             MulAddType::SubC => P8E0::from_bits(ui_c.wrapping_neg()),

@@ -110,7 +110,7 @@ impl P8E0 {
         use core::num::FpCategory::*;
         match self {
             Self::ZERO => Zero,
-            Self::NAN => Nan,
+            Self::NAR => Nan,
             _ => Normal,
         }
     }
@@ -133,7 +133,7 @@ impl P8E0 {
     #[inline]
     pub fn signum(self) -> Self {
         match self.0 {
-            n if n == Self::NAN.0 => Self::NAN,
+            n if n == Self::NAR.0 => Self::NAR,
             n if n > 0 => Self::ONE,
             0 => Self::ZERO,
             _ => -Self::ONE,
@@ -227,11 +227,16 @@ pub struct Q8E0(i32);
 
 impl Q8E0 {
     pub const ZERO: Self = Self(0);
-    pub const NAN: Self = Self(-0x8000_0000);
+    pub const NAR: Self = Self(-0x8000_0000);
 
     #[inline]
-    pub const fn new() -> Self {
+    pub const fn init() -> Self {
         Self::ZERO
+    }
+
+    #[inline]
+    pub fn from_posit(p: P8E0) -> Self {
+        Self::from(p)
     }
 
     #[inline]
@@ -250,22 +255,22 @@ impl Q8E0 {
     }
 
     #[inline]
-    pub fn is_nan(&self) -> bool {
+    pub fn is_nar(&self) -> bool {
         self.to_bits() == 0x8000_0000
     }
 
     #[inline]
-    pub fn qma(&mut self, p_a: P8E0, p_b: P8E0) {
+    pub fn add_product(&mut self, p_a: P8E0, p_b: P8E0) {
         ops::q8_fdp_add(self, p_a, p_b);
     }
 
     #[inline]
-    pub fn qms(&mut self, p_a: P8E0, p_b: P8E0) {
+    pub fn sub_product(&mut self, p_a: P8E0, p_b: P8E0) {
         ops::q8_fdp_sub(self, p_a, p_b);
     }
 
     #[inline]
-    pub fn roundp(self) -> P8E0 {
+    pub fn to_posit(self) -> P8E0 {
         P8E0::from(self)
     }
 
@@ -277,6 +282,44 @@ impl Q8E0 {
     #[inline]
     pub fn neg(&mut self) {
         self.0 = self.0.wrapping_neg();
+    }
+}
+
+impl crate::Quire for Q8E0 {
+    type Posit = P8E0;
+    type Bits = u32;
+    fn init() -> Self {
+        Self::init()
+    }
+    fn from_posit(p: Self::Posit) -> Self {
+        Self::from_posit(p)
+    }
+    fn to_posit(self) -> Self::Posit {
+        Self::to_posit(self)
+    }
+    fn from_bits(v: Self::Bits) -> Self {
+        Self::from_bits(v)
+    }
+    fn to_bits(&self) -> Self::Bits {
+        Self::to_bits(&self)
+    }
+    fn is_zero(&self) -> bool {
+        Self::is_zero(&self)
+    }
+    fn is_nar(&self) -> bool {
+        Self::is_nar(self)
+    }
+    fn add_product(&mut self, p_a: Self::Posit, p_b: Self::Posit) {
+        Self::add_product(self, p_a, p_b)
+    }
+    fn sub_product(&mut self, p_a: Self::Posit, p_b: Self::Posit) {
+        Self::sub_product(self, p_a, p_b)
+    }
+    fn clear(&mut self) {
+        Self::clear(self)
+    }
+    fn neg(&mut self) {
+        Self::neg(self)
     }
 }
 
@@ -297,7 +340,7 @@ impl fmt::Display for P8E0 {
 
 impl fmt::Display for Q8E0 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", f64::from(self.clone().roundp()))
+        write!(f, "{}", f64::from(self.clone().to_posit()))
     }
 }
 
@@ -307,21 +350,21 @@ impl fmt::Debug for P8E0 {
     }
 }
 
-impl crate::Quire for P8E0 {
+impl crate::AssociatedQuire for P8E0 {
     type Q = Q8E0;
 }
 
 impl crate::Poly for P8E0 {
     #[inline]
     fn poly1k(x: Self, c0: Self, c1: Self) -> Self {
-        let mut q = Q8E0::new(); // QCLR.S
+        let mut q = Q8E0::init(); // QCLR.S
         q += (c0, x); // QMADD.S
         q += (c1, Self::ONE);
         q.into() // QROUND.S
     }
     #[inline]
     fn poly2k(x: Self, x2: Self, c0: Self, c: &[Self]) -> Self {
-        let mut q = Q8E0::new();
+        let mut q = Q8E0::init();
         q += (c0, x2);
         q += (c[0], x);
         q += (c[1], Self::ONE);
@@ -329,7 +372,7 @@ impl crate::Poly for P8E0 {
     }
     #[inline]
     fn poly3k(x: Self, x2: Self, x3: Self, c0: Self, c: &[Self]) -> Self {
-        let mut q = Q8E0::new();
+        let mut q = Q8E0::init();
         q += (c0, x3);
         q += (c[0], x2);
         q += (c[1], x);
@@ -338,7 +381,7 @@ impl crate::Poly for P8E0 {
     }
     #[inline]
     fn poly4k(x: Self, x2: Self, x3: Self, x4: Self, c0: Self, c: &[Self]) -> Self {
-        let mut q = Q8E0::new();
+        let mut q = Q8E0::init();
         q += (c0, x4);
         q += (c[0], x3);
         q += (c[1], x2);

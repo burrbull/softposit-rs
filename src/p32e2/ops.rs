@@ -57,7 +57,7 @@ impl ops::Add for P32E2 {
             // Not required but put here for speed
             Self::from_bits(ui_a | ui_b)
         } else if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) {
-            Self::INFINITY
+            Self::NAR
         } else {
             //different signs
             if Self::sign_ui(ui_a ^ ui_b) {
@@ -78,7 +78,7 @@ impl ops::Sub for P32E2 {
 
         //infinity
         if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) {
-            Self::INFINITY
+            Self::NAR
         } else if (ui_a == 0) || (ui_b == 0) {
             //Zero
             Self::from_bits(ui_a | ui_b.wrapping_neg())
@@ -104,7 +104,7 @@ impl ops::Div for P32E2 {
 
         //Zero or infinity
         if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) || (ui_b == 0) {
-            return Self::INFINITY;
+            return Self::NAR;
         } else if ui_a == 0 {
             return Self::ZERO;
         }
@@ -204,7 +204,7 @@ impl ops::Mul for P32E2 {
 
         //NaR or Zero
         if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) {
-            return Self::INFINITY;
+            return Self::NAR;
         } else if (ui_a == 0) || (ui_b == 0) {
             return Self::ZERO;
         }
@@ -499,8 +499,8 @@ pub(super) fn q32_fdp_add(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
     let mut ui_a = p_a.to_bits();
     let mut ui_b = p_b.to_bits();
 
-    if q.is_nan() || p_a.is_nan() || p_b.is_nan() {
-        *q = Q32E2::NAN;
+    if q.is_nar() || p_a.is_nar() || p_b.is_nar() {
+        *q = Q32E2::NAR;
         return;
     } else if (ui_a == 0) || (ui_b == 0) {
         return;
@@ -601,7 +601,7 @@ pub(super) fn q32_fdp_add(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
 
     //Exception handling
     let q_z = Q32E2::from_bits(u_z);
-    *q = if q_z.is_nan() { Q32E2::ZERO } else { q_z }
+    *q = if q_z.is_nar() { Q32E2::ZERO } else { q_z }
 }
 
 pub(super) fn q32_fdp_sub(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
@@ -610,8 +610,8 @@ pub(super) fn q32_fdp_sub(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
     let mut ui_a = p_a.to_bits();
     let mut ui_b = p_b.to_bits();
 
-    if q.is_nan() || p_a.is_nan() || p_b.is_nan() {
-        *q = Q32E2::NAN;
+    if q.is_nar() || p_a.is_nar() || p_b.is_nar() {
+        *q = Q32E2::NAR;
         return;
     } else if (ui_a == 0) || (ui_b == 0) {
         return;
@@ -713,7 +713,7 @@ pub(super) fn q32_fdp_sub(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
 
     //Exception handling
     let q_z = Q32E2::from_bits(u_z);
-    *q = if q_z.is_nan() { Q32E2::ZERO } else { q_z }
+    *q = if q_z.is_nar() { Q32E2::ZERO } else { q_z }
 }
 
 #[test]
@@ -727,10 +727,10 @@ fn test_quire_mul_add() {
         let f_a = f64::from(p_a);
         let f_b = f64::from(p_b);
         let f_c = f64::from(p_c);
-        let mut q = Q32E2::new();
+        let mut q = Q32E2::init();
         q += (p_a, p_b);
         q += (p_c, P32E2::ONE);
-        let p = q.roundp();
+        let p = q.to_posit();
         let f = f_a.mul_add(f_b, f_c);
         assert_eq!(p, P32E2::from(f));
     }
@@ -747,10 +747,10 @@ fn test_quire_mul_sub() {
         let f_a = f64::from(p_a);
         let f_b = f64::from(p_b);
         let f_c = f64::from(p_c);
-        let mut q = Q32E2::new();
+        let mut q = Q32E2::init();
         q -= (p_a, p_b);
         q += (p_c, P32E2::ONE);
-        let p = q.roundp();
+        let p = q.to_posit();
         let f = (-f_a).mul_add(f_b, f_c);
         assert_eq!(p, P32E2::from(f));
     }

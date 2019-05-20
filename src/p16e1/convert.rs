@@ -374,7 +374,7 @@ impl From<f64> for P16E1 {
         if float == 0. {
             return Self::ZERO;
         } else if !float.is_finite() {
-            return Self::INFINITY;
+            return Self::NAR;
         } else if float >= 268_435_456. {
             //maxpos
             return Self::MAX;
@@ -590,8 +590,8 @@ impl From<Q16E1> for P16E1 {
     fn from(q_a: Q16E1) -> Self {
         if q_a.is_zero() {
             return Self::ZERO;
-        } else if q_a.is_nan() {
-            return Self::NAN;
+        } else if q_a.is_nar() {
+            return Self::NAR;
         }
 
         let mut u_z = q_a.to_bits();

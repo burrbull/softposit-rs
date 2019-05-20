@@ -177,7 +177,7 @@ impl P32E2 {
     }
     #[inline]
     pub fn asinh(self) -> Self {
-        if self.is_nan() {
+        if self.is_nar() {
             self
         } else {
             (self + ((self * self) + Self::ONE).sqrt()).ln()
@@ -186,7 +186,7 @@ impl P32E2 {
     #[inline]
     pub fn acosh(self) -> Self {
         match self {
-            x if x < Self::ONE => Self::NAN,
+            x if x < Self::ONE => Self::NAR,
             x => (x + ((x * x) - Self::ONE).sqrt()).ln(),
         }
     }
@@ -200,7 +200,7 @@ pub(super) fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddTyp
     let mut bits_more = false;
     //NaR
     if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) || (ui_c == 0x8000_0000) {
-        return P32E2::INFINITY;
+        return P32E2::NAR;
     } else if (ui_a == 0) || (ui_b == 0) {
         return match op {
             MulAddType::SubC => P32E2::from_bits(ui_c.wrapping_neg()),
@@ -451,7 +451,7 @@ pub(super) fn sqrt(p_a: P32E2) -> P32E2 {
 
     // If NaR or a negative number, return NaR.
     if (ui_a & 0x8000_0000) != 0 {
-        return P32E2::INFINITY;
+        return P32E2::NAR;
     }
     // If the argument is zero, return zero.
     else if ui_a == 0 {
