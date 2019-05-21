@@ -342,47 +342,6 @@ macro_rules! impl_num_traits {
     };
 }
 
-#[cfg(feature = "linalg")]
-#[macro_export]
-macro_rules! impl_quire_dot {
-    ($posit:ty, $quire:ty) => {
-        use nalgebra::{
-            base::{
-                allocator::Allocator,
-                constraint::{AreMultipliable, ShapeConstraint},
-                storage::Storage,
-            },
-            DefaultAllocator, Dim, Matrix, MatrixMN,
-        };
-
-        impl<'b, R1: Dim, C1: Dim, R2: Dim, C2: Dim, SA, SB>
-            crate::QuireDot<&'b Matrix<$posit, R2, C2, SB>> for Matrix<$posit, R1, C1, SA>
-        where
-            SB: Storage<$posit, R2, C2>,
-            SA: Storage<$posit, R1, C1>,
-            DefaultAllocator: Allocator<$posit, R1, C2>,
-            ShapeConstraint: AreMultipliable<R1, C1, R2, C2>,
-        {
-            type Output = MatrixMN<$posit, R1, C2>;
-            fn quire_dot(&self, rhs: &'b Matrix<$posit, R2, C2, SB>) -> Self::Output {
-                let mut out = unsafe {
-                    Matrix::new_uninitialized_generic(self.data.shape().0, rhs.data.shape().1)
-                };
-                for (i, mut row) in out.row_iter_mut().enumerate() {
-                    for (j, elem) in row.iter_mut().enumerate() {
-                        let mut quire = <$quire>::init();
-                        for (a, b) in self.row(i).iter().zip(rhs.column(j).iter()) {
-                            quire += (*a, *b);
-                        }
-                        *elem = quire.into()
-                    }
-                }
-                out
-            }
-        }
-    };
-}
-
 #[cfg(feature = "alga")]
 #[macro_export]
 macro_rules! impl_lattice(

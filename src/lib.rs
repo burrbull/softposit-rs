@@ -138,22 +138,21 @@ const NTESTS16: usize = 100_000;
 #[cfg(test)]
 const NTESTS8: usize = 1_000;
 
-pub trait AssociatedQuire {
-    type Q;
+pub trait AssociatedQuire<P> {
+    type Q: Quire<P>;
 }
 
-pub trait Quire {
-    type Posit;
+pub trait Quire<P> {
     type Bits;
     fn init() -> Self;
-    fn from_posit(p: Self::Posit) -> Self;
-    fn to_posit(self) -> Self::Posit;
+    fn from_posit(p: P) -> Self;
+    fn to_posit(self) -> P;
     fn from_bits(v: Self::Bits) -> Self;
     fn to_bits(&self) -> Self::Bits;
     fn is_zero(&self) -> bool;
     fn is_nar(&self) -> bool;
-    fn add_product(&mut self, p_a: Self::Posit, p_b: Self::Posit);
-    fn sub_product(&mut self, p_a: Self::Posit, p_b: Self::Posit);
+    fn add_product(&mut self, p_a: P, p_b: P);
+    fn sub_product(&mut self, p_a: P, p_b: P);
     fn clear(&mut self);
     fn neg(&mut self);
 }
@@ -413,3 +412,6 @@ pub trait QuireDot<T> {
     type Output;
     fn quire_dot(&self, rhs: T) -> Self::Output;
 }
+
+#[cfg(feature = "linalg")]
+mod linalg;

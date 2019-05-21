@@ -6,8 +6,7 @@ mod ops;
 #[cfg(feature = "num-traits")]
 crate::impl_num_traits!(P32E2);
 #[cfg(feature = "linalg")]
-crate::impl_quire_dot!(P32E2, Q32E2);
-
+//crate::impl_quire_dot!(P32E2, Q32E2);
 #[cfg(feature = "approx")]
 crate::impl_ulps_eq!(P32E2, i32);
 #[cfg(feature = "approx")]
@@ -307,16 +306,15 @@ impl Q32E2 {
     }
 }
 
-impl crate::Quire for Q32E2 {
-    type Posit = P32E2;
+impl crate::Quire<P32E2> for Q32E2 {
     type Bits = [u64; 8];
     fn init() -> Self {
         Self::init()
     }
-    fn from_posit(p: Self::Posit) -> Self {
+    fn from_posit(p: P32E2) -> Self {
         Self::from_posit(p)
     }
-    fn to_posit(self) -> Self::Posit {
+    fn to_posit(self) -> P32E2 {
         Self::to_posit(self)
     }
     fn from_bits(v: Self::Bits) -> Self {
@@ -331,10 +329,10 @@ impl crate::Quire for Q32E2 {
     fn is_nar(&self) -> bool {
         Self::is_nar(self)
     }
-    fn add_product(&mut self, p_a: Self::Posit, p_b: Self::Posit) {
+    fn add_product(&mut self, p_a: P32E2, p_b: P32E2) {
         Self::add_product(self, p_a, p_b)
     }
-    fn sub_product(&mut self, p_a: Self::Posit, p_b: Self::Posit) {
+    fn sub_product(&mut self, p_a: P32E2, p_b: P32E2) {
         Self::sub_product(self, p_a, p_b)
     }
     fn clear(&mut self) {
@@ -372,7 +370,7 @@ impl fmt::Debug for P32E2 {
     }
 }
 
-impl crate::AssociatedQuire for P32E2 {
+impl crate::AssociatedQuire<Self> for P32E2 {
     type Q = Q32E2;
 }
 
