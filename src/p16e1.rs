@@ -370,42 +370,7 @@ impl crate::AssociatedQuire<Self> for P16E1 {
     type Q = Q16E1;
 }
 
-impl crate::Poly for P16E1 {
-    #[inline]
-    fn poly1k(x: Self, c0: Self, c1: Self) -> Self {
-        let mut q = Q16E1::init(); // QCLR.S
-        q += (c0, x); // QMADD.S
-        q += (c1, Self::ONE);
-        q.into() // QROUND.S
-    }
-    #[inline]
-    fn poly2k(x: Self, x2: Self, c0: Self, c: &[Self]) -> Self {
-        let mut q = Q16E1::init();
-        q += (c0, x2);
-        q += (c[0], x);
-        q += (c[1], Self::ONE);
-        q.into()
-    }
-    #[inline]
-    fn poly3k(x: Self, x2: Self, x3: Self, c0: Self, c: &[Self]) -> Self {
-        let mut q = Q16E1::init();
-        q += (c0, x3);
-        q += (c[0], x2);
-        q += (c[1], x);
-        q += (c[2], Self::ONE);
-        q.into()
-    }
-    #[inline]
-    fn poly4k(x: Self, x2: Self, x3: Self, x4: Self, c0: Self, c: &[Self]) -> Self {
-        let mut q = Q16E1::init();
-        q += (c0, x4);
-        q += (c[0], x3);
-        q += (c[1], x2);
-        q += (c[2], x);
-        q += (c[3], Self::ONE);
-        q.into()
-    }
-}
+impl crate::polynom::poly::Poly for P16E1 {}
 
 impl crate::Polynom for P16E1 {}
 
