@@ -516,7 +516,7 @@ pub(super) fn q16_fdp_add(q: &mut Q16E1, p_a: P16E1, p_b: P16E1) {
 
     //default dot is between bit 71 and 72, extreme left bit is bit 0. Last right bit is bit 127.
     //Scale = 2^es * k + e  => 2k + e
-    let first_pos = 71 - (k_a << 1) as i16 - (exp_a as i16);
+    let first_pos = 71 - ((k_a as i16) << 1) - (exp_a as i16);
 
     //No worries about hidden bit moving before position 4 because fraction is right aligned so
     //there are 16 spare bits
@@ -626,7 +626,7 @@ pub(super) fn q16_fdp_sub(q: &mut Q16E1, p_a: P16E1, p_b: P16E1) {
 
     //default dot is between bit 71 and 72, extreme left bit is bit 0. Last right bit is bit 127.
     //Scale = 2^es * k + e  => 2k + e
-    let first_pos = 71 - (k_a << 1) as i16 - (exp_a as i16);
+    let first_pos = 71 - ((k_a as i16) << 1) - (exp_a as i16);
 
     //No worries about hidden bit moving before position 4 because fraction is right aligned so
     //there are 16 spare bits

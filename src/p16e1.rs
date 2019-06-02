@@ -36,6 +36,7 @@ pub struct P16E1(i16);
 impl P16E1 {
     pub const SIZE: usize = 16;
     pub const ES: usize = 1;
+    pub const USEED: usize = 4;
 
     /// Machine epsilon (2.44140625e-4).
     pub const EPSILON: Self = Self::new(0x_100);
@@ -183,7 +184,11 @@ impl P16E1 {
     #[inline]
     pub(crate) fn separate_bits(bits: u16) -> (i8, i8, u16) {
         let (k, tmp) = Self::separate_bits_tmp(bits);
-        (k, (tmp >> 14) as i8, (tmp | 0x4000))
+        (
+            k,
+            (tmp >> (Self::SIZE - 1 - Self::ES)) as i8,
+            (tmp | 0x4000),
+        )
     }
     #[inline]
     pub(crate) fn separate_bits_tmp(bits: u16) -> (i8, u16) {

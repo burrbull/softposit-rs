@@ -547,7 +547,7 @@ pub(super) fn q32_fdp_add(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
     //default dot is between bit 271 and 272, extreme left bit is bit 0. Last right bit is bit 512.
     //Minpos is 120 position to the right of binary point (dot)
     //Scale = 2^es * k + e  => 2k + e
-    let first_pos = 271 - ((k_a << 2) as i32) - exp_a;
+    let first_pos = 271 - ((k_a as i32) << 2) - exp_a;
 
     //Moving in chunk of 64. If it is in first chunk, a part might be in the chunk right to it. Simply have to handle that.
     let mut u_z2: [u64; 8] = [0; 8];
@@ -576,14 +576,13 @@ pub(super) fn q32_fdp_add(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
         }
     }
 
-    //Subtraction
+    //Addition
     let mut u_z: [u64; 8] = [0; 8];
     let mut rcarry_z = false;
-    for (i, (u, (u1, u2))) in (0..8).rev().zip(
-        u_z.iter_mut()
-            .rev()
-            .zip(u_z1.iter().rev().zip(u_z2.iter().rev())),
-    ) {
+    for (i, (u, (u1, u2))) in (0..8)
+        .zip(u_z.iter_mut().zip(u_z1.iter().zip(u_z2.iter())))
+        .rev()
+    {
         let b1 = (*u1 & 0x1) != 0;
         let b2 = (*u2 & 0x1) != 0;
         if i == 7 {
@@ -658,7 +657,7 @@ pub(super) fn q32_fdp_sub(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
     //default dot is between bit 271 and 272, extreme left bit is bit 0. Last right bit is bit 512.
     //Minpos is 120 position to the right of binary point (dot)
     //Scale = 2^es * k + e  => 2k + e
-    let first_pos = 271 - ((k_a << 2) as i32) - exp_a;
+    let first_pos = 271 - ((k_a as i32) << 2) - exp_a;
 
     //Moving in chunk of 64. If it is in first chunk, a part might be in the chunk right to it. Simply have to handle that.
     let mut u_z2: [u64; 8] = [0; 8];
@@ -691,11 +690,10 @@ pub(super) fn q32_fdp_sub(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
     //Subtraction
     let mut u_z: [u64; 8] = [0; 8];
     let mut rcarry_z = false;
-    for (i, (u, (u1, u2))) in (0..8).rev().zip(
-        u_z.iter_mut()
-            .rev()
-            .zip(u_z1.iter().rev().zip(u_z2.iter().rev())),
-    ) {
+    for (i, (u, (u1, u2))) in (0..8)
+        .zip(u_z.iter_mut().zip(u_z1.iter().zip(u_z2.iter())))
+        .rev()
+    {
         let b1 = (*u1 & 0x1) != 0;
         let b2 = (*u2 & 0x1) != 0;
         if i == 7 {

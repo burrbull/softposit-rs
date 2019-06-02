@@ -36,6 +36,7 @@ pub struct P8E0(i8);
 impl P8E0 {
     pub const SIZE: usize = 8;
     pub const ES: usize = 0;
+    pub const USEED: usize = 2;
 
     /// Machine epsilon (3.125e-2).
     pub const EPSILON: Self = Self::new(0x_2);

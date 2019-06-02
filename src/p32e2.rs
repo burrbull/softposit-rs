@@ -36,6 +36,7 @@ pub struct P32E2(i32);
 impl P32E2 {
     pub const SIZE: usize = 32;
     pub const ES: usize = 2;
+    pub const USEED: usize = 16;
 
     /// Machine epsilon (7.450580596923828e-9).
     pub const EPSILON: Self = Self::new(0x_00a0_0000);
@@ -179,7 +180,7 @@ impl P32E2 {
         let (k, tmp) = Self::separate_bits_tmp(bits);
         (
             k,
-            (tmp >> 29) as i32,
+            (tmp >> (Self::SIZE - 1 - Self::ES)) as i32,
             ((tmp << 1) | 0x4000_0000) & 0x7FFF_FFFF,
         )
     }
