@@ -249,7 +249,8 @@ pub struct Q16E1(i64, u64);
 
 impl Q16E1 {
     pub const ZERO: Self = Self(0, 0);
-    pub const NAR: Self = Self(-0x8000_0000_0000_0000, 0);
+    pub const ONE: Self = Self(0, 0x_0100_0000_0000_0000);
+    pub const NAR: Self = Self(-0x_8000_0000_0000_0000, 0);
 
     #[inline]
     pub const fn init() -> Self {

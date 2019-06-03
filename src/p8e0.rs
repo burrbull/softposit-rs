@@ -227,7 +227,8 @@ pub struct Q8E0(i32);
 
 impl Q8E0 {
     pub const ZERO: Self = Self(0);
-    pub const NAR: Self = Self(-0x8000_0000);
+    pub const ONE: Self = Self(0x_0000_1000);
+    pub const NAR: Self = Self(-0x_8000_0000);
 
     #[inline]
     pub const fn init() -> Self {
