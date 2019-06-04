@@ -520,12 +520,12 @@ pub(super) fn q32_fdp_add(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
 
     let (mut k_a, tmp) = P32E2::separate_bits_tmp(ui_a);
     let mut exp_a = (tmp >> 29) as i32; //to get 2 bits
-    let frac_a = ((tmp << 2) | 0x_8000_0000) & 0x_ffff_ffff;
+    let frac_a = (tmp << 2) | 0x_8000_0000;
 
     let (k_b, tmp) = P32E2::separate_bits_tmp(ui_b);
     k_a += k_b;
     exp_a += (tmp >> 29) as i32;
-    let mut frac64_z = (frac_a as u64) * ((((tmp << 2) | 0x_8000_0000) & 0x_ffff_ffff) as u64);
+    let mut frac64_z = (frac_a as u64) * (((tmp << 2) | 0x_8000_0000) as u64);
 
     if exp_a > 3 {
         k_a += 1;
@@ -568,7 +568,7 @@ pub(super) fn q32_fdp_add(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
         while let Some(u) = j.next() {
             if *u > 0 {
                 *u = u.wrapping_neg();
-                while let Some(w) = j.next() {
+                for w in j {
                     *w = !*w;
                 }
                 break;
@@ -630,12 +630,12 @@ pub(super) fn q32_fdp_sub(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
 
     let (mut k_a, tmp) = P32E2::separate_bits_tmp(ui_a);
     let mut exp_a = (tmp >> 29) as i32; //to get 2 bits
-    let frac_a = ((tmp << 2) | 0x_8000_0000) & 0x_ffff_ffff;
+    let frac_a = (tmp << 2) | 0x_8000_0000;
 
     let (k_b, tmp) = P32E2::separate_bits_tmp(ui_b);
     k_a += k_b;
     exp_a += (tmp >> 29) as i32;
-    let mut frac64_z = (frac_a as u64) * ((((tmp << 2) | 0x_8000_0000) & 0x_ffff_ffff) as u64);
+    let mut frac64_z = (frac_a as u64) * (((tmp << 2) | 0x_8000_0000) as u64);
 
     if exp_a > 3 {
         k_a += 1;
@@ -679,7 +679,7 @@ pub(super) fn q32_fdp_sub(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
         while let Some(u) = j.next() {
             if *u > 0 {
                 *u = u.wrapping_neg();
-                while let Some(w) = j.next() {
+                for w in j {
                     *w = !*w;
                 }
                 break;

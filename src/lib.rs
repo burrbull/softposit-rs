@@ -1,4 +1,8 @@
 #![no_std]
+#![allow(clippy::cast_lossless)]
+#![allow(clippy::float_cmp)]
+#![allow(clippy::many_single_char_names)]
+#![allow(clippy::suspicious_arithmetic_impl)]
 
 pub mod p8e0;
 pub use self::p8e0::{P8E0, Q8E0};
@@ -95,6 +99,7 @@ enum MulAddType {
     SubProd = 2,
 }
 
+#[allow(clippy::declare_interior_mutable_const)]
 pub trait MathConsts {
     /// Euler's number (e) = 2.7182818284590452353602874713526625
     const E: Self;

@@ -461,13 +461,13 @@ fn sqrt(p_a: P16E1) -> P16E1 {
         k_z = -1;
         while (ui_a & 0x4000) != 0 {
             k_z += 1;
-            ui_a= ui_a<<1 /* & 0xFFFF*/;
+            ui_a <<= 1;
         }
     } else {
         k_z = 0;
         while (ui_a & 0x4000) == 0 {
             k_z -= 1;
-            ui_a= ui_a<<1 /* & 0xFFFF*/;
+            ui_a <<= 1;
         }
     }
     ui_a &= 0x3fff;
@@ -495,21 +495,20 @@ fn sqrt(p_a: P16E1) -> P16E1 {
 
     // Figure out the regime and the resulting right shift of the fraction:
     let shift: u16;
-    let mut ui_z: u16;
-    if k_z < 0 {
+    let mut ui_z: u16 = if k_z < 0 {
         shift = ((-1 - k_z) >> 1) as u16;
-        ui_z = 0x2000 >> shift;
+        0x2000 >> shift
     } else {
         shift = (k_z >> 1) as u16;
-        ui_z = 0x7fff - (0x7FFF >> (shift + 1));
-    }
+        0x7fff - (0x7FFF >> (shift + 1))
+    };
     // Set the exponent bit in the answer, if it is nonzero:
     if (k_z & 1) != 0 {
         ui_z |= 0x1000 >> shift;
     }
 
     // Right-shift fraction bits, accounting for 1 <= a < 2 versus 2 <= a < 4:
-    frac_z = frac_z >> (exp_a + shift);
+    frac_z >>= exp_a + shift;
 
     // Trick for eliminating off-by-one cases that only uses one multiply:
     frac_z += 1;

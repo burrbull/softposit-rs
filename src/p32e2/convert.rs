@@ -291,7 +291,7 @@ impl From<P32E2> for i32 {
         } else if ui_a > 0x7FAF_FFFF {
             //overflow so return max integer value
             if sign {
-                -2147483648
+                -0x_8000_0000
             } else {
                 0x7FFF_FFFF
             }
@@ -398,7 +398,7 @@ impl From<P32E2> for i64 {
             2 // 3/2 <= x <= 5/2 rounds to 2.
         } else if ui_a > 0x7FFF_AFFF {
             if sign {
-                -9223372036854775808
+                -9_223_372_036_854_775_808
             } else {
                 0x7FFF_FFFF_FFFF_FFFF
             }
@@ -616,7 +616,7 @@ impl From<Q32E2> for P32E2 {
             while let Some(u) = j.next() {
                 if *u > 0 {
                     *u = u.wrapping_neg();
-                    while let Some(w) = j.next() {
+                    for w in j {
                         *w = !*w;
                     }
                     break;
@@ -649,7 +649,7 @@ impl From<Q32E2> for P32E2 {
                         bits_more = true;
                     }
                 }
-                while let Some((_, w)) = j.next() {
+                for (_, w) in j {
                     if *w > 0 {
                         bits_more = true;
                         break;
