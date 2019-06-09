@@ -38,7 +38,8 @@ version = "0.6"
 optional = true
 
 [features]
-default = ["float_convert", "rand", "linalg"]
+default = ["std", "float_convert", "rand", "linalg"]
+std = []
 float_convert = ["libm"]
 linalg = ["nalgebra", "num-traits", "alga", "approx", "alga_derive"]
 

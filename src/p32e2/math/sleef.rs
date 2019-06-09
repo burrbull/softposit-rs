@@ -5,6 +5,8 @@ use super::{
     TWO,  // 2.
 };
 
+const THREE: P32E2 = P32E2::new(0x_4c00_0000);
+
 const NAR: P32E2 = P32E2::NAR;
 const ZERO: P32E2 = P32E2::ZERO;
 const ONE: P32E2 = P32E2::ONE;
@@ -43,14 +45,20 @@ mod kernel {
             n = -n;
         }
         let k = n >> 2;
-        let exp_a: u32 = ((n & 0x3) as u32) << (27 - k);
-        let ui_a = (0x7FFF_FFFF ^ (0x3FFF_FFFF >> k)) | exp_a;
+        let ex: u32 = ((n & 0x3) as u32) << (27 - k);
+        let ui = (0x7FFF_FFFF ^ (0x3FFF_FFFF >> k)) | ex;
 
         if sign {
-            P32E2::from_bits((ui_a << 1).wrapping_neg() >> 1)
+            P32E2::from_bits((ui << 1).wrapping_neg() >> 1)
         } else {
-            P32E2::from_bits(ui_a)
+            P32E2::from_bits(ui)
         }
+    }
+
+    pub fn ilogb(d: P32E2) -> i32 {
+        let ui = d.abs().to_bits();
+        let (k_a, tmp) = P32E2::separate_bits_tmp(ui);
+        ((k_a as i32) << 2) + ((tmp >> 29) as i32)
     }
 
     pub fn ldexp2(d: P32E2, e: i32) -> P32E2 {
@@ -70,12 +78,12 @@ mod kernel {
         let s = quire.to_posit();
 
         let mut u = s.poly5(&[
-            P32E2::new(0x_07a0_57b4), // 0.000_198_527_617_612_853_646_278_381,
-            P32E2::new(0x_0cda_5b24), // 0.001_393_043_552_525_341_510_772_71,
-            P32E2::new(0x_1444_4530), // 0.008_333_360_776_305_198_669_433_59,
-            P32E2::new(0x_1d55_53d0), // 0.041_666_485_369_205_474_853_515_6,
-            P32E2::new(0x_2aaa_aab0), // 0.166_666_671_633_720_397_949_219,
-            HALF,
+            P32E2::new(0x_079d_b0ca), // 1.9726304345e-4,
+            P32E2::new(0x_0cda_fee4), // 1.3942635851e-3,
+            P32E2::new(0x_1444_4e5b), // 8.3336340031e-3,
+            P32E2::new(0x_1d55_5258), // 4.1666310281e-2,
+            P32E2::new(0x_2aaa_aa9a), // 1.6666665114e-1,
+            P32E2::new(0x_3800_0002), // 5.0000000745e-1,
         ]);
         u = s * s * u + s;
 
@@ -85,6 +93,239 @@ mod kernel {
             u
         }
     }
+
+    #[inline]
+    pub fn exp(d: P32E2) -> P32E2 {
+        let qf = (d * R_LN2).round();
+        let q = i32::from(qf);
+
+        let mut quire = Q32E2::init();
+        quire += (d, ONE);
+        quire -= (qf, L2U);
+        quire -= (qf, L2L);
+        let s = quire.clone().to_posit();
+
+        let u = s.poly4(&[
+            P32E2::new(0x_0ccabbd8), // 0.001_363_246_468_827_128_410_339_36
+            P32E2::new(0x_14488b58), // 0.008_365_969_173_610_210_418_701_17
+            P32E2::new(0x_1d557a60), // 0.041_671_082_377_433_776_855_468_8
+            P32E2::new(0x_2aaaa5e0), // 0.166_665_524_244_308_471_679_688
+            P32E2::new(0x_37ffffb0), // 0.499_999_850_988_388_061_523_438
+        ]);
+
+        quire += (s * s, u);
+        quire += (ONE, ONE);
+
+        if d < P32E2::new(-0x_6a80_0000)
+        /*-104.*/
+        {
+            ZERO
+        } else {
+            ldexp2(quire.to_posit(), q) //ldexpkf
+        }
+    }
+
+    #[inline]
+    pub fn log(d: P32E2) -> P32E2 {
+        let e = kernel::ilogb(d * (ONE / P32E2::new(0x_3c00_0000)/*0.75*/)); // ilogb2kf
+        let m = kernel::ldexp2(d, -e); //ldexp3kf(d, -e);
+        let x = (m - ONE) / (m + ONE);
+        let x2 = x * x;
+
+        let t = x2.poly2(&[
+            P32E2::new(0x_2f6168a0), // 0.240_320_354_700_088_500_976_562
+            P32E2::new(0x_311fa4a0), // 0.285_112_679_004_669_189_453_125
+            P32E2::new(0x_34ccdd90), // 0.400_007_992_982_864_379_882_812
+        ]);
+
+        let mut quire = Q32E2::from_bits([
+            0,
+            0,
+            0,
+            0,
+            0x_0000_aaaa_aaaa_aaaa,
+            0x_aaaa_aaaa_aaaa_aaaa,
+            0x_aaaa_aaaa_aaaa_aaaa,
+            0x_aaaa_aaaa_aaaa_aaab,
+        ]);
+
+        quire += (x2, t);
+        let z = quire.to_posit();
+
+        let ef = P32E2::from(e);
+        let mut quire = Q32E2::init();
+        quire += (L2U, ef);
+        quire += (L2L, ef);
+        quire += (x, TWO);
+        quire += (x2 * x, z);
+        quire.into()
+    }
+
+    #[inline]
+    pub fn atan2(mut y: P32E2, mut x: P32E2) -> P32E2 {
+        let mut q = if x.is_sign_negative() {
+            x = -x;
+            -2
+        } else {
+            0
+        };
+
+        if y > x {
+            let t = x;
+            x = y;
+            y = -t;
+            q += 1;
+        }
+
+        let s = y / x;
+        let t = s * s;
+
+        let u = t.poly7(&[
+            P32E2::new(0x_0ee4_3334), // 0.002_823_638_962_581_753_730_773_93,
+            P32E2::new(-0x_1815_c068), // -0.015_956_902_876_496_315_002_441_4,
+            P32E2::new(0x_1d70_cdb0), // 0.042_504_988_610_744_476_318_359_4,
+            P32E2::new(-0x_2195_ffa0), // -0.074_890_092_015_266_418_457_031_2,
+            P32E2::new(0x_259c_cf20), // 0.106_347_933_411_598_205_566_406,
+            P32E2::new(-0x_2916_f9f0), // -0.142_027_363_181_114_196_777_344,
+            P32E2::new(0x_2ccb_9a70), // 0.199_926_957_488_059_997_558_594,
+            P32E2::new(-0x_32aa_a5d0) // -0.333_331_018_686_294_555_664_062,
+            ]);
+
+        let t = u * t * s + s;
+        P32E2::from(q) * P32E2::FRAC_PI_2 + t
+    }
+}
+
+#[inline]
+pub fn signf(d: P32E2) -> P32E2 {
+    mulsign(ONE, d)
+}
+
+/// Power function
+///
+/// This function returns the value of ***x*** raised to the power of ***y***.
+pub fn pow(x: P32E2, y: P32E2) -> P32E2 {
+    let p1_23 = P32E2::from(1u32 << 23);
+    let yisint = (y == y.round()) || (y.abs() >= p1_23);
+    let yisodd = ((1 & (i32::from(y))) != 0) && yisint && (y.abs() < p1_23);
+
+    let mut result = kernel::exp(kernel::log(x.abs()) * y);
+
+    result *= if x >= ZERO {
+        ONE
+    } else if !yisint {
+        P32E2::NAR
+    } else if yisodd {
+        -ONE
+    } else {
+        ONE
+    };
+
+    //let efx = mulsign(x.abs() - ONE, y);
+    if (y == ZERO) || (x == ONE) {
+        ONE
+    } else if x.is_nar() || y.is_nar() {
+        P32E2::NAR
+    } else if x == ZERO {
+        (if yisodd { signf(x) } else { ONE }) * (if -y < ZERO { ZERO } else { P32E2::NAR })
+    } else {
+        result
+    }
+}
+
+#[test]
+fn test_pow() {
+    test_pp_p(
+        pow,
+        f64::powf,
+        /*P32E2::MIN.0, P32E2::MAX.0,*/ 0x_3800_0000,
+        0x_5200_0000,
+        5,
+    );
+}
+
+/// Arc tangent function of two variables
+///
+/// These functions evaluates the arc tangent function of (***y*** / ***x***).
+pub fn atan2(y: P32E2, x: P32E2) -> P32E2 {
+    if x.is_nar() || y.is_nar() {
+        return P32E2::NAR;
+    }
+    let mut r = kernel::atan2(y.abs(), x);
+
+    r = if x == ZERO {
+        P32E2::FRAC_PI_2
+    } else if y == ZERO {
+        (if x.signum() == -ONE { P32E2::PI } else { ZERO })
+    } else {
+        mulsign(r, x)
+    };
+
+    mulsign(r, y)
+}
+
+#[test]
+fn test_atan2() {
+    test_pp_p(atan2, f64::atan2, P32E2::MIN.0, P32E2::MAX.0, 13);
+}
+
+/// Natural logarithmic function
+///
+/// These functions return the natural logarithm of ***a***.
+pub fn ln(d: P32E2) -> P32E2 {
+    if d <= ZERO {
+        return P32E2::NAR;
+    }
+
+    let e = kernel::ilogb(d * (ONE / P32E2::new(0x_3c00_0000)/*0.75*/)); // ilogb2kf
+    let m = kernel::ldexp2(d, -e); //ldexp3kf(d, -e);
+
+    let x = (m - ONE) / (m + ONE);
+    let x2 = x * x;
+
+    let t = x2.poly4(&[
+        P32E2::new(0x_2f5f_60aa), // 2.4019638635e-1,
+        P32E2::new(0x_311f_b2ca), // 2.8511943296e-1,
+        P32E2::new(0x_34cc_dd7e), // 4.0000795946e-1,
+        P32E2::new(0x_3aaa_aaa1), // 6.666666295963819528791795955505945e-1,
+        TWO,
+    ]);
+
+    x * t + P32E2::LN_2 * P32E2::from(e)
+}
+
+#[test]
+fn test_ln() {
+    test_p_p(ln, f64::ln, ZERO.0, P32E2::MAX.0, 3);
+}
+
+pub fn log2(d: P32E2) -> P32E2 {
+    if d <= ZERO {
+        return P32E2::NAR;
+    }
+
+    let e = kernel::ilogb(d * (ONE / P32E2::new(0x_3c00_0000)/*0.75*/)); // ilogb2kf
+    let m = kernel::ldexp2(d, -e); //ldexp3kf(d, -e);
+
+    let x = (m - ONE) / (m + ONE);
+    let x2 = x * x;
+
+    let t = x2.poly2(&[
+        P32E2::new(0x_35ff_40d0), // 0.437_408_834_7
+        P32E2::new(0x_3939_47b0), // 0.576_484_382_2
+        P32E2::new(0x_3f63_8af0), // 0.961_802_423
+    ]);
+
+    let mut quire = Q32E2::init();
+    quire += (x2 * x, t);
+    quire += (x, P32E2::new(0x_4b8a_a3b3)); // 2.8853900879621506
+    quire += (P32E2::from(e), ONE);
+    quire.into()
+}
+
+#[test]
+fn test_log2() {
+    test_p_p(log2, f64::log2, ZERO.0, P32E2::MAX.0, 9);
 }
 
 /// 2D Euclidian distance function
@@ -138,19 +379,19 @@ pub fn sin(mut d: P32E2) -> P32E2 {
         d = -d;
     }
 
-    let u = s.poly3(&[
-        P32E2::new(0x_02af_0a87),  // 2.608_315_980_978_659_354_150_3_e-6
-        P32E2::new(-0x_079f_75d6), // -0.000_198_106_907_191_686_332_225_8
-        P32E2::new(0x_1444_3bb8),  // 0.008_333_078_585_565_090_179_443_36
-        P32E2::new(-0x_2aaa_aa60), // -0.166_666_597_127_914_428_710_938
-    ]);
-
-    s.mul_add(u * d, d)
+    s.poly5(&[
+        P32E2::new(-0x_00d3_e191), // -2.4159030332e-8,
+        P32E2::new(0x_02b8_d0f3),  // 2.7539761902e-6,
+        P32E2::new(-0x_07a0_193a), // -1.9841124231e-4,
+        P32E2::new(0x_1444_443e),  // 8.3333326038e-3,
+        P32E2::new(-0x_2aaa_aaaa), // -1.6666666605e-1,
+        ONE,
+    ]) * d
 }
 
 #[test]
 fn test_sin() {
-    test_p_p(sin, f64::sin, -TRIGRANGEMAX.0 + 1, TRIGRANGEMAX.0 - 1, 4);
+    test_p_p(sin, f64::sin, -TRIGRANGEMAX.0 + 1, TRIGRANGEMAX.0 - 1, 2);
 }
 
 /// Cosine function
@@ -182,19 +423,19 @@ pub fn cos(mut d: P32E2) -> P32E2 {
         d = -d;
     }
 
-    let u = s.poly3(&[
-        P32E2::new(0x_02af_0a87),  // 2.608_315_980_978_659_354_150_3_e-6
-        P32E2::new(-0x_079f_75d6), // -0.000_198_106_907_191_686_332_225_8
-        P32E2::new(0x_1444_3bb8),  // 0.008_333_078_585_565_090_179_443_36
-        P32E2::new(-0x_2aaa_aa60), // -0.166_666_597_127_914_428_710_938
-    ]);
-
-    s.mul_add(u * d, d)
+    s.poly5(&[
+        P32E2::new(-0x_00d3_e191), // -2.4159030332e-8,
+        P32E2::new(0x_02b8_d0f3),  // 2.7539761902e-6,
+        P32E2::new(-0x_07a0_193a), // -1.9841124231e-4,
+        P32E2::new(0x_1444_443e),  // 8.3333326038e-3,
+        P32E2::new(-0x_2aaa_aaaa), // -1.6666666605e-1,
+        ONE,
+    ]) * d
 }
 
 #[test]
 fn test_cos() {
-    test_p_p(cos, f64::cos, -TRIGRANGEMAX.0 + 1, TRIGRANGEMAX.0 - 1, 4);
+    test_p_p(cos, f64::cos, -TRIGRANGEMAX.0 + 1, TRIGRANGEMAX.0 - 1, 2);
 }
 
 /// Tangent function
@@ -228,16 +469,16 @@ pub fn tan(d: P32E2) -> P32E2 {
         x = -x;
     }
 
-    let mut u = s.poly5(&[
-        P32E2::new(0x_14bf_5c10), // 0.009_272_458_031_773_567_199_707_03,
-        P32E2::new(0x_0f66_475c), // 0.003_319_849_958_643_317_222_595_21,
-        P32E2::new(0x_1a38_8320), // 0.024_299_807_846_546_173_095_703_1,
-        P32E2::new(0x_1ed7_6f28), // 0.053_449_530_154_466_629_028_320_3,
-        P32E2::new(0x_2889_58e0), // 0.133_383_005_857_467_651_367_188,
-        P32E2::new(0x_32aa_a790), // 0.333_331_853_151_321_411_132_812,
-    ]);
-
-    u = s.mul_add(u * x, x);
+    let u = s.poly7(&[
+        P32E2::new(0x_1043_9ddd), // 4.1641870630e-3,
+        P32E2::new(0x_0a23_312c), // 5.2184302331e-4,
+        P32E2::new(0x_155f_d348), // 1.0496714152e-2,
+        P32E2::new(0x_197b_2043), // 2.1410004003e-2,
+        P32E2::new(0x_1eea_ab3b), // 5.4036525544e-2,
+        P32E2::new(0x_2888_73e8), // 1.3332841545e-1,
+        P32E2::new(0x_32aa_aaf4), // 3.333334698957821126613114826434348e-1,
+        ONE,
+    ]) * x;
 
     if (q & 1) != 0 {
         u.recip()
@@ -248,7 +489,7 @@ pub fn tan(d: P32E2) -> P32E2 {
 
 #[test]
 fn test_tan() {
-    test_p_p(tan, f64::tan, -TRIGRANGEMAX.0 + 1, TRIGRANGEMAX.0 - 1, 13);
+    test_p_p(tan, f64::tan, -TRIGRANGEMAX.0 + 1, TRIGRANGEMAX.0 - 1, 3);
 }
 
 /// Arc tangent function
@@ -269,15 +510,16 @@ pub fn atan(mut s: P32E2) -> P32E2 {
 
     let mut t = s * s;
 
-    let u = t.poly7(&[
-        P32E2::new(0x_0ee4_3334),  // 0.002_823_638_962_581_753_730_773_93,
-        P32E2::new(-0x_1815_c068), // -0.015_956_902_876_496_315_002_441_4,
-        P32E2::new(0x_1d70_cdb0),  // 0.042_504_988_610_744_476_318_359_4,
-        P32E2::new(-0x_2195_ffa0), // -0.074_890_092_015_266_418_457_031_2,
-        P32E2::new(0x_259c_cf20),  // 0.106_347_933_411_598_205_566_406,
-        P32E2::new(-0x_2916_f9f0), // -0.142_027_363_181_114_196_777_344,
-        P32E2::new(0x_2ccb_9a70),  // 0.199_926_957_488_059_997_558_594,
-        P32E2::new(-0x_32aa_a5d0), //-0.333_331_018_686_294_555_664_062,
+    let u = t.poly8(&[
+        P32E2::new(-0x_0de4_f8b5), // -1.9015722646e-3,
+        P32E2::new(0x_15cf_6226),  // 1.1347834719e-2,
+        P32E2::new(-0x_1c14_c8ad), // -3.1884273980e-2,
+        P32E2::new(0x_1f7e_b681),  // 5.8554471005e-2,
+        P32E2::new(-0x_22ca_9b6e), // -8.4308079444e-2,
+        P32E2::new(0x_2606_ded6),  // 1.0958466958e-1,
+        P32E2::new(-0x_2921_200a), // -1.4264679886e-1,
+        P32E2::new(0x_2ccc_8d0c),  // 1.9998480007e-1,
+        P32E2::new(-0x_32aa_a9be), // -3.333328932749459636123021434852409e-1,
     ]);
 
     t = s + s * (t * u);
@@ -294,7 +536,7 @@ pub fn atan(mut s: P32E2) -> P32E2 {
 
 #[test]
 fn test_atan() {
-    test_p_p(atan, f64::atan, P32E2::MIN.0, P32E2::MAX.0, 13);
+    test_p_p(atan, f64::atan, P32E2::MIN.0, P32E2::MAX.0, 3);
 }
 
 /// Arc sine function
@@ -306,15 +548,15 @@ pub fn asin(d: P32E2) -> P32E2 {
     let x2 = if o { d * d } else { (ONE - d.abs()) * HALF };
     let x = if o { d.abs() } else { x2.sqrt() };
 
-    let u = x2
-        .poly4(&[
-            P32E2::new(0x_1d5f_6c08), // 0.419_745_482_5_e-1
-            P32E2::new(0x_1a34_9f70), // 0.242_404_602_5_e-1
-            P32E2::new(0x_1dd2_1990), // 0.454_742_386_9_e-1
-            P32E2::new(0x_2197_f8a0), // 0.749_502_927_1_e-1
-            P32E2::new(0x_2aaa_af20), // 0.166_667_729_6
-        ])
-        .mul_add(x * x2, x);
+    let u = x2.poly6(&[
+        P32E2::new(0x_1cc5_4185), // 3.7269773427e-2,
+        P32E2::new(0x_1775_4679), // 1.4566614409e-2,
+        P32E2::new(0x_1c11_bbd3), // 3.1791189220e-2,
+        P32E2::new(0x_1db2_b15f), // 4.4515773188e-2,
+        P32E2::new(0x_2199_c6fe), // 7.5005411170e-2,
+        P32E2::new(0x_2aaa_aa4e), // 1.6666658036e-1,
+        ONE,
+    ]) * x;
 
     let r = if o { u } else { (P32E2::FRAC_PI_2 - TWO * u) };
     mulsign(r, d)
@@ -322,7 +564,7 @@ pub fn asin(d: P32E2) -> P32E2 {
 
 #[test]
 fn test_asin() {
-    test_p_p(asin, f64::asin, -ONE.0, ONE.0, 4);
+    test_p_p(asin, f64::asin, -ONE.0, ONE.0, 3);
 }
 
 /// Arc cosine function
@@ -334,14 +576,14 @@ pub fn acos(d: P32E2) -> P32E2 {
     let mut x = if o { d.abs() } else { x2.sqrt() };
     x = if d.abs() == ONE { ZERO } else { x };
 
-    let mut u = x2.poly4(&[
-        P32E2::new(0x_1d5f_6c08), // 0.419_745_482_5_e-1
-        P32E2::new(0x_1a34_9f70), // 0.242_404_602_5_e-1
-        P32E2::new(0x_1dd2_1990), // 0.454_742_386_9_e-1
-        P32E2::new(0x_2197_f8a0), // 0.749_502_927_1_e-1
-        P32E2::new(0x_2aaa_af20), // 0.166_667_729_6
-    ]);
-    u *= x * x2;
+    let u = x2.poly5(&[
+        P32E2::new(0x_1cc5_4185), // 3.7269773427e-2,
+        P32E2::new(0x_1775_4679), // 1.4566614409e-2,
+        P32E2::new(0x_1c11_bbd3), // 3.1791189220e-2,
+        P32E2::new(0x_1db2_b15f), // 4.4515773188e-2,
+        P32E2::new(0x_2199_c6fe), // 7.5005411170e-2,
+        P32E2::new(0x_2aaa_aa4e), // 1.6666658036e-1,
+    ]) * (x * x2);
 
     let y = P32E2::FRAC_PI_2 - (mulsign(x, d) + mulsign(u, d));
     x += u;
@@ -357,7 +599,47 @@ pub fn acos(d: P32E2) -> P32E2 {
 
 #[test]
 fn test_acos() {
-    test_p_p(acos, f64::acos, -ONE.0, ONE.0, 4);
+    test_p_p(acos, f64::acos, -ONE.0, ONE.0, 2);
+}
+
+/// Cube root function
+///
+/// These functions return the real cube root of ***a***.
+pub fn cbrt(mut d: P32E2) -> P32E2 {
+    let e = kernel::ilogb(d /*.abs()*/) + 1;
+    d = kernel::ldexp2(d, -e);
+    let r = (e + 6144) % 3;
+    let mut q = if r == 1 {
+        P32E2::new(0x_4214_517d) // 1.259_921_049_894_873_164_767_210_6
+    } else {
+        ONE
+    };
+    q = if r == 2 {
+        P32E2::new(0x_44b2_ff53) // 1.587_401_051_968_199_474_751_705_6
+    } else {
+        q
+    };
+    q = kernel::ldexp2(q, (e + 6144) / 3 - 2048);
+
+    q = mulsign(q, d);
+    d = d.abs();
+
+    let x = d.poly5(&[
+        P32E2::new(-0x_39a0_0210), //-0.601564466953277587890625
+        P32E2::new(0x_4b48_9730),  // 2.8208892345428466796875
+        P32E2::new(-0x_5310_7a30), // -5.532182216644287109375
+        P32E2::new(0x_53cb_e910),  // 5.898262500762939453125
+        P32E2::new(-0x_4f3c_f880), // -3.8095417022705078125
+        P32E2::new(0x_48e5_8130),  // 2.2241256237030029296875
+    ]);
+
+    let y = d * x * x;
+    (y - (TWO / THREE) * y * (y * x - ONE)) * q
+}
+
+#[test]
+fn test_cbrt() {
+    test_p_p(cbrt, f64::cbrt, P32E2::MIN.0, P32E2::MAX.0, 4);
 }
 
 pub fn exp2(d: P32E2) -> P32E2 {
@@ -454,12 +736,12 @@ pub fn exp(d: P32E2) -> P32E2 {
     let s = quire.to_posit();
 
     let mut u = s.poly5(&[
-        P32E2::new(0x_07a0_57b4), // 0.000_198_527_617_612_853_646_278_381_f32
-        P32E2::new(0x_0cda_5b24), // 0.001_393_043_552_525_341_510_772_71)
-        P32E2::new(0x_1444_4530), // 0.008_333_360_776_305_198_669_433_59)
-        P32E2::new(0x_1d55_53d0), // 0.041_666_485_369_205_474_853_515_6)
-        P32E2::new(0x_2aaa_aab0), // 0.166_666_671_633_720_397_949_219)
-        HALF,
+        P32E2::new(0x_079d_b0ca), // 1.9726304345e-4,
+        P32E2::new(0x_0cda_fee4), // 1.3942635851e-3,
+        P32E2::new(0x_1444_4e5b), // 8.3336340031e-3,
+        P32E2::new(0x_1d55_5258), // 4.1666310281e-2,
+        P32E2::new(0x_2aaa_aa9a), // 1.6666665114e-1,
+        P32E2::new(0x_3800_0002), // 5.0000000745e-1,
     ]);
 
     u = s * s * u + s + ONE;
@@ -479,7 +761,7 @@ pub fn exp(d: P32E2) -> P32E2 {
 
 #[test]
 fn test_exp() {
-    test_p_p(exp, f64::exp, -0x_6a80_0000, 0x_6a80_0000, 4);
+    test_p_p(exp, f64::exp, -0x_6a80_0000, 0x_6a80_0000, 1);
 }
 
 /// Hyperbolic sine function
@@ -599,7 +881,7 @@ fn test_p_p(fun_p: fn(P32E2) -> P32E2, fun_f: fn(f64) -> f64, mn: i32, mx: i32, 
             correct,
             u,
         );
-        /*if (u <= 3) {
+        /*if u <= expected_ulp {
             ncorrect += 1;
         }
         if i == NTESTS - 1 {

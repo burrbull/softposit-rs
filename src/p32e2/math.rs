@@ -269,8 +269,8 @@ impl P32E2 {
         unimplemented!()
     }
     #[inline]
-    pub fn powf(self, _n: Self) -> Self {
-        unimplemented!()
+    pub fn powf(self, other: Self) -> Self {
+        sleef::pow(self, other)
     }
     #[inline]
     pub fn sqrt(self) -> Self {
@@ -290,7 +290,7 @@ impl P32E2 {
     }
     #[inline]
     pub fn ln(self) -> Self {
-        unimplemented!()
+        sleef::ln(self)
     }
     #[inline]
     pub fn log(self, _base: Self) -> Self {
@@ -298,7 +298,7 @@ impl P32E2 {
     }
     #[inline]
     pub fn log2(self) -> Self {
-        unimplemented!()
+        sleef::log2(self)
     }
     #[inline]
     pub fn log10(self) -> Self {
@@ -306,7 +306,7 @@ impl P32E2 {
     }
     #[inline]
     pub fn cbrt(self) -> Self {
-        unimplemented!()
+        sleef::cbrt(self)
     }
     #[inline]
     pub fn hypot(self, other: Self) -> Self {
@@ -337,8 +337,8 @@ impl P32E2 {
         sleef::atan(self)
     }
     #[inline]
-    pub fn atan2(self, _other: Self) -> Self {
-        unimplemented!()
+    pub fn atan2(self, other: Self) -> Self {
+        sleef::atan2(self, other)
     }
     #[inline]
     pub fn sin_cos(self) -> (Self, Self) {
