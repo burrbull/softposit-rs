@@ -95,6 +95,7 @@ mod kernel {
     }
 
     #[inline]
+    // TODO: fix coeffs
     pub fn exp(d: P32E2) -> P32E2 {
         let qf = (d * R_LN2).round();
         let q = i32::from(qf);
@@ -105,12 +106,13 @@ mod kernel {
         quire -= (qf, L2L);
         let s = quire.clone().to_posit();
 
-        let u = s.poly4(&[
-            P32E2::new(0x_0ccabbd8), // 0.001_363_246_468_827_128_410_339_36
-            P32E2::new(0x_14488b58), // 0.008_365_969_173_610_210_418_701_17
-            P32E2::new(0x_1d557a60), // 0.041_671_082_377_433_776_855_468_8
-            P32E2::new(0x_2aaaa5e0), // 0.166_665_524_244_308_471_679_688
-            P32E2::new(0x_37ffffb0), // 0.499_999_850_988_388_061_523_438
+        let u = s.poly5(&[
+            P32E2::new(0x_079d_b0ca), // 1.9726304345e-4,
+            P32E2::new(0x_0cda_fee4), // 1.3942635851e-3,
+            P32E2::new(0x_1444_4e5b), // 8.3336340031e-3,
+            P32E2::new(0x_1d55_5258), // 4.1666310281e-2,
+            P32E2::new(0x_2aaa_aa9a), // 1.6666665114e-1,
+            P32E2::new(0x_3800_0002), // 5.0000000745e-1,
         ]);
 
         quire += (s * s, u);
@@ -126,6 +128,7 @@ mod kernel {
     }
 
     #[inline]
+    // TODO: fix coeffs
     pub fn log(d: P32E2) -> P32E2 {
         let e = kernel::ilogb(d * (ONE / P32E2::new(0x_3c00_0000)/*0.75*/)); // ilogb2kf
         let m = kernel::ldexp2(d, -e); //ldexp3kf(d, -e);
@@ -180,16 +183,17 @@ mod kernel {
         let s = y / x;
         let t = s * s;
 
-        let u = t.poly7(&[
-            P32E2::new(0x_0ee4_3334), // 0.002_823_638_962_581_753_730_773_93,
-            P32E2::new(-0x_1815_c068), // -0.015_956_902_876_496_315_002_441_4,
-            P32E2::new(0x_1d70_cdb0), // 0.042_504_988_610_744_476_318_359_4,
-            P32E2::new(-0x_2195_ffa0), // -0.074_890_092_015_266_418_457_031_2,
-            P32E2::new(0x_259c_cf20), // 0.106_347_933_411_598_205_566_406,
-            P32E2::new(-0x_2916_f9f0), // -0.142_027_363_181_114_196_777_344,
-            P32E2::new(0x_2ccb_9a70), // 0.199_926_957_488_059_997_558_594,
-            P32E2::new(-0x_32aa_a5d0) // -0.333_331_018_686_294_555_664_062,
-            ]);
+        let u = t.poly8(&[
+            P32E2::new(-0x_0de4_f8b5), // -1.9015722646e-3,
+            P32E2::new(0x_15cf_6226),  // 1.1347834719e-2,
+            P32E2::new(-0x_1c14_c8ad), // -3.1884273980e-2,
+            P32E2::new(0x_1f7e_b681),  // 5.8554471005e-2,
+            P32E2::new(-0x_22ca_9b6e), // -8.4308079444e-2,
+            P32E2::new(0x_2606_ded6),  // 1.0958466958e-1,
+            P32E2::new(-0x_2921_200a), // -1.4264679886e-1,
+            P32E2::new(0x_2ccc_8d0c),  // 1.9998480007e-1,
+            P32E2::new(-0x_32aa_a9be), // -3.333328932749459636123021434852409e-1,
+        ]);
 
         let t = u * t * s + s;
         P32E2::from(q) * P32E2::FRAC_PI_2 + t
@@ -266,7 +270,7 @@ pub fn atan2(y: P32E2, x: P32E2) -> P32E2 {
 
 #[test]
 fn test_atan2() {
-    test_pp_p(atan2, f64::atan2, P32E2::MIN.0, P32E2::MAX.0, 13);
+    test_pp_p(atan2, f64::atan2, P32E2::MIN.0, P32E2::MAX.0, 3);
 }
 
 /// Natural logarithmic function
@@ -299,6 +303,7 @@ fn test_ln() {
     test_p_p(ln, f64::ln, ZERO.0, P32E2::MAX.0, 3);
 }
 
+// TODO: fix coeffs
 pub fn log2(d: P32E2) -> P32E2 {
     if d <= ZERO {
         return P32E2::NAR;
@@ -310,22 +315,29 @@ pub fn log2(d: P32E2) -> P32E2 {
     let x = (m - ONE) / (m + ONE);
     let x2 = x * x;
 
-    let t = x2.poly2(&[
-        P32E2::new(0x_35ff_40d0), // 0.437_408_834_7
-        P32E2::new(0x_3939_47b0), // 0.576_484_382_2
-        P32E2::new(0x_3f63_8af0), // 0.961_802_423
+    let t = x2.poly3(&[
+        // First pass
+        P32E2::new(0x_3316_c66e), // 3.4653016599e-1,
+        P32E2::new(0x_3529_b329), // 4.1134031280e-1,
+        P32E2::new(0x_393b_c226), // 5.7708945172e-1,
+        P32E2::new(0x_3f63_84e0), // 9.6179664042e-1,
+
+                                  /*        P32E2::new(0x_35ff_40d0), // 0.437_408_834_7
+                                  P32E2::new(0x_3939_47b0), // 0.576_484_382_2
+                                  P32E2::new(0x_3f63_8af0), // 0.961_802_423*/
     ]);
 
     let mut quire = Q32E2::init();
     quire += (x2 * x, t);
-    quire += (x, P32E2::new(0x_4b8a_a3b3)); // 2.8853900879621506
+    quire += (x, P32E2::new(0x_4b8a_a3b3)); // 2.8853900824
+                                            //quire += (x, P32E2::new(0x_4b8a_a3b3)); // 2.8853900879621506
     quire += (P32E2::from(e), ONE);
     quire.into()
 }
 
 #[test]
 fn test_log2() {
-    test_p_p(log2, f64::log2, ZERO.0, P32E2::MAX.0, 9);
+    test_p_p(log2, f64::log2, ZERO.0, P32E2::MAX.0, 3);
 }
 
 /// 2D Euclidian distance function
@@ -605,6 +617,7 @@ fn test_acos() {
 /// Cube root function
 ///
 /// These functions return the real cube root of ***a***.
+// TODO: fix coeffs
 pub fn cbrt(mut d: P32E2) -> P32E2 {
     let e = kernel::ilogb(d /*.abs()*/) + 1;
     d = kernel::ldexp2(d, -e);
@@ -642,18 +655,21 @@ fn test_cbrt() {
     test_p_p(cbrt, f64::cbrt, P32E2::MIN.0, P32E2::MAX.0, 4);
 }
 
+// TODO: fix coeffs
 pub fn exp2(d: P32E2) -> P32E2 {
     let q = d.round();
 
     let s = d - q;
 
-    let mut u = s.poly6(&[
-        P32E2::new(0x_0742_1b20), // 0.153_592_089_2_e-3
-        P32E2::new(0x_0cbe_28cc), // 0.133_926_270_1_e-2
-        P32E2::new(0x_14ec_b370), // 0.961_838_476_4_e-2
-        P32E2::new(0x_1f1a_bce0), // 0.555_034_726_9_e-1
-        P32E2::new(0x_2f5f_dec0), // 0.240_226_447_6
-        P32E2::new(0x_3b17_2180), // 0.693_147_182_5
+    let mut u = s.poly7(&[
+        // First phase
+        P32E2::new(0x_03ff_5322), // 1.5218540611e-5,
+        P32E2::new(0x_0743_a155), // 1.5431890756e-4,
+        P32E2::new(0x_0cbb_1128), // 1.3333645047e-3,
+        P32E2::new(0x_14ec_aa3e), // 9.6181107656e-3,
+        P32E2::new(0x_1f1a_c235), // 5.5504108226e-2,
+        P32E2::new(0x_2f5f_df00), // 2.4022650730e-1,
+        P32E2::new(0x_3b17_217f), // 6.9314718060e-1,
         ONE,
     ]);
 
@@ -674,9 +690,10 @@ pub fn exp2(d: P32E2) -> P32E2 {
 
 #[test]
 fn test_exp2() {
-    test_p_p(exp2, f64::exp2, -0x_6cb0_0000, 0x_6c00_0000, 4);
+    test_p_p(exp2, f64::exp2, -0x_6cb0_0000, 0x_6c00_0000, 1);
 }
 
+// TODO: fix coeffs
 pub fn exp10(d: P32E2) -> P32E2 {
     let q = (d * P32E2::LOG10_2).round();
 
@@ -685,6 +702,17 @@ pub fn exp10(d: P32E2) -> P32E2 {
     quire -= (q, L10U);
     quire -= (q, L10L);
     let s = quire.to_posit();
+
+    /* First phase
+    6.6708447179e-2,
+    2.1117800497e-1,
+    5.3978904942e-1,
+    1.1709893206,
+    2.0346547477,
+    2.6509541366,
+    2.3025853876,
+    9.9999998463e-1,
+    */
 
     let mut u = s.poly6(&[
         P32E2::new(0x_2d35_aa70), // 0.206_400_498_7
@@ -816,7 +844,7 @@ pub fn cosh(x: P32E2) -> P32E2 {
 
 #[test]
 fn test_cosh() {
-    test_p_p(cosh, f64::cosh, -0x_6980_0000, 0x_6980_0000, 4);
+    test_p_p(cosh, f64::cosh, -0x_6980_0000, 0x_6980_0000, 2);
 }
 
 /// Hyperbolic tangent function
