@@ -45,183 +45,185 @@ impl ops::RemAssign for P16E1 {
     }
 }
 
-#[inline]
-pub fn sub_mags_p16(mut ui_a: u16, mut ui_b: u16) -> P16E1 {
-    //Both ui_a and ui_b are actually the same signs if ui_b inherits sign of sub
-    //Make both positive
-    let mut sign = P16E1::sign_ui(ui_a);
-    if sign {
-        ui_a = ui_a.wrapping_neg();
-    } else {
-        ui_b = ui_b.wrapping_neg();
-    }
+impl P16E1 {
+    #[inline]
+    pub fn sub_mags(mut ui_a: u16, mut ui_b: u16) -> Self {
+        //Both ui_a and ui_b are actually the same signs if ui_b inherits sign of sub
+        //Make both positive
+        let mut sign = Self::sign_ui(ui_a);
+        if sign {
+            ui_a = ui_a.wrapping_neg();
+        } else {
+            ui_b = ui_b.wrapping_neg();
+        }
 
-    if ui_a == ui_b {
-        //essential, if not need special handling
-        return P16E1::ZERO;
-    }
-    if ui_a < ui_b {
-        ui_a ^= ui_b;
-        ui_b ^= ui_a;
-        ui_a ^= ui_b;
-        sign = !sign; //A becomes B
-    }
+        if ui_a == ui_b {
+            //essential, if not need special handling
+            return Self::ZERO;
+        }
+        if ui_a < ui_b {
+            ui_a ^= ui_b;
+            ui_b ^= ui_a;
+            ui_a ^= ui_b;
+            sign = !sign; //A becomes B
+        }
 
-    let (mut k_a, mut exp_a, frac_a) = P16E1::separate_bits(ui_a);
-    let mut frac32_a = (frac_a as u32) << 16;
-    let (k_b, exp_b, frac_b) = P16E1::separate_bits(ui_b);
-    let mut frac32_b = (frac_b as u32) << 16;
+        let (mut k_a, mut exp_a, frac_a) = Self::separate_bits(ui_a);
+        let mut frac32_a = (frac_a as u32) << 16;
+        let (k_b, exp_b, frac_b) = Self::separate_bits(ui_b);
+        let mut frac32_b = (frac_b as u32) << 16;
 
-    let mut shift_right = (k_a as i16) - (k_b as i16);
+        let mut shift_right = (k_a as i16) - (k_b as i16);
 
-    //This is 2kZ + expZ; (where kZ=k_a-k_b and expZ=exp_a-expB)
+        //This is 2kZ + expZ; (where kZ=k_a-k_b and expZ=exp_a-expB)
 
-    shift_right = (shift_right << 1) + (exp_a as i16) - (exp_b as i16);
+        shift_right = (shift_right << 1) + (exp_a as i16) - (exp_b as i16);
 
-    if shift_right != 0 {
-        if shift_right >= 29 {
-            let mut u_z: u16 = ui_a;
-            if sign {
-                u_z = (-(u_z as i16)) as u16/* & 0xFFFF*/;
+        if shift_right != 0 {
+            if shift_right >= 29 {
+                let mut u_z: u16 = ui_a;
+                if sign {
+                    u_z = (-(u_z as i16)) as u16/* & 0xFFFF*/;
+                }
+                return Self::from_bits(u_z);
+            } else {
+                frac32_b >>= shift_right;
             }
-            return P16E1::from_bits(u_z);
-        } else {
-            frac32_b >>= shift_right;
         }
-    }
 
-    frac32_a -= frac32_b;
+        frac32_a -= frac32_b;
 
-    while (frac32_a >> 29) == 0 {
-        k_a -= 1;
-        frac32_a <<= 2;
-    }
-    let ecarry = (0x4000_0000 & frac32_a) >> 30 != 0;
-    if !ecarry {
-        if exp_a == 0 {
+        while (frac32_a >> 29) == 0 {
             k_a -= 1;
+            frac32_a <<= 2;
         }
-        exp_a ^= 1;
-        frac32_a <<= 1;
-    }
+        let ecarry = (0x4000_0000 & frac32_a) >> 30 != 0;
+        if !ecarry {
+            if exp_a == 0 {
+                k_a -= 1;
+            }
+            exp_a ^= 1;
+            frac32_a <<= 1;
+        }
 
-    let (regime, reg_sa, reg_a) = P16E1::calculate_regime(k_a);
+        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
 
-    let u_z = if reg_a > 14 {
-        //max or min pos. exp and frac does not matter.
-        if reg_sa {
-            0x7FFF
+        let u_z = if reg_a > 14 {
+            //max or min pos. exp and frac does not matter.
+            if reg_sa {
+                0x7FFF
+            } else {
+                0x1
+            }
         } else {
-            0x1
-        }
-    } else {
-        //remove hidden bits
-        frac32_a = (frac32_a & 0x3FFF_FFFF) >> (reg_a + 1);
-        let mut frac_a = (frac32_a >> 16) as u16;
-        let mut bit_n_plus_one = false;
-        if reg_a != 14 {
-            bit_n_plus_one = ((frac32_a >> 15) & 0x1) != 0;
-        } else if frac32_a > 0 {
-            frac_a = 0;
-        }
-        if (reg_a == 14) && (exp_a != 0) {
-            bit_n_plus_one = true;
-        }
-        let mut u_z = P16E1::pack_to_ui(regime, reg_a, exp_a as u16, frac_a);
-        if bit_n_plus_one {
-            let bits_more = (frac32_a & 0x7FFF) != 0;
-            //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-            u_z += (u_z & 1) | (bits_more as u16);
-        }
-        u_z
-    };
-    P16E1::from_bits(u_z.with_sign(sign))
-}
-
-#[inline]
-pub fn add_mags_p16(mut ui_a: u16, mut ui_b: u16) -> P16E1 {
-    let sign = P16E1::sign_ui(ui_a); //sign is always positive.. actually don't have to do this.
-    if sign {
-        ui_a = ui_a.wrapping_neg();
-        ui_b = ui_b.wrapping_neg();
+            //remove hidden bits
+            frac32_a = (frac32_a & 0x3FFF_FFFF) >> (reg_a + 1);
+            let mut frac_a = (frac32_a >> 16) as u16;
+            let mut bit_n_plus_one = false;
+            if reg_a != 14 {
+                bit_n_plus_one = ((frac32_a >> 15) & 0x1) != 0;
+            } else if frac32_a > 0 {
+                frac_a = 0;
+            }
+            if (reg_a == 14) && (exp_a != 0) {
+                bit_n_plus_one = true;
+            }
+            let mut u_z = Self::pack_to_ui(regime, reg_a, exp_a as u16, frac_a);
+            if bit_n_plus_one {
+                let bits_more = (frac32_a & 0x7FFF) != 0;
+                //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+                u_z += (u_z & 1) | (bits_more as u16);
+            }
+            u_z
+        };
+        Self::from_bits(u_z.with_sign(sign))
     }
 
-    if (ui_a as i16) < (ui_b as i16) {
-        let ui_x = ui_a;
-        let ui_y = ui_b;
-        ui_a = ui_y;
-        ui_b = ui_x;
-    }
-
-    let (mut k_a, mut exp_a, frac_a) = P16E1::separate_bits(ui_a);
-    let mut frac32_a = (frac_a as u32) << 16;
-    let (k_b, exp_b, frac_b) = P16E1::separate_bits(ui_b);
-    let mut frac32_b = (frac_b as u32) << 16;
-
-    let mut shift_right = (k_a as i16) - (k_b as i16);
-
-    //This is 2kZ + expZ; (where kZ=k_a-k_b and expZ=exp_a-expB)
-    shift_right = (shift_right << 1) + (exp_a as i16) - (exp_b as i16);
-
-    if shift_right == 0 {
-        frac32_a += frac32_b;
-        //rcarry is one
-        if exp_a != 0 {
-            k_a += 1;
-        }
-        exp_a ^= 1;
-        frac32_a >>= 1;
-    } else {
-        //Manage CLANG (LLVM) compiler when shifting right more than number of bits
-        if shift_right > 31 {
-            frac32_b = 0;
-        } else {
-            //frac32_b >>= shift_right
-            frac32_b >>= shift_right;
+    #[inline]
+    pub fn add_mags(mut ui_a: u16, mut ui_b: u16) -> Self {
+        let sign = Self::sign_ui(ui_a); //sign is always positive.. actually don't have to do this.
+        if sign {
+            ui_a = ui_a.wrapping_neg();
+            ui_b = ui_b.wrapping_neg();
         }
 
-        frac32_a += frac32_b;
-        let rcarry = (frac32_a & 0x8000_0000) != 0; //first left bit
-        if rcarry {
+        if (ui_a as i16) < (ui_b as i16) {
+            let ui_x = ui_a;
+            let ui_y = ui_b;
+            ui_a = ui_y;
+            ui_b = ui_x;
+        }
+
+        let (mut k_a, mut exp_a, frac_a) = Self::separate_bits(ui_a);
+        let mut frac32_a = (frac_a as u32) << 16;
+        let (k_b, exp_b, frac_b) = Self::separate_bits(ui_b);
+        let mut frac32_b = (frac_b as u32) << 16;
+
+        let mut shift_right = (k_a as i16) - (k_b as i16);
+
+        //This is 2kZ + expZ; (where kZ=k_a-k_b and expZ=exp_a-expB)
+        shift_right = (shift_right << 1) + (exp_a as i16) - (exp_b as i16);
+
+        if shift_right == 0 {
+            frac32_a += frac32_b;
+            //rcarry is one
             if exp_a != 0 {
                 k_a += 1;
             }
             exp_a ^= 1;
             frac32_a >>= 1;
-        }
-    }
-
-    let (regime, reg_sa, reg_a) = P16E1::calculate_regime(k_a);
-
-    let u_z = if reg_a > 14 {
-        //max or min pos. exp and frac does not matter.
-        if reg_sa {
-            0x7FFF
         } else {
-            0x1
+            //Manage CLANG (LLVM) compiler when shifting right more than number of bits
+            if shift_right > 31 {
+                frac32_b = 0;
+            } else {
+                //frac32_b >>= shift_right
+                frac32_b >>= shift_right;
+            }
+
+            frac32_a += frac32_b;
+            let rcarry = (frac32_a & 0x8000_0000) != 0; //first left bit
+            if rcarry {
+                if exp_a != 0 {
+                    k_a += 1;
+                }
+                exp_a ^= 1;
+                frac32_a >>= 1;
+            }
         }
-    } else {
-        //remove hidden bits
-        frac32_a = (frac32_a & 0x3FFF_FFFF) >> (reg_a + 1);
-        let mut frac_a = (frac32_a >> 16) as u16;
-        let mut bit_n_plus_one = false;
-        if reg_a != 14 {
-            bit_n_plus_one = ((frac32_a >> 15) & 0x1) != 0;
-        } else if frac32_a > 0 {
-            frac_a = 0;
-        }
-        if (reg_a == 14) && (exp_a != 0) {
-            bit_n_plus_one = true;
-        }
-        let mut u_z = P16E1::pack_to_ui(regime, reg_a, exp_a as u16, frac_a);
-        if bit_n_plus_one {
-            let bits_more = (frac32_a & 0x7FFF) != 0;
-            //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-            u_z += (u_z & 1) | (bits_more as u16);
-        }
-        u_z
-    };
-    P16E1::from_bits(u_z.with_sign(sign))
+
+        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
+
+        let u_z = if reg_a > 14 {
+            //max or min pos. exp and frac does not matter.
+            if reg_sa {
+                0x7FFF
+            } else {
+                0x1
+            }
+        } else {
+            //remove hidden bits
+            frac32_a = (frac32_a & 0x3FFF_FFFF) >> (reg_a + 1);
+            let mut frac_a = (frac32_a >> 16) as u16;
+            let mut bit_n_plus_one = false;
+            if reg_a != 14 {
+                bit_n_plus_one = ((frac32_a >> 15) & 0x1) != 0;
+            } else if frac32_a > 0 {
+                frac_a = 0;
+            }
+            if (reg_a == 14) && (exp_a != 0) {
+                bit_n_plus_one = true;
+            }
+            let mut u_z = Self::pack_to_ui(regime, reg_a, exp_a as u16, frac_a);
+            if bit_n_plus_one {
+                let bits_more = (frac32_a & 0x7FFF) != 0;
+                //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+                u_z += (u_z & 1) | (bits_more as u16);
+            }
+            u_z
+        };
+        Self::from_bits(u_z.with_sign(sign))
+    }
 }
 
 impl ops::Add for P16E1 {
@@ -232,17 +234,17 @@ impl ops::Add for P16E1 {
         let ui_b = other.to_bits();
 
         //Zero or infinity
-        if (ui_a == 0) || (ui_b == 0) {
+        if self.is_zero() || other.is_zero() {
             // Not required but put here for speed
             Self::from_bits(ui_a | ui_b)
-        } else if (ui_a == 0x8000) || (ui_b == 0x8000) {
+        } else if self.is_nar() || other.is_nar() {
             Self::NAR
         } else {
             //different signs
             if Self::sign_ui(ui_a ^ ui_b) {
-                sub_mags_p16(ui_a, ui_b)
+                Self::sub_mags(ui_a, ui_b)
             } else {
-                add_mags_p16(ui_a, ui_b)
+                Self::add_mags(ui_a, ui_b)
             }
         }
     }
@@ -256,17 +258,17 @@ impl ops::Sub for P16E1 {
         let ui_b = other.to_bits();
 
         //infinity
-        if (ui_a == 0x8000) || (ui_b == 0x8000) {
+        if self.is_nar() || other.is_nar() {
             Self::NAR
-        } else if (ui_a == 0) || (ui_b == 0) {
+        } else if self.is_zero() || other.is_zero() {
             //Zero
             Self::from_bits(ui_a | ui_b.wrapping_neg())
         } else {
             //different signs
             if Self::sign_ui(ui_a ^ ui_b) {
-                add_mags_p16(ui_a, ui_b.wrapping_neg())
+                Self::add_mags(ui_a, ui_b.wrapping_neg())
             } else {
-                sub_mags_p16(ui_a, ui_b.wrapping_neg())
+                Self::sub_mags(ui_a, ui_b.wrapping_neg())
             }
         }
     }
@@ -280,9 +282,9 @@ impl ops::Mul for P16E1 {
         let mut ui_b = other.to_bits();
 
         //NaR or Zero
-        if (ui_a == 0x8000) || (ui_b == 0x8000) {
+        if self.is_nar() || other.is_nar() {
             return Self::NAR;
-        } else if (ui_a == 0) || (ui_b == 0) {
+        } else if self.is_zero() || other.is_zero() {
             return Self::ZERO;
         }
 
@@ -363,9 +365,9 @@ impl ops::Div for P16E1 {
         let mut ui_b = other.to_bits();
 
         //NaR or Zero
-        if (ui_a == 0x8000) || (ui_b == 0x8000) || (ui_b == 0) {
+        if self.is_nar() || other.is_nar() || other.is_zero() {
             return Self::NAR;
-        } else if ui_a == 0 {
+        } else if self.is_zero() {
             return Self::ZERO;
         }
 
@@ -477,7 +479,7 @@ pub(super) fn q16_fdp_add(q: &mut Q16E1, p_a: P16E1, p_b: P16E1) {
     if q.is_nar() || p_a.is_nar() || p_b.is_nar() {
         *q = Q16E1::NAR;
         return;
-    } else if (ui_a == 0) || (ui_b == 0) {
+    } else if p_a.is_zero() || p_b.is_zero() {
         return;
     }
 
@@ -587,7 +589,7 @@ pub(super) fn q16_fdp_sub(q: &mut Q16E1, p_a: P16E1, p_b: P16E1) {
     if q.is_nar() || p_a.is_nar() || p_b.is_nar() {
         *q = Q16E1::NAR;
         return;
-    } else if (ui_a == 0) || (ui_b == 0) {
+    } else if p_a.is_zero() || p_b.is_zero() {
         return;
     }
 

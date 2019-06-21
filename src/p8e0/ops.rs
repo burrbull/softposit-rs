@@ -53,17 +53,17 @@ impl ops::Add for P8E0 {
         let ui_b = other.to_bits();
 
         //Zero or infinity
-        if (ui_a == 0) || (ui_b == 0) {
+        if self.is_zero() || other.is_zero() {
             // Not required but put here for speed
             Self::from_bits(ui_a | ui_b)
-        } else if (ui_a == 0x80) || (ui_b == 0x80) {
+        } else if self.is_nar() || other.is_nar() {
             Self::NAR
         } else {
             //different signs
             if Self::sign_ui(ui_a ^ ui_b) {
-                sub_mags_p8(ui_a, ui_b)
+                Self::sub_mags(ui_a, ui_b)
             } else {
-                add_mags_p8(ui_a, ui_b)
+                Self::add_mags(ui_a, ui_b)
             }
         }
     }
@@ -76,19 +76,18 @@ impl ops::Sub for P8E0 {
         let ui_a = self.to_bits();
         let ui_b = other.to_bits();
 
-        //infinity
-        if (ui_a == 0x80) || (ui_b == 0x80) {
+        if self.is_nar() || other.is_nar() {
+            //infinity
             Self::NAR
-        }
-        //Zero
-        else if (ui_a == 0) || (ui_b == 0) {
+        } else if self.is_zero() || other.is_zero() {
+            //Zero
             Self::from_bits(ui_a | ui_b.wrapping_neg())
         } else {
             //different signs
             if Self::sign_ui(ui_a ^ ui_b) {
-                add_mags_p8(ui_a, ui_b.wrapping_neg())
+                Self::add_mags(ui_a, ui_b.wrapping_neg())
             } else {
-                sub_mags_p8(ui_a, ui_b.wrapping_neg())
+                Self::sub_mags(ui_a, ui_b.wrapping_neg())
             }
         }
     }
@@ -102,9 +101,9 @@ impl ops::Div for P8E0 {
         let mut ui_b = other.to_bits();
 
         //Zero or infinity
-        if (ui_a == 0x80) || (ui_b == 0x80) || (ui_b == 0) {
+        if self.is_nar() || other.is_nar() || other.is_zero() {
             return Self::NAR;
-        } else if ui_a == 0 {
+        } else if self.is_zero() {
             return Self::ZERO;
         }
 
@@ -176,9 +175,9 @@ impl ops::Mul for P8E0 {
         let mut ui_b = other.to_bits();
 
         //NaR or Zero
-        if (ui_a == 0x80) || (ui_b == 0x80) {
+        if self.is_nar() || other.is_nar() {
             return Self::NAR;
-        } else if (ui_a == 0) || (ui_b == 0) {
+        } else if self.is_zero() || other.is_zero() {
             return Self::ZERO;
         }
 
@@ -233,134 +232,136 @@ impl ops::Mul for P8E0 {
     }
 }
 
-#[inline]
-fn add_mags_p8(mut ui_a: u8, mut ui_b: u8) -> P8E0 {
-    let sign = P8E0::sign_ui(ui_a);
-    if sign {
-        ui_a = ui_a.wrapping_neg();
-        ui_b = ui_b.wrapping_neg();
-    }
+impl P8E0 {
+    #[inline]
+    fn add_mags(mut ui_a: u8, mut ui_b: u8) -> Self {
+        let sign = Self::sign_ui(ui_a);
+        if sign {
+            ui_a = ui_a.wrapping_neg();
+            ui_b = ui_b.wrapping_neg();
+        }
 
-    if (ui_a as i8) < (ui_b as i8) {
-        ui_a ^= ui_b;
-        ui_b ^= ui_a;
-        ui_a ^= ui_b;
-    }
+        if (ui_a as i8) < (ui_b as i8) {
+            ui_a ^= ui_b;
+            ui_b ^= ui_a;
+            ui_a ^= ui_b;
+        }
 
-    let (mut k_a, frac_a) = P8E0::separate_bits(ui_a);
-    let mut frac16_a = (frac_a as u16) << 7;
+        let (mut k_a, frac_a) = Self::separate_bits(ui_a);
+        let mut frac16_a = (frac_a as u16) << 7;
 
-    let (k_b, frac_b) = P8E0::separate_bits(ui_b);
-    let shift_right = (k_a as i16) - (k_b as i16);
+        let (k_b, frac_b) = Self::separate_bits(ui_b);
+        let shift_right = (k_a as i16) - (k_b as i16);
 
-    //Manage CLANG (LLVM) compiler when shifting right more than number of bits
-    let frac16_b = if shift_right > 7 {
-        0
-    } else {
-        (frac_b as u16) << (7 - shift_right)
-    };
-
-    frac16_a += frac16_b;
-
-    let rcarry = (0x8000 & frac16_a) != 0; //first left bit
-    if rcarry {
-        k_a += 1;
-        frac16_a >>= 1;
-    }
-
-    let (regime, reg_sa, reg_a) = P8E0::calculate_regime(k_a);
-
-    let u_z = if reg_a > 6 {
-        //max or min pos. exp and frac does not matter.
-        if reg_sa {
-            0x7F
+        //Manage CLANG (LLVM) compiler when shifting right more than number of bits
+        let frac16_b = if shift_right > 7 {
+            0
         } else {
-            0x1
+            (frac_b as u16) << (7 - shift_right)
+        };
+
+        frac16_a += frac16_b;
+
+        let rcarry = (0x8000 & frac16_a) != 0; //first left bit
+        if rcarry {
+            k_a += 1;
+            frac16_a >>= 1;
         }
-    } else {
-        frac16_a = (frac16_a & 0x3FFF) >> reg_a;
-        let frac_a = (frac16_a >> 8) as u8;
-        let bit_n_plus_one = (0x80 & frac16_a) != 0;
-        let mut u_z = P8E0::pack_to_ui(regime, frac_a);
 
-        //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-        if bit_n_plus_one {
-            let bits_more = (0x7F & frac16_a) != 0;
-            u_z += (u_z & 1) | (bits_more as u8);
-        }
-        u_z
-    };
-    P8E0::from_bits(u_z.with_sign(sign))
-}
+        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
 
-#[inline]
-fn sub_mags_p8(mut ui_a: u8, mut ui_b: u8) -> P8E0 {
-    //Both ui_a and ui_b are actually the same signs if ui_b inherits sign of sub
-    //Make both positive
-    let mut sign = P8E0::sign_ui(ui_a);
-    if sign {
-        ui_a = ui_a.wrapping_neg();
-    } else {
-        ui_b = ui_b.wrapping_neg();
-    }
-    if ui_a == ui_b {
-        //essential, if not need special handling
-        return P8E0::ZERO;
-    }
-    if ui_a < ui_b {
-        ui_a ^= ui_b;
-        ui_b ^= ui_a;
-        ui_a ^= ui_b;
-        sign = !sign; //A becomes B
-    }
-
-    let (mut k_a, frac_a) = P8E0::separate_bits(ui_a);
-    let mut frac16_a = (frac_a as u16) << 7;
-
-    let (k_b, frac_b) = P8E0::separate_bits(ui_b);
-    let shift_right = (k_a as i16) - (k_b as i16);
-
-    let mut frac16_b = (frac_b as u16) << 7;
-
-    if shift_right >= 14 {
-        return P8E0::from_bits(ui_a.with_sign(sign));
-    } else {
-        frac16_b >>= shift_right;
-    }
-    frac16_a -= frac16_b;
-
-    while (frac16_a >> 14) == 0 {
-        k_a -= 1;
-        frac16_a <<= 1;
-    }
-    let ecarry = ((0x4000 & frac16_a) >> 14) != 0;
-    if !ecarry {
-        k_a -= 1;
-        frac16_a <<= 1;
-    }
-
-    let (regime, reg_sa, reg_a) = P8E0::calculate_regime(k_a);
-
-    let u_z = if reg_a > 6 {
-        //max or min pos. exp and frac does not matter.
-        if reg_sa {
-            0x7F
+        let u_z = if reg_a > 6 {
+            //max or min pos. exp and frac does not matter.
+            if reg_sa {
+                0x7F
+            } else {
+                0x1
+            }
         } else {
-            0x1
-        }
-    } else {
-        frac16_a = (frac16_a & 0x3FFF) >> reg_a;
-        let frac_a = (frac16_a >> 8) as u8;
-        let bit_n_plus_one = (0x80 & frac16_a) != 0;
-        let mut u_z = P8E0::pack_to_ui(regime, frac_a);
+            frac16_a = (frac16_a & 0x3FFF) >> reg_a;
+            let frac_a = (frac16_a >> 8) as u8;
+            let bit_n_plus_one = (0x80 & frac16_a) != 0;
+            let mut u_z = Self::pack_to_ui(regime, frac_a);
 
-        if bit_n_plus_one {
-            let bits_more = (0x7F & frac16_a) != 0;
-            u_z += (u_z & 1) | (bits_more as u8);
+            //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+            if bit_n_plus_one {
+                let bits_more = (0x7F & frac16_a) != 0;
+                u_z += (u_z & 1) | (bits_more as u8);
+            }
+            u_z
+        };
+        Self::from_bits(u_z.with_sign(sign))
+    }
+
+    #[inline]
+    fn sub_mags(mut ui_a: u8, mut ui_b: u8) -> Self {
+        //Both ui_a and ui_b are actually the same signs if ui_b inherits sign of sub
+        //Make both positive
+        let mut sign = Self::sign_ui(ui_a);
+        if sign {
+            ui_a = ui_a.wrapping_neg();
+        } else {
+            ui_b = ui_b.wrapping_neg();
         }
-        u_z
-    };
-    P8E0::from_bits(u_z.with_sign(sign))
+        if ui_a == ui_b {
+            //essential, if not need special handling
+            return Self::ZERO;
+        }
+        if ui_a < ui_b {
+            ui_a ^= ui_b;
+            ui_b ^= ui_a;
+            ui_a ^= ui_b;
+            sign = !sign; //A becomes B
+        }
+
+        let (mut k_a, frac_a) = Self::separate_bits(ui_a);
+        let mut frac16_a = (frac_a as u16) << 7;
+
+        let (k_b, frac_b) = Self::separate_bits(ui_b);
+        let shift_right = (k_a as i16) - (k_b as i16);
+
+        let mut frac16_b = (frac_b as u16) << 7;
+
+        if shift_right >= 14 {
+            return Self::from_bits(ui_a.with_sign(sign));
+        } else {
+            frac16_b >>= shift_right;
+        }
+        frac16_a -= frac16_b;
+
+        while (frac16_a >> 14) == 0 {
+            k_a -= 1;
+            frac16_a <<= 1;
+        }
+        let ecarry = ((0x4000 & frac16_a) >> 14) != 0;
+        if !ecarry {
+            k_a -= 1;
+            frac16_a <<= 1;
+        }
+
+        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
+
+        let u_z = if reg_a > 6 {
+            //max or min pos. exp and frac does not matter.
+            if reg_sa {
+                0x7F
+            } else {
+                0x1
+            }
+        } else {
+            frac16_a = (frac16_a & 0x3FFF) >> reg_a;
+            let frac_a = (frac16_a >> 8) as u8;
+            let bit_n_plus_one = (0x80 & frac16_a) != 0;
+            let mut u_z = Self::pack_to_ui(regime, frac_a);
+
+            if bit_n_plus_one {
+                let bits_more = (0x7F & frac16_a) != 0;
+                u_z += (u_z & 1) | (bits_more as u8);
+            }
+            u_z
+        };
+        Self::from_bits(u_z.with_sign(sign))
+    }
 }
 
 impl ops::Rem for P8E0 {
@@ -393,7 +394,7 @@ pub(super) fn q8_fdp_add(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
     if q.is_nar() || p_a.is_nar() || p_b.is_nar() {
         *q = Q8E0::NAR;
         return;
-    } else if (ui_a == 0) || (ui_b == 0) {
+    } else if p_a.is_zero() || p_b.is_zero() {
         return;
     }
 
@@ -452,7 +453,7 @@ pub(super) fn q8_fdp_sub(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
     if q.is_nar() || p_a.is_nar() || p_b.is_nar() {
         *q = Q8E0::NAR;
         return;
-    } else if (ui_a == 0) || (ui_b == 0) {
+    } else if p_a.is_zero() || p_b.is_zero() {
         return;
     }
 

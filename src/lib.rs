@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(feature = "nightly", feature(const_generics))]
 #![allow(clippy::cast_lossless)]
 #![allow(clippy::float_cmp)]
 #![allow(clippy::many_single_char_names)]
@@ -18,6 +19,9 @@ pub mod p32e2;
 pub use self::p32e2::{P32E2, Q32E2};
 pub type P32 = P32E2;
 pub type Q32 = Q32E2;
+
+#[cfg(feature = "nightly")]
+pub mod pxe2;
 
 mod convert;
 

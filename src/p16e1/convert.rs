@@ -519,7 +519,6 @@ impl From<f64> for P16E1 {
     }
 }
 
-#[cfg(feature = "float_convert")]
 impl From<P16E1> for f32 {
     #[inline]
     fn from(a: P16E1) -> Self {
@@ -527,62 +526,27 @@ impl From<P16E1> for f32 {
     }
 }
 
-#[cfg(feature = "float_convert")]
 impl From<P16E1> for f64 {
     #[inline]
-    fn from(a: P16E1) -> Self {
-        let mut u_z = a.to_bits();
+    fn from(p_a: P16E1) -> Self {
+        let mut ui_a = p_a.to_bits();
 
-        if u_z == 0 {
-            return 0.;
-        } else if u_z == 0x7FFF {
-            //maxpos -> 32767
-            return 268_435_456.;
-        } else if u_z == 0x8001 {
-            //-maxpos -> 32769
-            return -268_435_456.;
-        } else if u_z == 0x8000 {
-            //NaR -> 32768
-            return f64::NAN;
-        }
-
-        let sign = P16E1::sign_ui(u_z);
-        if sign {
-            u_z = u_z.wrapping_neg();
-        }
-        let reg_s = P16E1::sign_reg_ui(u_z);
-        let mut k = 0_i16;
-        let mut shift = 2_u16;
-        let mut tmp = u_z << 2;
-        let reg = if reg_s {
-            while (tmp & 0x_8000) != 0 {
-                k += 1;
-                shift += 1;
-                tmp <<= 1;
-            }
-            (k + 1) as u16
+        if p_a.is_zero() {
+            0.
+        } else if p_a.is_nar() {
+            f64::NAN
         } else {
-            k = -1;
-            while (tmp & 0x_8000) == 0 {
-                k -= 1;
-                shift += 1;
-                tmp <<= 1;
+            let sign_a = P16E1::sign_ui(ui_a);
+            if sign_a {
+                ui_a = ui_a.wrapping_neg();
             }
-            tmp &= 0x7FFF;
-            (-k) as u16
-        };
-        let exp = (tmp >> 14) as i8;
-        let frac = (tmp & 0x3FFF) >> shift;
+            let (k_a, tmp) = P16E1::separate_bits_tmp(ui_a);
 
-        let fraction_max = libm::pow(2., (13_u16.wrapping_sub(reg)) as f64);
-        let mut d16 = libm::pow(4., k as f64)
-            * libm::pow(2., exp as f64)
-            * (1. + ((frac as f64) / fraction_max));
+            let frac_a = ((tmp << 2) as u64) << 36;
+            let exp_a = (((k_a as u64) << 1) + ((tmp >> 14) as u64)).wrapping_add(1023) << 52;
 
-        if sign {
-            d16 = -d16;
+            f64::from_bits(exp_a + frac_a + (((sign_a as u64) & 0x1) << 63))
         }
-        d16
     }
 }
 

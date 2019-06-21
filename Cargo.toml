@@ -13,10 +13,6 @@ edition = "2018"
 version = "0.2"
 optional = true
 
-[dependencies.libm]
-version = "0.1.2"
-optional = true
-
 [dependencies.nalgebra]
 version = "0.18"
 optional = true
@@ -38,8 +34,7 @@ version = "0.6"
 optional = true
 
 [features]
-default = ["std", "float_convert", "rand", "linalg"]
+default = ["std", "rand", "linalg"]
 std = []
-float_convert = ["libm"]
 linalg = ["nalgebra", "num-traits", "alga", "approx", "alga_derive"]
-
+nightly = []

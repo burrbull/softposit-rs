@@ -86,6 +86,10 @@ impl P8E0 {
         }
     }
     #[inline]
+    pub fn is_zero(self) -> bool {
+        self == Self::ZERO
+    }
+    #[inline]
     pub fn is_nar(self) -> bool {
         self == Self::NAR
     }

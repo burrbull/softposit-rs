@@ -249,9 +249,9 @@ impl From<P32E2> for f64 {
     fn from(p_a: P32E2) -> Self {
         let mut ui_a = p_a.to_bits();
 
-        if p_a == P32E2::ZERO {
+        if p_a.is_zero() {
             0.
-        } else if p_a.is_infinite() {
+        } else if p_a.is_nar() {
             f64::NAN
         } else {
             let sign_a = P32E2::sign_ui(ui_a);
@@ -260,8 +260,8 @@ impl From<P32E2> for f64 {
             }
             let (k_a, tmp) = P32E2::separate_bits_tmp(ui_a);
 
-            let frac_a = (((tmp as u64) << 3) & 0xFFFF_FFFF) << 20;
-            let exp_a = ((((k_a as u64) << 2) + ((tmp >> 29) as u64)).wrapping_add(1023)) << 52;
+            let frac_a = ((tmp << 3) as u64) << 20;
+            let exp_a = (((k_a as u64) << 2) + ((tmp >> 29) as u64)).wrapping_add(1023) << 52;
 
             f64::from_bits(exp_a + frac_a + (((sign_a as u64) & 0x1) << 63))
         }
@@ -271,7 +271,7 @@ impl From<P32E2> for f64 {
 impl From<P32E2> for i32 {
     #[inline]
     fn from(p_a: P32E2) -> Self {
-        if p_a.is_infinite() {
+        if p_a.is_nar() {
             return i32::min_value();
         }
 
@@ -330,7 +330,7 @@ impl From<P32E2> for i32 {
 impl From<P32E2> for u32 {
     #[inline]
     fn from(p_a: P32E2) -> Self {
-        if p_a.is_infinite() {
+        if p_a.is_nar() {
             return 0x8000_0000; // Error: Should be u32::max_value()
         }
 

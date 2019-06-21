@@ -184,7 +184,6 @@ impl From<f64> for P8E0 {
     }
 }
 
-#[cfg(feature = "float_convert")]
 impl From<P8E0> for f32 {
     #[inline]
     fn from(a: P8E0) -> Self {
@@ -192,60 +191,26 @@ impl From<P8E0> for f32 {
     }
 }
 
-#[cfg(feature = "float_convert")]
 impl From<P8E0> for f64 {
     #[inline]
-    fn from(a: P8E0) -> Self {
-        let mut u_z = a.to_bits();
+    fn from(p_a: P8E0) -> Self {
+        let mut ui_a = p_a.to_bits();
 
-        if u_z == 0 {
-            return 0.;
-        } else if u_z == 0x7F {
-            //maxpos
-            return 64.;
-        } else if u_z == 0x81 {
-            //-maxpos
-            return -64.;
-        } else if u_z == 0x80 {
-            //NaR
-            return f64::NAN;
-        }
-
-        let sign = P8E0::sign_ui(u_z);
-        if sign {
-            u_z = u_z.wrapping_neg()
-        };
-        let reg_s = P8E0::sign_reg_ui(u_z);
-
-        let mut shift = 2_u8;
-        let mut k = 0_i8;
-        let mut tmp = u_z<<2 /* & 0xFF*/;
-        let reg = if reg_s {
-            while (tmp & 0x_80) != 0 {
-                k += 1;
-                shift += 1;
-                tmp <<= 1 /* & 0xFF*/;
-            }
-            k + 1
+        if p_a.is_zero() {
+            0.
+        } else if p_a.is_nar() {
+            f64::NAN
         } else {
-            k = -1;
-            while (tmp >> 7) == 0 {
-                k -= 1;
-                shift += 1;
-                tmp <<= 1 /* & 0xFF*/;
+            let sign_a = P8E0::sign_ui(ui_a);
+            if sign_a {
+                ui_a = ui_a.wrapping_neg();
             }
-            tmp &= 0x7F;
-            -k
-        } as u8;
-        let frac = (tmp & 0x7F) >> shift;
+            let (k_a, tmp) = P8E0::separate_bits_tmp(ui_a);
 
-        let fraction_max = libm::pow(2., (6 - reg) as f64);
-        let d8 = (libm::pow(2., k as f64) * (1. + ((frac as f64) / fraction_max))) as f64;
+            let frac_a = ((tmp << 1) as u64) << 44;
+            let exp_a = (k_a as u64).wrapping_add(1023) << 52;
 
-        if sign {
-            -d8
-        } else {
-            d8
+            f64::from_bits(exp_a + frac_a + (((sign_a as u64) & 0x1) << 63))
         }
     }
 }
