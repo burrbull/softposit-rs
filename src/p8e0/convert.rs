@@ -424,12 +424,17 @@ impl From<u32> for P8E0 {
 
 impl From<i32> for P8E0 {
     #[inline]
-    fn from(mut a: i32) -> Self {
-        let sign = a.is_negative();
-        if sign {
-            a = -a;
+    fn from(mut i_a: i32) -> Self {
+        if i_a < -48 {
+            //-48 to -MAX_INT rounds to P32 value -268435456
+            return Self::MIN;
         }
-        Self::from_bits(convert_u32_to_p8bits(a as u32).with_sign(sign))
+
+        let sign = i_a.is_negative();
+        if sign {
+            i_a = -i_a;
+        }
+        Self::from_bits(convert_u32_to_p8bits(i_a as u32).with_sign(sign))
     }
 }
 
@@ -442,19 +447,22 @@ impl From<u64> for P8E0 {
 
 impl From<i64> for P8E0 {
     #[inline]
-    fn from(mut a: i64) -> Self {
-        let sign = a.is_negative();
-        if sign {
-            a = -a;
+    fn from(mut i_a: i64) -> Self {
+        if i_a < -48 {
+            //-48 to -MAX_INT rounds to P32 value -268435456
+            return Self::MIN;
         }
-        Self::from_bits(convert_u64_to_p8bits(a as u64).with_sign(sign))
+
+        let sign = i_a.is_negative();
+        if sign {
+            i_a = -i_a;
+        }
+        Self::from_bits(convert_u64_to_p8bits(i_a as u64).with_sign(sign))
     }
 }
 
 fn convert_u32_to_p8bits(a: u32) -> u8 {
-    if a == 0x8000_0000 {
-        0x80
-    } else if a > 48 {
+    if a > 48 {
         0x7F
     } else if a < 2 {
         (a << 6) as u8
@@ -482,9 +490,7 @@ fn convert_u32_to_p8bits(a: u32) -> u8 {
 }
 
 fn convert_u64_to_p8bits(a: u64) -> u8 {
-    if a == 0x8000_0000_0000_0000 {
-        0x80
-    } else if a > 48 {
+    if a > 48 {
         0x7F
     } else if a < 2 {
         (a << 6) as u8

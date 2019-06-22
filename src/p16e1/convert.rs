@@ -7,12 +7,16 @@ crate::impl_convert!(P16E1, Q16E1);
 
 impl From<i32> for P16E1 {
     #[inline]
-    fn from(mut a: i32) -> Self {
-        let sign = a.is_negative();
-        if sign {
-            a = -a;
+    fn from(mut i_a: i32) -> Self {
+        if i_a < -134217728 {
+            //-2147483648 to -134217729 rounds to P32 value -268435456
+            return Self::MIN;
         }
-        Self::from_bits(convert_u32_to_p16bits(a as u32).with_sign(sign))
+        let sign = i_a.is_negative();
+        if sign {
+            i_a = -i_a;
+        }
+        Self::from_bits(convert_u32_to_p16bits(i_a as u32).with_sign(sign))
     }
 }
 
@@ -25,12 +29,16 @@ impl From<u32> for P16E1 {
 
 impl From<i64> for P16E1 {
     #[inline]
-    fn from(mut a: i64) -> Self {
-        let sign = a.is_negative();
-        if sign {
-            a = -a;
+    fn from(mut i_a: i64) -> Self {
+        if i_a < -134217728 {
+            //-2147483648 to -134217729 rounds to P32 value -268435456
+            return Self::MIN;
         }
-        Self::from_bits(convert_u64_to_p16bits(a as u64).with_sign(sign))
+        let sign = i_a.is_negative();
+        if sign {
+            i_a = -i_a;
+        }
+        Self::from_bits(convert_u64_to_p16bits(i_a as u64).with_sign(sign))
     }
 }
 
@@ -42,9 +50,7 @@ impl From<u64> for P16E1 {
 }
 
 fn convert_u32_to_p16bits(a: u32) -> u16 {
-    if a == 0x8000_0000 {
-        (a >> 4) as u16
-    } else if a > 0x0800_0000 {
+    if a > 0x0800_0000 {
         0x7FFF
     } else if a > 0x02FF_FFFF {
         0x7FFE
@@ -128,9 +134,7 @@ impl From<P16E1> for i32 {
 }
 
 fn convert_u64_to_p16bits(a: u64) -> u16 {
-    if a == 0x8000_0000_0000_0000 {
-        (a >> 24) as u16
-    } else if a > 0x0000_0000_0800_0000 {
+    if a > 0x0000_0000_0800_0000 {
         0x7FFF
     } else if a > 0x0000_0000_02FF_FFFF {
         0x7FFE

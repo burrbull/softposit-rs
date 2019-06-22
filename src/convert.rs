@@ -2,6 +2,69 @@ use crate::WithSign;
 use crate::{P16E1, P32E2, P8E0};
 use core::convert::From;
 
+fn check_extra_p32_two_bits(
+    mut float: f64,
+    mut temp: f64,
+    bits_n_plus_one: &mut bool,
+    bits_more: &mut bool,
+) {
+    temp /= 2.;
+    if temp <= float {
+        *bits_n_plus_one = true;
+        float -= temp;
+    }
+    if float > 0. {
+        *bits_more = true;
+    }
+}
+
+pub(crate) fn convert_fraction_p32(
+    mut float: f64,
+    mut frac_length: u16,
+    bits_n_plus_one: &mut bool,
+    bits_more: &mut bool,
+) -> u32 {
+    let mut frac = 0_u32;
+
+    if float == 0. {
+        return 0;
+    } else if float == core::f64::INFINITY {
+        return 0x8000_0000;
+    }
+
+    float -= 1.; //remove hidden bit
+    if frac_length == 0 {
+        check_extra_p32_two_bits(float, 1.0, bits_n_plus_one, bits_more);
+    } else {
+        let mut temp = 1_f64;
+        loop {
+            temp /= 2.;
+            if temp <= float {
+                float -= temp;
+                frac_length -= 1;
+                frac = (frac << 1) + 1; //shift in one
+                if float == 0. {
+                    frac <<= frac_length as u16;
+                    break;
+                }
+
+                if frac_length == 0 {
+                    check_extra_p32_two_bits(float, temp, bits_n_plus_one, bits_more);
+                    break;
+                }
+            } else {
+                frac <<= 1; //shift in a zero
+                frac_length -= 1;
+                if frac_length == 0 {
+                    check_extra_p32_two_bits(float, temp, bits_n_plus_one, bits_more);
+                    break;
+                }
+            }
+        }
+    }
+    frac
+}
+
 impl From<P8E0> for P16E1 {
     #[inline]
     fn from(p_a: P8E0) -> Self {

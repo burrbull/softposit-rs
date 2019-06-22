@@ -5,69 +5,6 @@ use core::f64;
 
 crate::impl_convert!(P32E2, Q32E2);
 
-fn check_extra_p32_two_bits(
-    mut float: f64,
-    mut temp: f64,
-    bits_n_plus_one: &mut bool,
-    bits_more: &mut bool,
-) {
-    temp /= 2.;
-    if temp <= float {
-        *bits_n_plus_one = true;
-        float -= temp;
-    }
-    if float > 0. {
-        *bits_more = true;
-    }
-}
-
-fn convert_fraction_p32(
-    mut float: f64,
-    mut frac_length: u16,
-    bits_n_plus_one: &mut bool,
-    bits_more: &mut bool,
-) -> u32 {
-    let mut frac = 0_u32;
-
-    if float == 0. {
-        return 0;
-    } else if float == f64::INFINITY {
-        return 0x8000_0000;
-    }
-
-    float -= 1.; //remove hidden bit
-    if frac_length == 0 {
-        check_extra_p32_two_bits(float, 1.0, bits_n_plus_one, bits_more);
-    } else {
-        let mut temp = 1_f64;
-        loop {
-            temp /= 2.;
-            if temp <= float {
-                float -= temp;
-                frac_length -= 1;
-                frac = (frac << 1) + 1; //shift in one
-                if float == 0. {
-                    frac <<= frac_length as u16;
-                    break;
-                }
-
-                if frac_length == 0 {
-                    check_extra_p32_two_bits(float, temp, bits_n_plus_one, bits_more);
-                    break;
-                }
-            } else {
-                frac <<= 1; //shift in a zero
-                frac_length -= 1;
-                if frac_length == 0 {
-                    check_extra_p32_two_bits(float, temp, bits_n_plus_one, bits_more);
-                    break;
-                }
-            }
-        }
-    }
-    frac
-}
-
 impl From<f32> for P32E2 {
     fn from(float: f32) -> Self {
         Self::from(float as f64)
@@ -146,7 +83,7 @@ impl From<f64> for P32E2 {
                         frac = 0;
                     }
                 } else {
-                    frac = convert_fraction_p32(
+                    frac = crate::convert_fraction_p32(
                         float,
                         frac_length as u16,
                         &mut bit_n_plus_one,
@@ -207,7 +144,7 @@ impl From<f64> for P32E2 {
                     frac = 0;
                 }
             } else {
-                frac = convert_fraction_p32(
+                frac = crate::convert_fraction_p32(
                     float,
                     frac_length as u16,
                     &mut bit_n_plus_one,
@@ -489,12 +426,21 @@ impl From<P32E2> for u64 {
 
 impl From<i32> for P32E2 {
     #[inline]
-    fn from(mut a: i32) -> Self {
-        let sign = a.is_negative();
-        if sign {
-            a = -a;
+    fn from(mut i_a: i32) -> Self {
+        if i_a < -2147483135 {
+            //-2147483648 to -2147483136 rounds to P32 value -2147483648
+            return Self::from_bits(0x80500000);
         }
-        Self::from_bits(convert_u32_to_p32bits(a as u32).with_sign(sign))
+        if i_a > 2147483135 {
+            //2147483136 to 2147483647 rounds to P32 value (2147483648)=> 0x7FB00000
+            return Self::from_bits(0x7FB00000);
+        }
+
+        let sign = i_a.is_negative();
+        if sign {
+            i_a = -i_a;
+        }
+        Self::from_bits(convert_u32_to_p32bits(i_a as u32).with_sign(sign))
     }
 }
 
@@ -507,12 +453,20 @@ impl From<u32> for P32E2 {
 
 impl From<i64> for P32E2 {
     #[inline]
-    fn from(mut a: i64) -> Self {
-        let sign = a.is_negative();
-        if sign {
-            a = -a;
+    fn from(mut i_a: i64) -> Self {
+        if i_a < -9222809086901354495 {
+            //-9222809086901354496 to -9223372036854775808 will be P32 value -9223372036854775808
+            return Self::from_bits(0x80005000);
         }
-        Self::from_bits(convert_u64_to_p32bits(a as u64).with_sign(sign))
+        if i_a > 9222809086901354495 {
+            //9222809086901354496 to 9223372036854775807 will be P32 value 9223372036854775808
+            return Self::from_bits(0x7FFFB000); // 9223372036854775808
+        }
+        let sign = i_a.is_negative();
+        if sign {
+            i_a = -i_a;
+        }
+        Self::from_bits(convert_u64_to_p32bits(i_a as u64).with_sign(sign))
     }
 }
 
@@ -526,9 +480,7 @@ impl From<u64> for P32E2 {
 fn convert_u32_to_p32bits(a: u32) -> u32 {
     let mut mask = 0x8000_0000_u32;
     // NaR
-    if a == 0x8000_0000 {
-        a
-    } else if a > 0xFFFF_FBFF {
+    if a > 0xFFFF_FBFF {
         // 4294966271
         0x7FC0_0000 // 4294967296
     } else if a < 0x2 {
@@ -562,9 +514,7 @@ fn convert_u32_to_p32bits(a: u32) -> u32 {
 fn convert_u64_to_p32bits(a: u64) -> u32 {
     let mut mask = 0x8000_0000_0000_0000_u64;
     // NaR
-    if a == 0x8000_0000_0000_0000 {
-        0x8000_0000
-    } else if a > 0xFFFB_FFFF_FFFF_FBFF {
+    if a > 0xFFFB_FFFF_FFFF_FBFF {
         // 18445618173802707967
         0x7FFF_C000 // 18446744073709552000
     } else if a < 0x2 {

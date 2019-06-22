@@ -24,6 +24,7 @@ pub type Q32 = Q32E2;
 pub mod pxe2;
 
 mod convert;
+use convert::convert_fraction_p32;
 
 mod macros;
 

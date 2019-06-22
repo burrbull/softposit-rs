@@ -1,6 +1,7 @@
 use core::mem;
 
 mod convert;
+mod math;
 mod ops;
 
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
