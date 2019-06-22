@@ -22,6 +22,8 @@ pub type Q32 = Q32E2;
 
 #[cfg(feature = "nightly")]
 pub mod pxe2;
+#[cfg(feature = "nightly")]
+pub use pxe2::PxE2;
 
 mod convert;
 use convert::convert_fraction_p32;

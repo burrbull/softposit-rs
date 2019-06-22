@@ -1,5 +1,7 @@
 use crate::WithSign;
 use crate::{P16E1, P32E2, P8E0};
+#[cfg(feature="nightly")]
+use crate::PxE2;
 use core::convert::From;
 
 fn check_extra_p32_two_bits(
@@ -392,6 +394,61 @@ impl From<P32E2> for P8E0 {
         };
 
         P8E0::from_bits(u_z.with_sign(sign))
+    }
+}
+
+#[cfg(feature="nightly")]
+impl<const N: u32> From<P32E2> for PxE2<{ N }> {
+    #[inline]
+    fn from(p_a: P32E2) -> Self {
+        let mut ui_a = p_a.to_bits();
+
+        if p_a.is_nar() || p_a.is_zero() {
+            Self::from_bits(ui_a);
+        }
+
+        let sign = P32E2::sign_ui( ui_a );
+        if sign {
+            ui_a = ui_a.wrapping_neg();
+        }
+
+        let u_z = if N==2 {
+            if ui_a>0 { 0x40000000 } else {0}
+        }
+        else if (N==32) || (((0xFFFFFFFF_u32>>N) & ui_a)==0 ){
+            ui_a
+        }
+        else {
+
+            let shift = 32-N;
+            if  (ui_a>>shift) != (0x7FFFFFFF>>shift) {
+                if( (0x80000000_u32>>N) & ui_a) != 0 {
+                    if ( ( (0x80000000_u32>>(N-1)) & ui_a) != 0) || (((0x7FFFFFFF_u32>>N) & ui_a) != 0 ) {
+                        ui_a += 0x1<<shift;
+                    }
+                }
+            }
+            let mut u_z = ui_a & (((-0x80000000_i32)>>(N-1)) as u32);
+            if u_z==0 {
+                u_z = 0x1<<shift;
+            }
+            u_z
+        };
+        Self::from_bits(u_z.with_sign(sign))
+    }
+}
+
+#[cfg(feature="nightly")]
+pub trait Gate<const GATE: bool>{}
+#[cfg(feature="nightly")]
+impl<const M: u32, const N: u32> From<PxE2<{ M }>> for PxE2<{ N }>
+where
+    Self: Gate<{ M != N }>
+{
+    #[inline]
+    fn from(p_a: PxE2<{ M }>) -> Self {
+        Self::from(P32E2::from_bits(p_a.to_bits()))
+        
     }
 }
 
