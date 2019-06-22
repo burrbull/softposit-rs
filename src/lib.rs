@@ -21,6 +21,11 @@ pub type P32 = P32E2;
 pub type Q32 = Q32E2;
 
 #[cfg(feature = "nightly")]
+pub mod pxe1;
+#[cfg(feature = "nightly")]
+pub use pxe1::PxE1;
+
+#[cfg(feature = "nightly")]
 pub mod pxe2;
 #[cfg(feature = "nightly")]
 pub use pxe2::PxE2;
