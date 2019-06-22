@@ -437,7 +437,7 @@ impl<const N: u32> From<P32E2> for PxE2<{ N }> {
         Self::from_bits(u_z.with_sign(sign))
     }
 }
-
+/*
 #[cfg(feature="nightly")]
 pub trait Gate<const GATE: bool>{}
 #[cfg(feature="nightly")]
@@ -450,7 +450,7 @@ where
         Self::from(P32E2::from_bits(p_a.to_bits()))
         
     }
-}
+}*/
 
 #[cfg(feature = "alga")]
 crate::impl_subset_into!(
