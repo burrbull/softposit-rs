@@ -887,34 +887,42 @@ fn ulp(x: P32E2, y: P32E2) -> i32 {
 fn test_p_p(fun_p: fn(P32E2) -> P32E2, fun_f: fn(f64) -> f64, mn: i32, mx: i32, expected_ulp: i32) {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    //    let mut ncorrect = 0;
-    //    let mut max_ulp = 0;
-    for _i in 0..NTESTS {
+    let mut av_ulp = 0_f64;
+    let mut ncorrect = 0;
+    let mut max_ulp = 0;
+    let mut inc_x = 0_f64;
+    let mut inc_answer = P32E2::ZERO;
+    let mut inc_correct = P32E2::ZERO;
+    for i in 0..NTESTS {
         let n_a = rng.gen_range(mn, mx);
         let p_a = P32E2::new(n_a);
         let f_a = f64::from(p_a);
         let answer = fun_p(p_a);
         let correct = P32E2::from(fun_f(f_a));
         let u = ulp(answer, correct);
-        /*
+
         if u > max_ulp {
             max_ulp = u;
         }
-        */
-        assert!(
-            u <= expected_ulp,
-            "x = {}, answer = {}, correct = {}, ulp = {}",
-            f_a,
-            answer,
-            correct,
-            u,
-        );
-        /*if u <= expected_ulp {
+        if u <= expected_ulp {
             ncorrect += 1;
+        } else {
+            inc_x = f_a;
+            inc_answer = answer;
+            inc_correct = correct;
         }
-        if i == NTESTS - 1 {
-            assert!(false, "Correct = {} %, max_ulp = {}", (ncorrect*100) as f32 / (NTESTS as f32), max_ulp);
-        }*/
+        av_ulp += u as f64;
+        if (i == NTESTS - 1) && (max_ulp > expected_ulp) {
+            av_ulp /= NTESTS as f64;
+            assert!(false, "Correct = {} %, max_ulp = {}, av_ulp = {}\nLast: x = {}, answer = {}, correct = {}",
+                (ncorrect*100) as f32 / (NTESTS as f32),
+                max_ulp,
+                av_ulp,
+                inc_x,
+                inc_answer,
+                inc_correct
+            );
+        }
     }
 }
 
