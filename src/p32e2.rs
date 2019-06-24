@@ -3,10 +3,7 @@ use core::mem;
 mod convert;
 mod math;
 mod ops;
-#[cfg(feature = "num-traits")]
 crate::impl_num_traits!(P32E2);
-#[cfg(feature = "linalg")]
-//crate::impl_quire_dot!(P32E2, Q32E2);
 #[cfg(feature = "approx")]
 crate::impl_ulps_eq!(P32E2, i32);
 #[cfg(feature = "approx")]

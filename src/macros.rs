@@ -1,4 +1,3 @@
-#[cfg(feature = "num-traits")]
 #[macro_export]
 macro_rules! impl_num_traits {
     ($posit:ty) => {
