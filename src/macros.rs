@@ -1035,3 +1035,26 @@ macro_rules! impl_alga {
         }
     };
 }
+
+#[macro_export]
+macro_rules! add_sub_array {
+    ($posit:ty, $quire:ty, $($i:literal),*) => {$(
+        impl ops::AddAssign<($posit, [$posit; $i])> for $quire {
+            #[inline]
+            fn add_assign(&mut self, rhs: ($posit, [$posit; $i])) {
+                for p in &rhs.1 {
+                    *self -= (rhs.0, *p);
+                }
+            }
+        }
+
+        impl ops::SubAssign<($posit, [$posit; $i])> for $quire {
+            #[inline]
+            fn sub_assign(&mut self, rhs: ($posit, [$posit; $i])) {
+                for p in &rhs.1 {
+                    *self -= (rhs.0, *p);
+                }
+            }
+        }
+    )*}
+}

@@ -385,6 +385,8 @@ impl ops::SubAssign<(P8E0, P8E0)> for Q8E0 {
     }
 }
 
+crate::add_sub_array!(P8E0, Q8E0, 1, 2, 3, 4);
+
 pub(super) fn q8_fdp_add(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
     let uq_z1 = q.to_bits();
 

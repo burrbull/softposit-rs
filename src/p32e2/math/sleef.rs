@@ -73,8 +73,7 @@ mod kernel {
 
         let mut quire = Q32E2::init();
         quire += (d, ONE);
-        quire -= (qf, L2U);
-        quire -= (qf, L2L);
+        quire -= (qf, [L2U, L2L]);
         let s = quire.to_posit();
 
         let mut u = s.poly5(&[
@@ -102,8 +101,7 @@ mod kernel {
 
         let mut quire = Q32E2::init();
         quire += (d, ONE);
-        quire -= (qf, L2U);
-        quire -= (qf, L2L);
+        quire -= (qf, [L2U, L2L]);
         let s = quire.clone().to_posit();
 
         let u = s.poly5(&[
@@ -128,37 +126,27 @@ mod kernel {
     }
 
     #[inline]
-    // TODO: fix coeffs
     pub fn log(d: P32E2) -> P32E2 {
         let e = kernel::ilogb(d * (ONE / P32E2::new(0x_3c00_0000)/*0.75*/)); // ilogb2kf
         let m = kernel::ldexp2(d, -e); //ldexp3kf(d, -e);
         let x = (m - ONE) / (m + ONE);
         let x2 = x * x;
 
-        let t = x2.poly2(&[
-            P32E2::new(0x_2f6168a0), // 0.240_320_354_700_088_500_976_562
-            P32E2::new(0x_311fa4a0), // 0.285_112_679_004_669_189_453_125
-            P32E2::new(0x_34ccdd90), // 0.400_007_992_982_864_379_882_812
+        let t = x2.poly3(&[
+            P32E2::new(0x_2cd5_6da8), // 2.0052663237e-1
+            P32E2::new(0x_2e2b_8340), // 2.2140580416e-1
+            P32E2::new(0x_3124_b46a), // 2.8573055938e-1
+            P32E2::new(0x_34cc_cc7e), // 3.9999985322e-1
         ]);
 
-        let mut quire = Q32E2::from_bits([
-            0,
-            0,
-            0,
-            0,
-            0x_0000_aaaa_aaaa_aaaa,
-            0x_aaaa_aaaa_aaaa_aaaa,
-            0x_aaaa_aaaa_aaaa_aaaa,
-            0x_aaaa_aaaa_aaaa_aaab,
-        ]);
-
+        let mut quire = Q32E2::ZERO;
+        quire += (P32E2::new(0x_3aaa_aaa8), P32E2::new(0x_4000_0002)); // 2/3
         quire += (x2, t);
         let z = quire.to_posit();
 
         let ef = P32E2::from(e);
         let mut quire = Q32E2::init();
-        quire += (L2U, ef);
-        quire += (L2L, ef);
+        quire += (ef, [L2U, L2L]);
         quire += (x, TWO);
         quire += (x2 * x, z);
         quire.into()
@@ -280,27 +268,12 @@ pub fn ln(d: P32E2) -> P32E2 {
     if d <= ZERO {
         return P32E2::NAR;
     }
-
-    let e = kernel::ilogb(d * (ONE / P32E2::new(0x_3c00_0000)/*0.75*/)); // ilogb2kf
-    let m = kernel::ldexp2(d, -e); //ldexp3kf(d, -e);
-
-    let x = (m - ONE) / (m + ONE);
-    let x2 = x * x;
-
-    let t = x2.poly4(&[
-        P32E2::new(0x_2f5f_60aa), // 2.4019638635e-1,
-        P32E2::new(0x_311f_b2ca), // 2.8511943296e-1,
-        P32E2::new(0x_34cc_dd7e), // 4.0000795946e-1,
-        P32E2::new(0x_3aaa_aaa1), // 6.666666295963819528791795955505945e-1,
-        TWO,
-    ]);
-
-    x * t + P32E2::LN_2 * P32E2::from(e)
+    kernel::log(d)
 }
 
 #[test]
 fn test_ln() {
-    test_p_p(ln, f64::ln, ZERO.0, P32E2::MAX.0, 3);
+    test_p_p(ln, f64::ln, ZERO.0, P32E2::MAX.0, 2);
 }
 
 // TODO: fix coeffs
@@ -377,9 +350,7 @@ pub fn sin(mut d: P32E2) -> P32E2 {
         q = qf.into();
         let mut quire = Q32E2::init();
         quire += (d, ONE);
-        quire -= (qf, PI_A);
-        quire -= (qf, PI_B);
-        quire -= (qf, PI_C);
+        quire -= (qf, [PI_A, PI_B, PI_C]);
         d = quire.into();
     } else {
         unimplemented!()
@@ -421,9 +392,7 @@ pub fn cos(mut d: P32E2) -> P32E2 {
         let qf = P32E2::from(q);
         let mut quire = Q32E2::init();
         quire += (d, ONE);
-        quire -= (qf, PI_A * HALF);
-        quire -= (qf, PI_B * HALF);
-        quire -= (qf, PI_C * HALF);
+        quire -= (qf, [PI_A * HALF, PI_B * HALF, PI_C * HALF]);
         d = quire.into();
     } else {
         unimplemented!()
@@ -467,9 +436,7 @@ pub fn tan(d: P32E2) -> P32E2 {
         q = qf.into();
         let mut quire = Q32E2::init();
         quire += (d, ONE);
-        quire -= (qf, PI_A * HALF);
-        quire -= (qf, PI_B * HALF);
-        quire -= (qf, PI_C * HALF);
+        quire -= (qf, [PI_A * HALF, PI_B * HALF, PI_C * HALF]);
         x = quire.into();
     } else {
         unimplemented!()
@@ -699,8 +666,7 @@ pub fn exp10(d: P32E2) -> P32E2 {
 
     let mut quire = Q32E2::init();
     quire += (d, ONE);
-    quire -= (q, L10U);
-    quire -= (q, L10L);
+    quire -= (q, [L10U, L10L]);
     let s = quire.to_posit();
 
     /* First phase
@@ -759,8 +725,7 @@ pub fn exp(d: P32E2) -> P32E2 {
 
     let mut quire = Q32E2::init();
     quire += (d, ONE);
-    quire -= (qf, L2U);
-    quire -= (qf, L2L);
+    quire -= (qf, [L2U, L2L]);
     let s = quire.to_posit();
 
     let mut u = s.poly5(&[
@@ -936,7 +901,14 @@ fn test_pp_p(
 ) {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    for _i in 0..NTESTS {
+    let mut av_ulp = 0_f64;
+    let mut ncorrect = 0;
+    let mut max_ulp = 0;
+    let mut inc_x = 0_f64;
+    let mut inc_y = 0_f64;
+    let mut inc_answer = P32E2::ZERO;
+    let mut inc_correct = P32E2::ZERO;
+    for i in 0..NTESTS {
         let n_a = rng.gen_range(mn, mx);
         let n_b = rng.gen_range(mn, mx);
         let p_a = P32E2::new(n_a);
@@ -946,14 +918,30 @@ fn test_pp_p(
         let answer = fun_p(p_a, p_b);
         let correct = P32E2::from(fun_f(f_a, f_b));
         let u = ulp(answer, correct);
-        assert!(
-            u <= expected_ulp,
-            "x = {}, y = {}, answer = {}, correct = {}, ulp = {}",
-            f_a,
-            f_b,
-            answer,
-            correct,
-            u,
-        );
+
+        if u > max_ulp {
+            max_ulp = u;
+        }
+        if u <= expected_ulp {
+            ncorrect += 1;
+        } else {
+            inc_x = f_a;
+            inc_y = f_b;
+            inc_answer = answer;
+            inc_correct = correct;
+        }
+        av_ulp += u as f64;
+        if (i == NTESTS - 1) && (max_ulp > expected_ulp) {
+            av_ulp /= NTESTS as f64;
+            assert!(false, "Correct = {} %, max_ulp = {}, av_ulp = {}\nLast: x = {}, y = {}, answer = {}, correct = {}",
+                (ncorrect*100) as f32 / (NTESTS as f32),
+                max_ulp,
+                av_ulp,
+                inc_x,
+                inc_y,
+                inc_answer,
+                inc_correct
+            );
+        }
     }
 }

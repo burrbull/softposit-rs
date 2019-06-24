@@ -358,9 +358,17 @@ impl crate::AssociatedQuire<Self> for P8E0 {
     type Q = Q8E0;
 }
 
-impl crate::polynom::poly::Poly for P8E0 {}
+impl crate::polynom::poly::Poly<Self> for P8E0 {}
+impl crate::Polynom<Self> for P8E0 {}
 
-impl crate::Polynom for P8E0 {}
+impl crate::polynom::poly::Poly<[Self; 1]> for P8E0 {}
+impl crate::Polynom<[Self; 1]> for P8E0 {}
+impl crate::polynom::poly::Poly<[Self; 2]> for P8E0 {}
+impl crate::Polynom<[Self; 2]> for P8E0 {}
+impl crate::polynom::poly::Poly<[Self; 3]> for P8E0 {}
+impl crate::Polynom<[Self; 3]> for P8E0 {}
+impl crate::polynom::poly::Poly<[Self; 4]> for P8E0 {}
+impl crate::Polynom<[Self; 4]> for P8E0 {}
 
 #[cfg(any(feature = "rand", test))]
 impl rand::distributions::Distribution<P8E0> for rand::distributions::Standard {

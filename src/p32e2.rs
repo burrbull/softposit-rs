@@ -380,9 +380,17 @@ impl crate::AssociatedQuire<Self> for P32E2 {
     type Q = Q32E2;
 }
 
-impl crate::polynom::poly::Poly for P32E2 {}
+impl crate::polynom::poly::Poly<Self> for P32E2 {}
+impl crate::Polynom<Self> for P32E2 {}
 
-impl crate::Polynom for P32E2 {}
+impl crate::polynom::poly::Poly<[Self; 1]> for P32E2 {}
+impl crate::Polynom<[Self; 1]> for P32E2 {}
+impl crate::polynom::poly::Poly<[Self; 2]> for P32E2 {}
+impl crate::Polynom<[Self; 2]> for P32E2 {}
+impl crate::polynom::poly::Poly<[Self; 3]> for P32E2 {}
+impl crate::Polynom<[Self; 3]> for P32E2 {}
+impl crate::polynom::poly::Poly<[Self; 4]> for P32E2 {}
+impl crate::Polynom<[Self; 4]> for P32E2 {}
 
 #[cfg(any(feature = "rand", test))]
 impl rand::distributions::Distribution<P32E2> for rand::distributions::Standard {
