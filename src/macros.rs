@@ -1043,7 +1043,7 @@ macro_rules! add_sub_array {
             #[inline]
             fn add_assign(&mut self, rhs: ($posit, [$posit; $i])) {
                 for p in &rhs.1 {
-                    *self -= (rhs.0, *p);
+                    *self += (rhs.0, *p);
                 }
             }
         }

@@ -152,29 +152,25 @@ where
 {
     // Quire1 = 1
     #[inline]
-    fn poly1(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 2);
+    fn poly1(self, c: &[T; 2]) -> Self {
         Self::poly1k(self, c[0], c[1])
     }
     // Quire1 + (x2=x*x) = 2
     #[inline]
-    fn poly2(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 3);
+    fn poly2(self, c: &[T; 3]) -> Self {
         let x2 = self * self;
         Self::poly2kt(self, x2, c[0], &c[1..])
     }
     // Quire1 + (x2, x3=x2*x) = 3, faster
     #[inline]
-    fn poly3(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 4);
+    fn poly3(self, c: &[T; 4]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         Self::poly3kt(self, x2, x3, c[0], &c[1..])
     }
     // Quire1 + (x2, x3, x4=x2*x2) = 4, faster
     #[inline]
-    fn poly4(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 5);
+    fn poly4(self, c: &[T; 5]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
@@ -182,24 +178,21 @@ where
     }
     // Quire2 + (x2, x3) = 4
     #[inline]
-    fn poly5(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 6);
+    fn poly5(self, c: &[T; 6]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         Self::poly5k(self, x2, x3, c[0], &c[1..])
     }
     // Quire2 + (x2, x3) = 4
     #[inline]
-    fn poly6(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 7);
+    fn poly6(self, c: &[T; 7]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         Self::poly6k(self, x2, x3, c[0], &c[1..])
     }
     // Quire2 + (x2, x3, x4) = 5
     #[inline]
-    fn poly7(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 8);
+    fn poly7(self, c: &[T; 8]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
@@ -207,8 +200,7 @@ where
     }
     // Quire2 + (x2, x3, x4) = 5
     #[inline]
-    fn poly8(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 9);
+    fn poly8(self, c: &[T; 9]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
@@ -216,8 +208,7 @@ where
     }
     // Quire3 + (x2, x3, x4) = 6
     #[inline]
-    fn poly9(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 10);
+    fn poly9(self, c: &[T; 10]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
@@ -225,8 +216,7 @@ where
     }
     // Quire3 + (x2, x3, x4) = 6
     #[inline]
-    fn poly10(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 11);
+    fn poly10(self, c: &[T; 11]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
@@ -234,8 +224,7 @@ where
     }
     // Quire3 + (x2, x3, x4) = 6
     #[inline]
-    fn poly11(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 12);
+    fn poly11(self, c: &[T; 12]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
@@ -243,8 +232,7 @@ where
     }
     // Quire3 + (x2, x3, x4) = 6
     #[inline]
-    fn poly12(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 13);
+    fn poly12(self, c: &[T; 13]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
@@ -252,8 +240,7 @@ where
     }
     // Quire4 + (x2, x3, x4) = 7
     #[inline]
-    fn poly13(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 14);
+    fn poly13(self, c: &[T; 14]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
@@ -261,8 +248,7 @@ where
     }
     // Quire4 + (x2, x3, x4) = 7
     #[inline]
-    fn poly14(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 15);
+    fn poly14(self, c: &[T; 15]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
@@ -270,8 +256,7 @@ where
     }
     // Quire4 + (x2, x3, x4) = 7
     #[inline]
-    fn poly15(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 16);
+    fn poly15(self, c: &[T; 16]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
@@ -279,8 +264,7 @@ where
     }
     // Quire4 + (x2, x3, x4) = 7
     #[inline]
-    fn poly16(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 17);
+    fn poly16(self, c: &[T; 17]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
@@ -288,8 +272,7 @@ where
     }
     // Quire5 + (x2, x3, x4) = 8
     #[inline]
-    fn poly17(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 18);
+    fn poly17(self, c: &[T; 18]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
@@ -297,8 +280,7 @@ where
     }
     // Quire5 + (x2, x3, x4) = 8
     #[inline]
-    fn poly18(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 19);
+    fn poly18(self, c: &[T; 19]) -> Self {
         let x2 = self * self;
         let x3 = x2 * self;
         let x4 = x2 * x2;
@@ -306,16 +288,14 @@ where
     }
     // Quire2 + (x2) = 3, more accurate
     #[inline]
-    fn poly3a(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 4);
+    fn poly3a(self, c: &[T; 4]) -> Self {
         let x2 = self * self;
         let p = Self::poly1k(self, c[0], c[1]);
         Self::poly2k(self, x2, p, &c[2..])
     }
     // Quire2 + (x2) = 3, more accurate
     #[inline]
-    fn poly4a(self, c: &[T]) -> Self {
-        assert_eq!(c.len(), 5);
+    fn poly4a(self, c: &[T; 5]) -> Self {
         let x2 = self * self;
         let p = Self::poly2kt(self, x2, c[0], &c[1..3]);
         Self::poly2k(self, x2, p, &c[3..])
