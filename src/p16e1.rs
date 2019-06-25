@@ -294,7 +294,7 @@ impl Q16E1 {
     }
 
     #[inline]
-    pub fn to_posit(self) -> P16E1 {
+    pub fn to_posit(&self) -> P16E1 {
         P16E1::from(self)
     }
 
@@ -317,7 +317,7 @@ impl crate::Quire<P16E1> for Q16E1 {
     fn from_posit(p: P16E1) -> Self {
         Self::from_posit(p)
     }
-    fn to_posit(self) -> P16E1 {
+    fn to_posit(&self) -> P16E1 {
         Self::to_posit(self)
     }
     fn from_bits(v: Self::Bits) -> Self {

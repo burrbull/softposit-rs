@@ -12,6 +12,7 @@ impl From<f32> for P32E2 {
 }
 
 impl From<f64> for P32E2 {
+    #[allow(clippy::cognitive_complexity)]
     fn from(mut float: f64) -> Self {
         let mut reg: u32;
         let mut frac = 0_u32;
@@ -427,13 +428,13 @@ impl From<P32E2> for u64 {
 impl From<i32> for P32E2 {
     #[inline]
     fn from(mut i_a: i32) -> Self {
-        if i_a < -2147483135 {
+        if i_a < -2_147_483_135 {
             //-2147483648 to -2147483136 rounds to P32 value -2147483648
-            return Self::from_bits(0x80500000);
+            return Self::from_bits(0x_8050_0000);
         }
-        if i_a > 2147483135 {
+        if i_a > 2_147_483_135 {
             //2147483136 to 2147483647 rounds to P32 value (2147483648)=> 0x7FB00000
-            return Self::from_bits(0x7FB00000);
+            return Self::from_bits(0x_7FB0_0000);
         }
 
         let sign = i_a.is_negative();
@@ -454,13 +455,13 @@ impl From<u32> for P32E2 {
 impl From<i64> for P32E2 {
     #[inline]
     fn from(mut i_a: i64) -> Self {
-        if i_a < -9222809086901354495 {
+        if i_a < -9_222_809_086_901_354_495 {
             //-9222809086901354496 to -9223372036854775808 will be P32 value -9223372036854775808
-            return Self::from_bits(0x80005000);
+            return Self::from_bits(0x_8000_5000);
         }
-        if i_a > 9222809086901354495 {
+        if i_a > 9_222_809_086_901_354_495 {
             //9222809086901354496 to 9223372036854775807 will be P32 value 9223372036854775808
-            return Self::from_bits(0x7FFFB000); // 9223372036854775808
+            return Self::from_bits(0x_7FFF_B000); // 9223372036854775808
         }
         let sign = i_a.is_negative();
         if sign {
@@ -547,7 +548,14 @@ fn convert_u64_to_p32bits(a: u64) -> u32 {
 }
 
 impl From<Q32E2> for P32E2 {
+    #[inline]
     fn from(q_a: Q32E2) -> Self {
+        (&q_a).into()
+    }
+}
+
+impl From<&Q32E2> for P32E2 {
+    fn from(q_a: &Q32E2) -> Self {
         let mut bits_more = false;
         let mut frac64_a = 0_u64;
 
@@ -557,7 +565,7 @@ impl From<Q32E2> for P32E2 {
             return Self::NAR;
         }
 
-        let mut u_z = q_a.to_bits();
+        let mut u_z = q_a.clone().to_bits();
 
         let sign = (u_z[0] & 0x_8000_0000_0000_0000) != 0;
 

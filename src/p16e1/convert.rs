@@ -8,7 +8,7 @@ crate::impl_convert!(P16E1, Q16E1);
 impl From<i32> for P16E1 {
     #[inline]
     fn from(mut i_a: i32) -> Self {
-        if i_a < -134217728 {
+        if i_a < -134_217_728 {
             //-2147483648 to -134217729 rounds to P32 value -268435456
             return Self::MIN;
         }
@@ -30,7 +30,7 @@ impl From<u32> for P16E1 {
 impl From<i64> for P16E1 {
     #[inline]
     fn from(mut i_a: i64) -> Self {
-        if i_a < -134217728 {
+        if i_a < -134_217_728 {
             //-2147483648 to -134217729 rounds to P32 value -268435456
             return Self::MIN;
         }
@@ -368,6 +368,7 @@ impl From<f32> for P16E1 {
 }
 
 impl From<f64> for P16E1 {
+    #[allow(clippy::cognitive_complexity)]
     fn from(mut float: f64) -> Self {
         let mut reg: u16;
         let mut bit_n_plus_one = false;
@@ -555,7 +556,14 @@ impl From<P16E1> for f64 {
 }
 
 impl From<Q16E1> for P16E1 {
+    #[inline]
     fn from(q_a: Q16E1) -> Self {
+        (&q_a).into()
+    }
+}
+
+impl From<&Q16E1> for P16E1 {
+    fn from(q_a: &Q16E1) -> Self {
         if q_a.is_zero() {
             return Self::ZERO;
         } else if q_a.is_nar() {

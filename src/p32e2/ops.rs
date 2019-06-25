@@ -488,10 +488,45 @@ impl ops::AddAssign<(P32E2, P32E2)> for Q32E2 {
     }
 }
 
+impl ops::AddAssign<(P32E2, (P32E2, P32E2))> for Q32E2 {
+    #[inline]
+    fn add_assign(&mut self, rhs: (P32E2, (P32E2, P32E2))) {
+        *self += (rhs.0, (rhs.1).0);
+        *self += (rhs.0, (rhs.1).1);
+    }
+}
+
+impl ops::AddAssign<((P32E2, P32E2), (P32E2, P32E2))> for Q32E2 {
+    #[inline]
+    fn add_assign(&mut self, rhs: ((P32E2, P32E2), (P32E2, P32E2))) {
+        *self += ((rhs.0).0, (rhs.1).0);
+        *self += ((rhs.0).0, (rhs.1).1);
+        *self += ((rhs.0).1, (rhs.1).0);
+        *self += ((rhs.0).1, (rhs.1).1);
+    }
+}
+
 impl ops::SubAssign<(P32E2, P32E2)> for Q32E2 {
     #[inline]
     fn sub_assign(&mut self, rhs: (P32E2, P32E2)) {
         q32_fdp_sub(self, rhs.0, rhs.1);
+    }
+}
+impl ops::SubAssign<(P32E2, (P32E2, P32E2))> for Q32E2 {
+    #[inline]
+    fn sub_assign(&mut self, rhs: (P32E2, (P32E2, P32E2))) {
+        *self -= (rhs.0, (rhs.1).0);
+        *self -= (rhs.0, (rhs.1).1);
+    }
+}
+
+impl ops::SubAssign<((P32E2, P32E2), (P32E2, P32E2))> for Q32E2 {
+    #[inline]
+    fn sub_assign(&mut self, rhs: ((P32E2, P32E2), (P32E2, P32E2))) {
+        *self -= ((rhs.0).0, (rhs.1).0);
+        *self -= ((rhs.0).0, (rhs.1).1);
+        *self -= ((rhs.0).1, (rhs.1).0);
+        *self -= ((rhs.0).1, (rhs.1).1);
     }
 }
 

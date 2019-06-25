@@ -199,6 +199,7 @@ impl P16E1 {
 //softposit_mulAdd_subC => (ui_a*ui_b)-ui_c
 //softposit_mulAdd_subProd => ui_c - (ui_a*ui_b)
 //Default is always op==0
+#[allow(clippy::cognitive_complexity)]
 fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1 {
     let mut bits_more = false;
 

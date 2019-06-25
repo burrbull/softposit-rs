@@ -520,6 +520,12 @@ fn convert_u64_to_p8bits(a: u64) -> u8 {
 impl From<Q8E0> for P8E0 {
     #[inline]
     fn from(q_a: Q8E0) -> Self {
+        (&q_a).into()
+    }
+}
+
+impl From<&Q8E0> for P8E0 {
+    fn from(q_a: &Q8E0) -> Self {
         if q_a.is_zero() {
             return Self::ZERO;
         } else if q_a.is_nar() {

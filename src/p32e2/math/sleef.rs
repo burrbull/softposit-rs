@@ -67,6 +67,31 @@ mod kernel {
     }
 
     #[inline]
+    pub fn sin(s: P32E2) -> P32E2 {
+        s.poly5(&[
+            P32E2::new(-0x_00d3_e191), // -2.4159030332e-8,
+            P32E2::new(0x_02b8_d0f3),  // 2.7539761902e-6,
+            P32E2::new(-0x_07a0_193a), // -1.9841124231e-4,
+            P32E2::new(0x_1444_443e),  // 8.3333326038e-3,
+            P32E2::new(-0x_2aaa_aaaa), // -1.6666666605e-1,
+            ONE,
+        ])
+    }
+
+    #[inline]
+    pub fn cos(s: P32E2) -> P32E2 {
+        s.poly6(&[
+            P32E2::new(0x_0071_2590),  // 1.9961422740e-9,
+            P32E2::new(-0x_0189_e57f), // -2.7528581792e-7,
+            P32E2::new(0x_04a0_181c),  // 2.4801145699e-5,
+            P32E2::new(-0x_0cd8_2d77), // -1.3888885487e-3,
+            P32E2::new(0x_1d55_5555),  // 4.1666666541e-2,
+            -HALF,
+            ONE,
+        ])
+    }
+
+    #[inline]
     pub fn exp_m1(d: P32E2) -> P32E2 {
         let qf = (d * R_LN2).round();
         let q = i32::from(qf);
@@ -362,14 +387,7 @@ pub fn sin(mut d: P32E2) -> P32E2 {
         d = -d;
     }
 
-    s.poly5(&[
-        P32E2::new(-0x_00d3_e191), // -2.4159030332e-8,
-        P32E2::new(0x_02b8_d0f3),  // 2.7539761902e-6,
-        P32E2::new(-0x_07a0_193a), // -1.9841124231e-4,
-        P32E2::new(0x_1444_443e),  // 8.3333326038e-3,
-        P32E2::new(-0x_2aaa_aaaa), // -1.6666666605e-1,
-        ONE,
-    ]) * d
+    kernel::sin(s) * d
 }
 
 #[test]
@@ -404,19 +422,57 @@ pub fn cos(mut d: P32E2) -> P32E2 {
         d = -d;
     }
 
-    s.poly5(&[
-        P32E2::new(-0x_00d3_e191), // -2.4159030332e-8,
-        P32E2::new(0x_02b8_d0f3),  // 2.7539761902e-6,
-        P32E2::new(-0x_07a0_193a), // -1.9841124231e-4,
-        P32E2::new(0x_1444_443e),  // 8.3333326038e-3,
-        P32E2::new(-0x_2aaa_aaaa), // -1.6666666605e-1,
-        ONE,
-    ]) * d
+    kernel::sin(s) * d
 }
 
 #[test]
 fn test_cos() {
     test_p_p(cos, f64::cos, -TRIGRANGEMAX.0 + 1, TRIGRANGEMAX.0 - 1, 2);
+}
+
+/// Evaluate sine and cosine function simultaneously
+///
+/// Evaluates the sine and cosine functions of a value in ***a*** at a time,
+/// and store the two values in *first* and *second* position in the returned value, respectively.
+pub fn sin_cos(d: P32E2) -> (P32E2, P32E2) {
+    if d.is_nar() {
+        return (NAR, NAR);
+    }
+
+    let q: i32;
+
+    let mut s = d;
+
+    if d.abs() < TRIGRANGEMAX {
+        let qf = (s * P32E2::FRAC_1_PI).round();
+        q = qf.into();
+        let mut quire = Q32E2::init();
+        quire += (s, ONE);
+        quire -= (qf, [PI_A * HALF, PI_B * HALF, PI_C * HALF]);
+        s = quire.into();
+    } else {
+        unimplemented!()
+    }
+
+    let t = s;
+
+    s = s * s;
+
+    let mut rsin = kernel::sin(s) * t;
+
+    let mut rcos = kernel::cos(s);
+
+    if (q & 1) != 0 {
+        core::mem::swap(&mut rcos, &mut rsin);
+    }
+    if (q & 2) != 0 {
+        rsin = -rsin;
+    }
+    if ((q + 1) & 2) != 0 {
+        rcos = -rcos;
+    }
+
+    (rsin, rcos)
 }
 
 /// Tangent function

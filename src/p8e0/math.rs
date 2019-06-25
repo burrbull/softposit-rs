@@ -267,6 +267,7 @@ fn sqrt(p_a: P8E0) -> P8E0 {
 //softposit_mulAdd_subC => (ui_a*ui_b)-ui_c
 //softposit_mulAdd_subProd => ui_c - (ui_a*ui_b)
 //Default is always op==0
+#[allow(clippy::cognitive_complexity)]
 fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
     let mut bits_more = false;
 

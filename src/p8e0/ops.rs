@@ -378,10 +378,45 @@ impl ops::AddAssign<(P8E0, P8E0)> for Q8E0 {
     }
 }
 
+impl ops::AddAssign<(P8E0, (P8E0, P8E0))> for Q8E0 {
+    #[inline]
+    fn add_assign(&mut self, rhs: (P8E0, (P8E0, P8E0))) {
+        *self += (rhs.0, (rhs.1).0);
+        *self += (rhs.0, (rhs.1).1);
+    }
+}
+
+impl ops::AddAssign<((P8E0, P8E0), (P8E0, P8E0))> for Q8E0 {
+    #[inline]
+    fn add_assign(&mut self, rhs: ((P8E0, P8E0), (P8E0, P8E0))) {
+        *self += ((rhs.0).0, (rhs.1).0);
+        *self += ((rhs.0).0, (rhs.1).1);
+        *self += ((rhs.0).1, (rhs.1).0);
+        *self += ((rhs.0).1, (rhs.1).1);
+    }
+}
+
 impl ops::SubAssign<(P8E0, P8E0)> for Q8E0 {
     #[inline]
     fn sub_assign(&mut self, rhs: (P8E0, P8E0)) {
         q8_fdp_sub(self, rhs.0, rhs.1);
+    }
+}
+impl ops::SubAssign<(P8E0, (P8E0, P8E0))> for Q8E0 {
+    #[inline]
+    fn sub_assign(&mut self, rhs: (P8E0, (P8E0, P8E0))) {
+        *self -= (rhs.0, (rhs.1).0);
+        *self -= (rhs.0, (rhs.1).1);
+    }
+}
+
+impl ops::SubAssign<((P8E0, P8E0), (P8E0, P8E0))> for Q8E0 {
+    #[inline]
+    fn sub_assign(&mut self, rhs: ((P8E0, P8E0), (P8E0, P8E0))) {
+        *self -= ((rhs.0).0, (rhs.1).0);
+        *self -= ((rhs.0).0, (rhs.1).1);
+        *self -= ((rhs.0).1, (rhs.1).0);
+        *self -= ((rhs.0).1, (rhs.1).1);
     }
 }
 

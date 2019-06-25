@@ -4,6 +4,7 @@
 #![allow(clippy::float_cmp)]
 #![allow(clippy::many_single_char_names)]
 #![allow(clippy::suspicious_arithmetic_impl)]
+#![allow(clippy::verbose_bit_mask)]
 
 pub mod p8e0;
 pub use self::p8e0::{P8E0, Q8E0};
@@ -166,7 +167,7 @@ pub trait Quire<P> {
     type Bits;
     fn init() -> Self;
     fn from_posit(p: P) -> Self;
-    fn to_posit(self) -> P;
+    fn to_posit(&self) -> P;
     fn from_bits(v: Self::Bits) -> Self;
     fn to_bits(&self) -> Self::Bits;
     fn is_zero(&self) -> bool;

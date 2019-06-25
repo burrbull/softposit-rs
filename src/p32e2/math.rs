@@ -342,7 +342,7 @@ impl P32E2 {
     }
     #[inline]
     pub fn sin_cos(self) -> (Self, Self) {
-        (self.sin(), self.cos())
+        sleef::sin_cos(self)
     }
     #[inline]
     pub fn exp_m1(self) -> Self {
@@ -385,6 +385,7 @@ impl P32E2 {
     }
 }
 
+#[allow(clippy::cognitive_complexity)]
 pub(super) fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> P32E2 {
     let mut bits_more = false;
     //NaR

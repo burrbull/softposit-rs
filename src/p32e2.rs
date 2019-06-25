@@ -294,7 +294,7 @@ impl Q32E2 {
     }
 
     #[inline]
-    pub fn to_posit(self) -> P32E2 {
+    pub fn to_posit(&self) -> P32E2 {
         P32E2::from(self)
     }
 
@@ -317,7 +317,7 @@ impl crate::Quire<P32E2> for Q32E2 {
     fn from_posit(p: P32E2) -> Self {
         Self::from_posit(p)
     }
-    fn to_posit(self) -> P32E2 {
+    fn to_posit(&self) -> P32E2 {
         Self::to_posit(self)
     }
     fn from_bits(v: Self::Bits) -> Self {

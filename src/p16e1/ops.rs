@@ -463,10 +463,45 @@ impl ops::AddAssign<(P16E1, P16E1)> for Q16E1 {
     }
 }
 
+impl ops::AddAssign<(P16E1, (P16E1, P16E1))> for Q16E1 {
+    #[inline]
+    fn add_assign(&mut self, rhs: (P16E1, (P16E1, P16E1))) {
+        *self += (rhs.0, (rhs.1).0);
+        *self += (rhs.0, (rhs.1).1);
+    }
+}
+
+impl ops::AddAssign<((P16E1, P16E1), (P16E1, P16E1))> for Q16E1 {
+    #[inline]
+    fn add_assign(&mut self, rhs: ((P16E1, P16E1), (P16E1, P16E1))) {
+        *self += ((rhs.0).0, (rhs.1).0);
+        *self += ((rhs.0).0, (rhs.1).1);
+        *self += ((rhs.0).1, (rhs.1).0);
+        *self += ((rhs.0).1, (rhs.1).1);
+    }
+}
+
 impl ops::SubAssign<(P16E1, P16E1)> for Q16E1 {
     #[inline]
     fn sub_assign(&mut self, rhs: (P16E1, P16E1)) {
         q16_fdp_sub(self, rhs.0, rhs.1);
+    }
+}
+impl ops::SubAssign<(P16E1, (P16E1, P16E1))> for Q16E1 {
+    #[inline]
+    fn sub_assign(&mut self, rhs: (P16E1, (P16E1, P16E1))) {
+        *self -= (rhs.0, (rhs.1).0);
+        *self -= (rhs.0, (rhs.1).1);
+    }
+}
+
+impl ops::SubAssign<((P16E1, P16E1), (P16E1, P16E1))> for Q16E1 {
+    #[inline]
+    fn sub_assign(&mut self, rhs: ((P16E1, P16E1), (P16E1, P16E1))) {
+        *self -= ((rhs.0).0, (rhs.1).0);
+        *self -= ((rhs.0).0, (rhs.1).1);
+        *self -= ((rhs.0).1, (rhs.1).0);
+        *self -= ((rhs.0).1, (rhs.1).1);
     }
 }
 
