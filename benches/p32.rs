@@ -1,5 +1,5 @@
+use criterion::{black_box as bb, Criterion};
 use criterion::{criterion_group, criterion_main};
-use criterion::{Criterion, black_box as bb};
 
 use softposit::{P32, Q32};
 
@@ -24,19 +24,22 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("ln", |c| c.iter(|| bb(X).ln()));
     c.bench_function("pow", |c| c.iter(|| bb(X).powf(Z)));
 
-    c.bench_function("q_add", |c| c.iter(|| {
-        let mut q = Q32::init();
-        q += (bb(X), bb(Y));
-        q.to_posit()
-    }));
-    c.bench_function("q_add3", |c| c.iter(|| {
-        let mut q = Q32::init();
-        q += (bb(X), bb(Y));
-        q += (bb(X), bb(Z));
-        q += (bb(Y), bb(Z));
-        q.to_posit()
-    }));
-    
+    c.bench_function("q_add", |c| {
+        c.iter(|| {
+            let mut q = Q32::init();
+            q += (bb(X), bb(Y));
+            q.to_posit()
+        })
+    });
+    c.bench_function("q_add3", |c| {
+        c.iter(|| {
+            let mut q = Q32::init();
+            q += (bb(X), bb(Y));
+            q += (bb(X), bb(Z));
+            q += (bb(Y), bb(Z));
+            q.to_posit()
+        })
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

@@ -94,5 +94,5 @@ cargo bench
 |       |    -      | 45 MPOPS           | 83 MPOPS          |
 |       |    *      | 56 MPOPS           | 99 MPOPS          |
 |       |    /      | 25 MPOPS           | 42 MPOPS          |
-|       |  sqrt     | 48 MPOPS           | 92 MPOPS          |
+|       |   √⎺⎺     | 48 MPOPS           | 92 MPOPS          |
 |       |  round    | 89 MPOPS           | 159 MPOPS         |

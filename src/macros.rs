@@ -1124,5 +1124,5 @@ macro_rules! quire_add_sub {
                 *self -= ((rhs.0).1, (rhs.1).1);
             }
         }
-    }
+    };
 }
