@@ -285,12 +285,12 @@ impl Q32E2 {
 
     #[inline]
     pub fn add_product(&mut self, p_a: P32E2, p_b: P32E2) {
-        ops::q32_fdp_add(self, p_a, p_b);
+        ops::fdp_add(self, p_a, p_b);
     }
 
     #[inline]
     pub fn sub_product(&mut self, p_a: P32E2, p_b: P32E2) {
-        ops::q32_fdp_sub(self, p_a, p_b);
+        ops::fdp_sub(self, p_a, p_b);
     }
 
     #[inline]

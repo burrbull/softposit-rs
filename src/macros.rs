@@ -1036,7 +1036,7 @@ macro_rules! impl_alga {
 }
 
 #[macro_export]
-macro_rules! add_sub_array {
+macro_rules! quire_add_sub_array {
     ($posit:ty, $quire:ty, $($i:literal),*) => {$(
         impl ops::AddAssign<($posit, [$posit; $i])> for $quire {
             #[inline]
@@ -1056,4 +1056,73 @@ macro_rules! add_sub_array {
             }
         }
     )*}
+}
+
+#[macro_export]
+macro_rules! quire_add_sub {
+    ($posit:ty, $quire:ty) => {
+        impl ops::AddAssign<($posit, $posit)> for $quire {
+            #[inline]
+            fn add_assign(&mut self, rhs: ($posit, $posit)) {
+                fdp_add(self, rhs.0, rhs.1);
+            }
+        }
+
+        impl ops::AddAssign<($posit, ($posit, $posit))> for $quire {
+            #[inline]
+            fn add_assign(&mut self, rhs: ($posit, ($posit, $posit))) {
+                *self += (rhs.0, (rhs.1).0);
+                *self += (rhs.0, (rhs.1).1);
+            }
+        }
+
+        impl ops::AddAssign<$posit> for $quire {
+            #[inline]
+            fn add_assign(&mut self, rhs: $posit) {
+                *self += (rhs, <$posit>::ONE);
+            }
+        }
+
+        impl ops::AddAssign<(($posit, $posit), ($posit, $posit))> for $quire {
+            #[inline]
+            fn add_assign(&mut self, rhs: (($posit, $posit), ($posit, $posit))) {
+                *self += ((rhs.0).0, (rhs.1).0);
+                *self += ((rhs.0).0, (rhs.1).1);
+                *self += ((rhs.0).1, (rhs.1).0);
+                *self += ((rhs.0).1, (rhs.1).1);
+            }
+        }
+
+        impl ops::SubAssign<($posit, $posit)> for $quire {
+            #[inline]
+            fn sub_assign(&mut self, rhs: ($posit, $posit)) {
+                fdp_sub(self, rhs.0, rhs.1);
+            }
+        }
+
+        impl ops::SubAssign<$posit> for $quire {
+            #[inline]
+            fn sub_assign(&mut self, rhs: $posit) {
+                *self -= (rhs, <$posit>::ONE);
+            }
+        }
+
+        impl ops::SubAssign<($posit, ($posit, $posit))> for $quire {
+            #[inline]
+            fn sub_assign(&mut self, rhs: ($posit, ($posit, $posit))) {
+                *self -= (rhs.0, (rhs.1).0);
+                *self -= (rhs.0, (rhs.1).1);
+            }
+        }
+
+        impl ops::SubAssign<(($posit, $posit), ($posit, $posit))> for $quire {
+            #[inline]
+            fn sub_assign(&mut self, rhs: (($posit, $posit), ($posit, $posit))) {
+                *self -= ((rhs.0).0, (rhs.1).0);
+                *self -= ((rhs.0).0, (rhs.1).1);
+                *self -= ((rhs.0).1, (rhs.1).0);
+                *self -= ((rhs.0).1, (rhs.1).1);
+            }
+        }
+    }
 }

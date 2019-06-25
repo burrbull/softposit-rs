@@ -371,58 +371,10 @@ impl ops::Rem for P8E0 {
     }
 }
 
-impl ops::AddAssign<(P8E0, P8E0)> for Q8E0 {
-    #[inline]
-    fn add_assign(&mut self, rhs: (P8E0, P8E0)) {
-        q8_fdp_add(self, rhs.0, rhs.1);
-    }
-}
+crate::quire_add_sub!(P8E0, Q8E0);
+crate::quire_add_sub_array!(P8E0, Q8E0, 1, 2, 3, 4);
 
-impl ops::AddAssign<(P8E0, (P8E0, P8E0))> for Q8E0 {
-    #[inline]
-    fn add_assign(&mut self, rhs: (P8E0, (P8E0, P8E0))) {
-        *self += (rhs.0, (rhs.1).0);
-        *self += (rhs.0, (rhs.1).1);
-    }
-}
-
-impl ops::AddAssign<((P8E0, P8E0), (P8E0, P8E0))> for Q8E0 {
-    #[inline]
-    fn add_assign(&mut self, rhs: ((P8E0, P8E0), (P8E0, P8E0))) {
-        *self += ((rhs.0).0, (rhs.1).0);
-        *self += ((rhs.0).0, (rhs.1).1);
-        *self += ((rhs.0).1, (rhs.1).0);
-        *self += ((rhs.0).1, (rhs.1).1);
-    }
-}
-
-impl ops::SubAssign<(P8E0, P8E0)> for Q8E0 {
-    #[inline]
-    fn sub_assign(&mut self, rhs: (P8E0, P8E0)) {
-        q8_fdp_sub(self, rhs.0, rhs.1);
-    }
-}
-impl ops::SubAssign<(P8E0, (P8E0, P8E0))> for Q8E0 {
-    #[inline]
-    fn sub_assign(&mut self, rhs: (P8E0, (P8E0, P8E0))) {
-        *self -= (rhs.0, (rhs.1).0);
-        *self -= (rhs.0, (rhs.1).1);
-    }
-}
-
-impl ops::SubAssign<((P8E0, P8E0), (P8E0, P8E0))> for Q8E0 {
-    #[inline]
-    fn sub_assign(&mut self, rhs: ((P8E0, P8E0), (P8E0, P8E0))) {
-        *self -= ((rhs.0).0, (rhs.1).0);
-        *self -= ((rhs.0).0, (rhs.1).1);
-        *self -= ((rhs.0).1, (rhs.1).0);
-        *self -= ((rhs.0).1, (rhs.1).1);
-    }
-}
-
-crate::add_sub_array!(P8E0, Q8E0, 1, 2, 3, 4);
-
-pub(super) fn q8_fdp_add(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
+pub(super) fn fdp_add(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
     let uq_z1 = q.to_bits();
 
     let mut ui_a = p_a.to_bits();
@@ -481,7 +433,7 @@ pub(super) fn q8_fdp_add(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
 
 //q - (p_a*p_b)
 
-pub(super) fn q8_fdp_sub(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
+pub(super) fn fdp_sub(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
     let uq_z1 = q.to_bits();
 
     let mut ui_a = p_a.to_bits();

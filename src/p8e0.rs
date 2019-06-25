@@ -263,12 +263,12 @@ impl Q8E0 {
 
     #[inline]
     pub fn add_product(&mut self, p_a: P8E0, p_b: P8E0) {
-        ops::q8_fdp_add(self, p_a, p_b);
+        ops::fdp_add(self, p_a, p_b);
     }
 
     #[inline]
     pub fn sub_product(&mut self, p_a: P8E0, p_b: P8E0) {
-        ops::q8_fdp_sub(self, p_a, p_b);
+        ops::fdp_sub(self, p_a, p_b);
     }
 
     #[inline]

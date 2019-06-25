@@ -481,58 +481,10 @@ impl ops::Rem for P32E2 {
     }
 }
 
-impl ops::AddAssign<(P32E2, P32E2)> for Q32E2 {
-    #[inline]
-    fn add_assign(&mut self, rhs: (P32E2, P32E2)) {
-        q32_fdp_add(self, rhs.0, rhs.1);
-    }
-}
+crate::quire_add_sub!(P32E2, Q32E2);
+crate::quire_add_sub_array!(P32E2, Q32E2, 1, 2, 3, 4);
 
-impl ops::AddAssign<(P32E2, (P32E2, P32E2))> for Q32E2 {
-    #[inline]
-    fn add_assign(&mut self, rhs: (P32E2, (P32E2, P32E2))) {
-        *self += (rhs.0, (rhs.1).0);
-        *self += (rhs.0, (rhs.1).1);
-    }
-}
-
-impl ops::AddAssign<((P32E2, P32E2), (P32E2, P32E2))> for Q32E2 {
-    #[inline]
-    fn add_assign(&mut self, rhs: ((P32E2, P32E2), (P32E2, P32E2))) {
-        *self += ((rhs.0).0, (rhs.1).0);
-        *self += ((rhs.0).0, (rhs.1).1);
-        *self += ((rhs.0).1, (rhs.1).0);
-        *self += ((rhs.0).1, (rhs.1).1);
-    }
-}
-
-impl ops::SubAssign<(P32E2, P32E2)> for Q32E2 {
-    #[inline]
-    fn sub_assign(&mut self, rhs: (P32E2, P32E2)) {
-        q32_fdp_sub(self, rhs.0, rhs.1);
-    }
-}
-impl ops::SubAssign<(P32E2, (P32E2, P32E2))> for Q32E2 {
-    #[inline]
-    fn sub_assign(&mut self, rhs: (P32E2, (P32E2, P32E2))) {
-        *self -= (rhs.0, (rhs.1).0);
-        *self -= (rhs.0, (rhs.1).1);
-    }
-}
-
-impl ops::SubAssign<((P32E2, P32E2), (P32E2, P32E2))> for Q32E2 {
-    #[inline]
-    fn sub_assign(&mut self, rhs: ((P32E2, P32E2), (P32E2, P32E2))) {
-        *self -= ((rhs.0).0, (rhs.1).0);
-        *self -= ((rhs.0).0, (rhs.1).1);
-        *self -= ((rhs.0).1, (rhs.1).0);
-        *self -= ((rhs.0).1, (rhs.1).1);
-    }
-}
-
-crate::add_sub_array!(P32E2, Q32E2, 1, 2, 3, 4);
-
-pub(super) fn q32_fdp_add(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
+pub(super) fn fdp_add(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
     let u_z1 = q.to_bits();
 
     let mut ui_a = p_a.to_bits();
@@ -642,7 +594,7 @@ pub(super) fn q32_fdp_add(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
     *q = if q_z.is_nar() { Q32E2::ZERO } else { q_z }
 }
 
-pub(super) fn q32_fdp_sub(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
+pub(super) fn fdp_sub(q: &mut Q32E2, p_a: P32E2, p_b: P32E2) {
     let u_z1 = q.to_bits();
 
     let mut ui_a = p_a.to_bits();

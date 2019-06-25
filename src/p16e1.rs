@@ -285,12 +285,12 @@ impl Q16E1 {
 
     #[inline]
     pub fn add_product(&mut self, p_a: P16E1, p_b: P16E1) {
-        ops::q16_fdp_add(self, p_a, p_b);
+        ops::fdp_add(self, p_a, p_b);
     }
 
     #[inline]
     pub fn sub_product(&mut self, p_a: P16E1, p_b: P16E1) {
-        ops::q16_fdp_sub(self, p_a, p_b);
+        ops::fdp_sub(self, p_a, p_b);
     }
 
     #[inline]
