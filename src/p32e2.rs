@@ -307,6 +307,22 @@ impl Q32E2 {
     pub fn neg(&mut self) {
         self.0 = self.0.wrapping_neg();
     }
+
+    #[inline]
+    pub fn into_two_posits(mut self) -> (P32E2, P32E2) {
+        let p1 = self.to_posit();
+        self -= p1;
+        (p1, self.to_posit())
+    }
+
+    #[inline]
+    pub fn into_three_posits(mut self) -> (P32E2, P32E2, P32E2) {
+        let p1 = self.to_posit();
+        self -= p1;
+        let p2 = self.to_posit();
+        self -= p2;
+        (p1, p2, self.to_posit())
+    }
 }
 
 impl crate::Quire<P32E2> for Q32E2 {
