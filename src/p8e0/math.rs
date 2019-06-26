@@ -35,11 +35,11 @@ impl P8E0 {
     }
     #[inline]
     pub fn floor(self) -> Self {
-        (self - HALF).round()
+        floor(self)
     }
     #[inline]
     pub fn ceil(self) -> Self {
-        (self + HALF).round()
+        ceil(self)
     }
     #[inline]
     pub fn round(self) -> Self {
@@ -93,7 +93,7 @@ impl P8E0 {
     }
     #[inline]
     pub fn exp(self) -> Self {
-        unimplemented!()
+        exp(self)
     }
     #[inline]
     pub fn exp2(self) -> Self {
@@ -101,7 +101,7 @@ impl P8E0 {
     }
     #[inline]
     pub fn ln(self) -> Self {
-        unimplemented!()
+        log(self)
     }
     #[inline]
     pub fn log(self, _base: Self) -> Self {
@@ -200,26 +200,25 @@ fn round(p_a: P8E0) -> P8E0 {
     let mut mask = 0x20_u8;
     let mut scale = 0_u8;
 
-    let mut u_a = p_a.to_bits();
-    let mut ui_a = u_a;
+    let mut ui_a = p_a.to_bits();
     let sign = ui_a > 0x80;
 
     // sign is True if p_a > NaR.
     if sign {
         ui_a = ui_a.wrapping_neg();
     }
-    if ui_a <= 0x20 {
+    let u_a = if ui_a <= 0x20 {
         // 0 <= |p_a| <= 1/2 rounds to zero.
         return P8E0::ZERO;
     } else if ui_a < 0x50 {
         // 1/2 < x < 3/2 rounds to 1.
-        u_a = 0x40;
+        0x40
     } else if ui_a <= 0x64 {
         // 3/2 <= x <= 5/2 rounds to 2.
-        u_a = 0x60;
+        0x60
     } else if ui_a >= 0x78 {
         // If |A| is 8 or greater, leave it unchanged.
-        return P8E0::from_bits(u_a); // This also takes care of the NaR case, 0x80.
+        return p_a; // This also takes care of the NaR case, 0x80.
     } else {
         while (mask & ui_a) != 0 {
             scale += 1;
@@ -239,8 +238,8 @@ fn round(p_a: P8E0) -> P8E0 {
         if bit_n_plus_one && (((bit_last as u8) | tmp) != 0) {
             ui_a += mask << 1;
         }
-        u_a = ui_a;
-    }
+        ui_a
+    };
     P8E0::from_bits(u_a.with_sign(sign))
 }
 
@@ -412,6 +411,163 @@ fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
         u_z
     };
     P8E0::from_bits(u_z.with_sign(sign_z))
+}
+
+fn ceil(p_a: P8E0) -> P8E0 {
+    let mut mask = 0x20_u8;
+    let mut scale = 0_u8;
+
+    let mut ui_a = p_a.to_bits();
+    let sign = ui_a > 0x80;
+
+    // sign is True if p_a > NaR.
+    if sign {
+        ui_a = ui_a.wrapping_neg();
+    }
+    let u_a = if ui_a == 0 {
+        return p_a;
+    } else if ui_a <= 0x40 {
+        // 0 <= |pA| < 1 floor to zero.(if not negative and whole number)
+        if sign && (ui_a != 0x40) {
+            0x0
+        } else {
+            0x40
+        }
+    } else if ui_a <= 0x60 {
+        // 1 <= x < 2 floor to 1 (if not negative and whole number)
+        if sign && (ui_a != 0x60) {
+            0x40
+        } else {
+            0x60
+        }
+    } else if ui_a <= 0x68 {
+        // 2 <= x < 3 floor to 2 (if not negative and whole number)
+        if sign && (ui_a != 0x68) {
+            0x60
+        } else {
+            0x68
+        }
+    } else if ui_a >= 0x78 {
+        // If |A| is 8 or greater, leave it unchanged.
+        return p_a; // This also takes care of the NaR case, 0x80.
+    } else {
+        while (mask & ui_a) != 0 {
+            scale += 1;
+            mask >>= 1;
+        }
+
+        mask >>= scale;
+
+        mask >>= 1;
+        let mut tmp = ui_a & mask;
+        let bit_n_plus_one = tmp;
+        ui_a ^= tmp;
+        tmp = ui_a & (mask - 1); //bits_more
+        ui_a ^= tmp;
+
+        if !sign && ((bit_n_plus_one | tmp) != 0) {
+            ui_a += mask << 1;
+        }
+        ui_a
+    };
+    P8E0::from_bits(u_a.with_sign(sign))
+}
+
+fn floor(p_a: P8E0) -> P8E0 {
+    let mut mask = 0x20_u8;
+    let mut scale = 0_u8;
+
+    let mut ui_a = p_a.to_bits();
+    let sign = ui_a > 0x80;
+
+    // sign is True if p_a > NaR.
+    if sign {
+        ui_a = ui_a.wrapping_neg();
+    }
+    let u_a = if ui_a == 0 {
+        return p_a;
+    } else if ui_a < 0x40 {
+        // 0 <= |pA| < 1 floor to zero.(if not negative and whole number)
+        if sign && (ui_a != 0x0) {
+            0x40
+        } else {
+            0x0
+        }
+    } else if ui_a < 0x60 {
+        // 1 <= x < 2 floor to 1 (if not negative and whole number)
+        if sign && (ui_a != 0x40) {
+            0x60
+        } else {
+            0x40
+        }
+    } else if ui_a < 0x68 {
+        // 2 <= x < 3 floor to 2 (if not negative and whole number)
+        if sign && (ui_a != 0x60) {
+            0x68
+        } else {
+            0x60
+        }
+    } else if ui_a >= 0x78 {
+        // If |A| is 8 or greater, leave it unchanged.
+        return p_a; // This also takes care of the NaR case, 0x80.
+    } else {
+        while (mask & ui_a) != 0 {
+            scale += 1;
+            mask >>= 1;
+        }
+
+        mask >>= scale;
+
+        mask >>= 1;
+        let mut tmp = ui_a & mask;
+        let bit_n_plus_one = tmp;
+        ui_a ^= tmp;
+        tmp = ui_a & (mask - 1); //bits_more
+        ui_a ^= tmp;
+
+        if sign && ((bit_n_plus_one | tmp) != 0) {
+            ui_a += mask << 1;
+        }
+        ui_a
+    };
+    P8E0::from_bits(u_a.with_sign(sign))
+}
+
+fn exp(p_a: P8E0) -> P8E0 {
+    const EXP8: [u8; 256] = [
+        64, 65, 65, 66, 66, 67, 67, 68, 68, 69, 69, 70, 71, 71, 72, 72, 73, 74, 74, 75, 76, 76, 77,
+        78, 79, 79, 80, 81, 82, 82, 83, 84, 85, 86, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 96,
+        96, 97, 97, 97, 97, 98, 98, 98, 99, 99, 99, 99, 100, 100, 100, 101, 101, 101, 102, 102,
+        103, 104, 105, 105, 106, 107, 108, 109, 110, 111, 112, 112, 112, 113, 113, 113, 114, 114,
+        114, 114, 115, 115, 116, 116, 116, 117, 117, 117, 118, 118, 119, 120, 121, 121, 122, 123,
+        124, 124, 125, 125, 125, 126, 126, 126, 126, 127, 127, 127, 127, 127, 127, 127, 127, 127,
+        127, 127, 127, 127, 127, 127, 127, 127, 128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 2, 2, 2, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 12,
+        12, 13, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 20, 20, 21, 21, 22, 23, 24, 24,
+        24, 25, 25, 25, 26, 26, 27, 27, 28, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34,
+        35, 35, 36, 36, 37, 38, 38, 39, 39, 40, 41, 41, 42, 43, 43, 44, 45, 45, 46, 47, 48, 48, 49,
+        50, 51, 51, 52, 53, 54, 55, 56, 56, 57, 58, 59, 60, 61, 62, 63,
+    ];
+    P8E0::from_bits(EXP8[p_a.to_bits() as usize])
+}
+
+fn log(p_a: P8E0) -> P8E0 {
+    const LOG8: [u8; 128] = [
+        128, 144, 148, 152, 154, 156, 157, 158, 159, 161, 165, 168, 170, 173, 175, 178, 180, 182,
+        183, 185, 187, 188, 190, 191, 193, 196, 198, 201, 203, 205, 208, 210, 212, 214, 216, 217,
+        219, 221, 223, 224, 226, 228, 229, 231, 232, 233, 235, 236, 238, 239, 240, 241, 243, 244,
+        245, 246, 247, 249, 250, 251, 252, 253, 254, 255, 0, 2, 4, 6, 8, 9, 11, 13, 14, 16, 17, 19,
+        20, 22, 23, 25, 26, 27, 29, 30, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 48, 52,
+        55, 59, 62, 64, 66, 67, 68, 70, 71, 72, 73, 74, 75, 76, 80, 84, 87, 89, 92, 94, 96, 97, 98,
+        100, 101, 102, 105, 108, 112,
+    ];
+
+    let u_a = p_a.to_bits();
+    if u_a > 127 {
+        P8E0::NAR
+    } else {
+        P8E0::from_bits(LOG8[u_a as usize])
+    }
 }
 
 #[test]

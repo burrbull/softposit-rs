@@ -1076,6 +1076,15 @@ macro_rules! quire_add_sub {
             }
         }
 
+        impl ops::AddAssign<($posit, ($posit, $posit, $posit))> for $quire {
+            #[inline]
+            fn add_assign(&mut self, rhs: ($posit, ($posit, $posit, $posit))) {
+                *self += (rhs.0, (rhs.1).0);
+                *self += (rhs.0, (rhs.1).1);
+                *self += (rhs.0, (rhs.1).2);
+            }
+        }
+
         impl ops::AddAssign<$posit> for $quire {
             #[inline]
             fn add_assign(&mut self, rhs: $posit) {

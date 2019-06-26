@@ -1,5 +1,5 @@
 use super::PxE2;
-use crate::{MulAddType, WithSign};
+use crate::WithSign;
 
 impl<const N: u32> PxE2<{ N }> {
     #[inline]
@@ -131,14 +131,14 @@ impl<const N: u32> PxE2<{ N }> {
             u_a = 0x4000_0000;
         } else if ui_a <= 0x4A00_0000 {
             u_a = if N > 4 { 0x_4800_0000 } else { 0x_4000_0000 };
-        } else if ui_a >= 0x7E800000 {
+        } else if ui_a >= 0x7E80_0000 {
             // If |A| is 0x7E800000 (4194304) (posit is pure integer value), leave it unchanged.
             if N > 8 {
                 return p_a; // This also takes care of the NaR case, 0x80000000.
             } else {
-                let bit_n_plus_one = ((0x80000000_u32 >> N) & ui_a) != 0;
-                let tmp = (0x7FFFFFFF_u32 >> N) & ui_a; //bitsMore
-                let bit_last = (0x80000000_u32 >> (N - 1)) & ui_a;
+                let bit_n_plus_one = ((0x8000_0000_u32 >> N) & ui_a) != 0;
+                let tmp = (0x7FFF_FFFF_u32 >> N) & ui_a; //bitsMore
+                let bit_last = (0x8000_0000_u32 >> (N - 1)) & ui_a;
                 if bit_n_plus_one {
                     if (bit_last | tmp) != 0 {
                         ui_a += bit_last;

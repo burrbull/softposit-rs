@@ -307,6 +307,22 @@ impl Q16E1 {
     pub fn neg(&mut self) {
         self.0 = self.0.wrapping_neg();
     }
+
+    #[inline]
+    fn into_two_posits(mut self) -> (P16E1, P16E1) {
+        let p1 = self.to_posit();
+        self -= p1;
+        (p1, self.to_posit())
+    }
+
+    #[inline]
+    fn into_three_posits(mut self) -> (P16E1, P16E1, P16E1) {
+        let p1 = self.to_posit();
+        self -= p1;
+        let p2 = self.to_posit();
+        self -= p2;
+        (p1, p2, self.to_posit())
+    }
 }
 
 impl crate::Quire<P16E1> for Q16E1 {

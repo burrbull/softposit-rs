@@ -1,4 +1,4 @@
-use super::P16E1;
+use super::{P16E1, Q16E1};
 use crate::{MulAddType, WithSign};
 
 const HALF: P16E1 = P16E1::new(0x_3000);
@@ -35,11 +35,11 @@ impl P16E1 {
     }
     #[inline]
     pub fn floor(self) -> Self {
-        (self - HALF).round()
+        floor(self)
     }
     #[inline]
     pub fn ceil(self) -> Self {
-        (self + HALF).round()
+        ceil(self)
     }
     #[inline]
     pub fn round(self) -> Self {
@@ -93,7 +93,7 @@ impl P16E1 {
     }
     #[inline]
     pub fn exp(self) -> Self {
-        unimplemented!()
+        exp(self)
     }
     #[inline]
     pub fn exp2(self) -> Self {
@@ -392,26 +392,25 @@ fn round(p_a: P16E1) -> P16E1 {
     let mut mask = 0x2000_u16;
     let mut scale = 0_u16;
 
-    let mut u_a = p_a.to_bits();
-    let mut ui_a = u_a; // Copy of the input.
+    let mut ui_a = p_a.to_bits();
     let sign = ui_a > 0x8000;
 
     // sign is True if p_a > NaR.
     if sign {
         ui_a = ui_a.wrapping_neg() // A is now |A|.
     };
-    if ui_a <= 0x3000 {
+    let u_a = if ui_a <= 0x3000 {
         // 0 <= |p_a| <= 1/2 rounds to zero.
         return P16E1::ZERO;
     } else if ui_a < 0x4800 {
         // 1/2 < x < 3/2 rounds to 1.
-        u_a = 0x4000;
+        0x4000
     } else if ui_a <= 0x5400 {
         // 3/2 <= x <= 5/2 rounds to 2.
-        u_a = 0x5000;
+        0x5000
     } else if ui_a >= 0x7C00 {
         // If |A| is 256 or greater, leave it unchanged.
-        return P16E1::from_bits(u_a); // This also takes care of the NaR case, 0x8000.
+        return p_a; // This also takes care of the NaR case, 0x8000.
     } else {
         // 34% of the cases, we have to decode the posit.
         while (mask & ui_a) != 0 {
@@ -439,8 +438,8 @@ fn round(p_a: P16E1) -> P16E1 {
                 ui_a += mask << 1;
             }
         }
-        u_a = ui_a;
-    }
+        ui_a
+    };
     P16E1::from_bits(u_a.with_sign(sign))
 }
 
@@ -530,6 +529,228 @@ fn sqrt(p_a: P16E1) -> P16E1 {
     }
     // Assemble the result and return it.
     P16E1::from_bits(ui_z | ((frac_z >> 4) as u16))
+}
+
+fn ceil(p_a: P16E1) -> P16E1 {
+    let mut mask = 0x2000_u16;
+    let mut scale = 0_u16;
+
+    let mut ui_a = p_a.to_bits();
+    let sign = ui_a > 0x8000;
+
+    // sign is True if p_a > NaR.
+    if sign {
+        ui_a = ui_a.wrapping_neg() // A is now |A|.
+    };
+
+    let u_a = if ui_a == 0 {
+        return p_a;
+    } else if ui_a <= 0x4000 {
+        // 0 <= |pA| < 1 ceiling to zero.(if not negative and whole number)
+        if sign && (ui_a != 0x4000) {
+            0x0
+        } else {
+            0x4000
+        }
+    } else if ui_a <= 0x5000 {
+        // 1 <= x < 2 ceiling to 1 (if not negative and whole number)
+        if sign && (ui_a != 0x5000) {
+            0x4000
+        } else {
+            0x5000
+        }
+    } else if ui_a <= 0x5800 {
+        // 2 <= x < 3 ceiling to 2 (if not negative and whole number)
+        if sign & (ui_a != 0x5800) {
+            0x5000
+        } else {
+            0x5800
+        }
+    } else if ui_a >= 0x7C00 {
+        // If |A| is 256 or greater, leave it unchanged.
+        return p_a; // This also takes care of the NaR case, 0x8000.
+    } else {
+        // 34% of the cases, we have to decode the posit.
+        while (mask & ui_a) != 0 {
+            // Increment scale by 2 for each regime sign bit.
+            scale += 2; // Regime sign bit is always 1 in this range.
+            mask >>= 1; // Move the mask right, to the next bit.
+        }
+        mask >>= 1; // Skip over termination bit.
+        if (mask & ui_a) != 0 {
+            scale += 1; // If exponent is 1, increment the scale.
+        }
+        mask >>= scale; // Point to the last bit of the integer part.
+
+        mask >>= 1;
+        let mut tmp = ui_a & mask;
+        let bit_n_plus_one = tmp; // "True" if nonzero.
+        ui_a ^= tmp; // Erase the bit, if it was set.
+        tmp = ui_a & (mask - 1); // tmp has any remaining bits = bitsMore
+        ui_a ^= tmp; // Erase those bits, if any were set.
+
+        if !sign && (bit_n_plus_one | tmp) != 0 {
+            ui_a += mask << 1;
+        }
+        ui_a
+    };
+    P16E1::from_bits(u_a.with_sign(sign))
+}
+
+fn floor(p_a: P16E1) -> P16E1 {
+    let mut mask = 0x2000_u16;
+    let mut scale = 0_u16;
+
+    let mut ui_a = p_a.to_bits();
+    let sign = ui_a > 0x8000;
+
+    // sign is True if p_a > NaR.
+    if sign {
+        ui_a = ui_a.wrapping_neg() // A is now |A|.
+    };
+
+    let u_a = if ui_a < 0x4000 {
+        // 0 <= |pA| < 1 floor to zero.(if not negative and whole number)
+        if sign && (ui_a != 0x0) {
+            0x4000
+        } else {
+            0x0
+        }
+    } else if ui_a < 0x5000 {
+        // 1 <= x < 2 floor to 1 (if not negative and whole number)
+        if sign && (ui_a != 0x4000) {
+            0x5000
+        } else {
+            0x4000
+        }
+    } else if ui_a < 0x5800 {
+        // 2 <= x < 3 floor to 2 (if not negative and whole number)
+        if sign & (ui_a != 0x5000) {
+            0x5800
+        } else {
+            0x5000
+        }
+    } else if ui_a >= 0x7C00 {
+        // If |A| is 256 or greater, leave it unchanged.
+        return p_a; // This also takes care of the NaR case, 0x8000.
+    } else {
+        // 34% of the cases, we have to decode the posit.
+        while (mask & ui_a) != 0 {
+            // Increment scale by 2 for each regime sign bit.
+            scale += 2; // Regime sign bit is always 1 in this range.
+            mask >>= 1; // Move the mask right, to the next bit.
+        }
+        mask >>= 1; // Skip over termination bit.
+        if (mask & ui_a) != 0 {
+            scale += 1; // If exponent is 1, increment the scale.
+        }
+        mask >>= scale; // Point to the last bit of the integer part.
+
+        mask >>= 1;
+        let mut tmp = ui_a & mask;
+        let bit_n_plus_one = tmp; // "True" if nonzero.
+        ui_a ^= tmp; // Erase the bit, if it was set.
+        tmp = ui_a & (mask - 1); // tmp has any remaining bits = bitsMore
+        ui_a ^= tmp; // Erase those bits, if any were set.
+
+        if sign && ((bit_n_plus_one | tmp) != 0) {
+            ui_a += mask << 1;
+        }
+        ui_a
+    };
+    P16E1::from_bits(u_a.with_sign(sign))
+}
+
+fn exp(p_a: P16E1) -> P16E1 {
+    // Use names for commonly-used posits.
+    const LARGE: P16E1 = P16E1::new(0x7FFE);
+    const SMALL: P16E1 = P16E1::new(0x0002);
+
+    // If input is NaR, return NaR.
+    if p_a.is_nar() {
+        P16E1::NAR
+    }
+    // If input is large enough that result is maxpos, return maxpos.
+    else if P16E1::new(0x70AE) <= p_a {
+        P16E1::MAX
+    }
+    // If input is negative enough that result is minpos, return minpos.
+    else if p_a <= P16E1::new(-0x_70ae) {
+        P16E1::MIN_POSITIVE
+    }
+    // This range rounds to maxpos/4, the next-to-largest posit16.
+    else if P16E1::new(0x706F) < p_a {
+        LARGE
+    }
+    // This range rounds to minpos*4, the next-to-smallest posit16.
+    else if p_a < P16E1::new(-0x_7067) {
+        SMALL
+    } else {
+        // Scale input by 1/log(2) to trio precision, using the quire.
+        let mut q = Q16E1::init();
+
+        q += (
+            p_a,
+            (P16E1::new(0x4715), P16E1::new(0x0087), P16E1::new(0x000A)),
+        );
+
+        let mut p_n = q.to_posit().round();
+        q -= p_n; // Reduce the argument range.
+        let (t1, t2, t3) = q.into_three_posits();
+
+        // Evaluate 6th-degree polynomial in t using Horner's rule.
+        let mut q = Q16E1::init();
+        q += (t1, P16E1::new(0x00D1));
+        q += (P16E1::new(0x0A20), P16E1::new(0x0F28));
+        let p1 = q.to_posit(); // c6 * t + c5, solo precision
+
+        q.clear();
+        q += (p1, t1);
+        q += (P16E1::new(0x0A60), P16E1::new(0x28B8));
+        let (p1, p2) = q.into_two_posits(); // (...) * t + c4, duo precision
+
+        let mut q = Q16E1::init();
+        q += (t1, (p1, p2));
+        q += (p1, t2);
+        q += (P16E1::new(0x0B80), P16E1::new(0x4E50));
+        let (p1, p2) = q.into_two_posits(); // (...) * t + c3, duo precision
+
+        let mut q = Q16E1::init();
+        q += (t1, (p1, p2));
+        q += (p1, t2);
+        q += (P16E1::new(0x11F0), P16E1::new(0x58C1));
+        let (p1, p2, p3) = q.into_three_posits(); // (...) * t + c2, trio precision
+
+        let mut q = Q16E1::init();
+        q += (t1, (p1, p2, p3));
+        q += (p1, t2);
+        q += (P16E1::new(0x2D78), P16E1::new(0x4816));
+        q += (P16E1::new(0x0180), P16E1::new(0x0180));
+        let (p1, p2, p3) = q.into_three_posits(); // c1 term, trio precision
+
+        let mut q = Q16E1::init();
+        q += (t1, (p1, p2, p3));
+        q += (p1, t2);
+        q += (p1, t3);
+        q += P16E1::ONE; // (...) * t + c0, (where c0 = 1).
+        let (p1, p2, p3) = q.into_three_posits(); // polynomial for exp(x), trio precision
+
+        // Convert `p_n` to an integer and use to compute `2` to the power `n`.
+        let mut n = i32::from(p_n);
+
+        n = if n < 0 {
+            ((n & 0x1) | 0x0002) << (12 - ((-n) >> 1))
+        } else {
+            0x7FFF & (((n & 0x1) | 0x7FFC) << (12 - (n >> 1)))
+        };
+        p_n = P16E1::new(n as i16);
+
+        // Scale the result by that power.
+        let mut q = Q16E1::init();
+        q += (p_n, (p1, p2, p3)); // trio precision; round it and we're done.
+
+        q.to_posit()
+    }
 }
 
 #[test]
