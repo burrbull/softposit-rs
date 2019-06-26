@@ -898,16 +898,7 @@ macro_rules! impl_subset_into(
 
 #[macro_export]
 macro_rules! impl_convert {
-    ($posit:ty, $quire:ty) => {
-        impl From<$posit> for $quire {
-            #[inline]
-            fn from(a: $posit) -> Self {
-                let mut q = Self::ZERO;
-                q += (a, <$posit>::ONE);
-                q
-            }
-        }
-
+    ($posit:ty) => {
         impl From<i8> for $posit {
             #[inline]
             fn from(a: i8) -> Self {
@@ -1064,7 +1055,9 @@ macro_rules! quire_add_sub {
         impl ops::AddAssign<($posit, $posit)> for $quire {
             #[inline]
             fn add_assign(&mut self, rhs: ($posit, $posit)) {
-                fdp_add(self, rhs.0, rhs.1);
+                let ui_a = (rhs.0).to_bits();
+                let ui_b = (rhs.1).to_bits();
+                fdp_add(self, ui_a, ui_b);
             }
         }
 
@@ -1105,7 +1098,9 @@ macro_rules! quire_add_sub {
         impl ops::SubAssign<($posit, $posit)> for $quire {
             #[inline]
             fn sub_assign(&mut self, rhs: ($posit, $posit)) {
-                fdp_sub(self, rhs.0, rhs.1);
+                let ui_a = (rhs.0).to_bits();
+                let ui_b = (rhs.1).to_bits();
+                fdp_sub(self, ui_a, ui_b);
             }
         }
 
@@ -1125,6 +1120,122 @@ macro_rules! quire_add_sub {
         }
 
         impl ops::SubAssign<(($posit, $posit), ($posit, $posit))> for $quire {
+            #[inline]
+            fn sub_assign(&mut self, rhs: (($posit, $posit), ($posit, $posit))) {
+                *self -= ((rhs.0).0, (rhs.1).0);
+                *self -= ((rhs.0).0, (rhs.1).1);
+                *self -= ((rhs.0).1, (rhs.1).0);
+                *self -= ((rhs.0).1, (rhs.1).1);
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! quire_add_sub_array_x {
+    ($posit:ty, $quire:ty, $($i:literal),*) => {$(
+        #[cfg(feature = "nightly")]
+        impl<const N: u32> ops::AddAssign<($posit, [$posit; $i])> for $quire {
+            #[inline]
+            fn add_assign(&mut self, rhs: ($posit, [$posit; $i])) {
+                for p in &rhs.1 {
+                    *self += (rhs.0, *p);
+                }
+            }
+        }
+
+        #[cfg(feature = "nightly")]
+        impl<const N: u32> ops::SubAssign<($posit, [$posit; $i])> for $quire {
+            #[inline]
+            fn sub_assign(&mut self, rhs: ($posit, [$posit; $i])) {
+                for p in &rhs.1 {
+                    *self -= (rhs.0, *p);
+                }
+            }
+        }
+    )*}
+}
+
+#[macro_export]
+macro_rules! quire_add_sub_x {
+    ($posit:ty, $quire:ty) => {
+        #[cfg(feature = "nightly")]
+        impl<const N: u32> ops::AddAssign<($posit, $posit)> for $quire {
+            #[inline]
+            fn add_assign(&mut self, rhs: ($posit, $posit)) {
+                let ui_a = (rhs.0).to_bits();
+                let ui_b = (rhs.1).to_bits();
+                fdp_add(self, ui_a, ui_b);
+            }
+        }
+
+        #[cfg(feature = "nightly")]
+        impl<const N: u32> ops::AddAssign<($posit, ($posit, $posit))> for $quire {
+            #[inline]
+            fn add_assign(&mut self, rhs: ($posit, ($posit, $posit))) {
+                *self += (rhs.0, (rhs.1).0);
+                *self += (rhs.0, (rhs.1).1);
+            }
+        }
+
+        #[cfg(feature = "nightly")]
+        impl<const N: u32> ops::AddAssign<($posit, ($posit, $posit, $posit))> for $quire {
+            #[inline]
+            fn add_assign(&mut self, rhs: ($posit, ($posit, $posit, $posit))) {
+                *self += (rhs.0, (rhs.1).0);
+                *self += (rhs.0, (rhs.1).1);
+                *self += (rhs.0, (rhs.1).2);
+            }
+        }
+
+        #[cfg(feature = "nightly")]
+        impl<const N: u32> ops::AddAssign<$posit> for $quire {
+            #[inline]
+            fn add_assign(&mut self, rhs: $posit) {
+                *self += (rhs, <$posit>::ONE);
+            }
+        }
+
+        #[cfg(feature = "nightly")]
+        impl<const N: u32> ops::AddAssign<(($posit, $posit), ($posit, $posit))> for $quire {
+            #[inline]
+            fn add_assign(&mut self, rhs: (($posit, $posit), ($posit, $posit))) {
+                *self += ((rhs.0).0, (rhs.1).0);
+                *self += ((rhs.0).0, (rhs.1).1);
+                *self += ((rhs.0).1, (rhs.1).0);
+                *self += ((rhs.0).1, (rhs.1).1);
+            }
+        }
+
+        #[cfg(feature = "nightly")]
+        impl<const N: u32> ops::SubAssign<($posit, $posit)> for $quire {
+            #[inline]
+            fn sub_assign(&mut self, rhs: ($posit, $posit)) {
+                let ui_a = (rhs.0).to_bits();
+                let ui_b = (rhs.1).to_bits();
+                fdp_sub(self, ui_a, ui_b);
+            }
+        }
+
+        #[cfg(feature = "nightly")]
+        impl<const N: u32> ops::SubAssign<$posit> for $quire {
+            #[inline]
+            fn sub_assign(&mut self, rhs: $posit) {
+                *self -= (rhs, <$posit>::ONE);
+            }
+        }
+
+        #[cfg(feature = "nightly")]
+        impl<const N: u32> ops::SubAssign<($posit, ($posit, $posit))> for $quire {
+            #[inline]
+            fn sub_assign(&mut self, rhs: ($posit, ($posit, $posit))) {
+                *self -= (rhs.0, (rhs.1).0);
+                *self -= (rhs.0, (rhs.1).1);
+            }
+        }
+
+        #[cfg(feature = "nightly")]
+        impl<const N: u32> ops::SubAssign<(($posit, $posit), ($posit, $posit))> for $quire {
             #[inline]
             fn sub_assign(&mut self, rhs: (($posit, $posit), ($posit, $posit))) {
                 *self -= ((rhs.0).0, (rhs.1).0);

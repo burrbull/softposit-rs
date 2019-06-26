@@ -3,7 +3,15 @@ use crate::WithSign;
 use core::convert::From;
 use core::f64;
 
-crate::impl_convert!(P8E0, Q8E0);
+impl From<P8E0> for Q8E0 {
+    #[inline]
+    fn from(a: P8E0) -> Self {
+        let mut q = Self::ZERO;
+        q += (a, P8E0::ONE);
+        q
+    }
+}
+crate::impl_convert!(P8E0);
 
 fn check_extra_two_bits_p8(
     mut float: f64,

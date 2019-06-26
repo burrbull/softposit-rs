@@ -459,16 +459,13 @@ impl ops::Rem for P16E1 {
 crate::quire_add_sub!(P16E1, Q16E1);
 crate::quire_add_sub_array!(P16E1, Q16E1, 1, 2, 3, 4);
 
-pub(super) fn fdp_add(q: &mut Q16E1, p_a: P16E1, p_b: P16E1) {
+pub(super) fn fdp_add(q: &mut Q16E1, mut ui_a: u16, mut ui_b: u16) {
     let u_z1 = q.to_bits();
 
-    let mut ui_a = p_a.to_bits();
-    let mut ui_b = p_b.to_bits();
-
-    if q.is_nar() || p_a.is_nar() || p_b.is_nar() {
+    if q.is_nar() || ui_a == 0x_8000 || ui_b == 0x_8000 {
         *q = Q16E1::NAR;
         return;
-    } else if p_a.is_zero() || p_b.is_zero() {
+    } else if ui_a == 0 || ui_b == 0 {
         return;
     }
 
@@ -569,16 +566,13 @@ pub(super) fn fdp_add(q: &mut Q16E1, p_a: P16E1, p_b: P16E1) {
     *q = if q_z.is_nar() { Q16E1::ZERO } else { q_z }
 }
 
-pub(super) fn fdp_sub(q: &mut Q16E1, p_a: P16E1, p_b: P16E1) {
+pub(super) fn fdp_sub(q: &mut Q16E1, mut ui_a: u16, mut ui_b: u16) {
     let u_z1 = q.to_bits();
 
-    let mut ui_a = p_a.to_bits();
-    let mut ui_b = p_b.to_bits();
-
-    if q.is_nar() || p_a.is_nar() || p_b.is_nar() {
+    if q.is_nar() || ui_a == 0x_8000 || ui_b == 0x_8000 {
         *q = Q16E1::NAR;
         return;
-    } else if p_a.is_zero() || p_b.is_zero() {
+    } else if ui_a == 0 || ui_b == 0 {
         return;
     }
 

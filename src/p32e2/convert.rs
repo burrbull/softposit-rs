@@ -1,9 +1,9 @@
-use super::{P32E2, Q32E2};
+use super::P32E2;
 use crate::WithSign;
 use core::convert::From;
 use core::f64;
 
-crate::impl_convert!(P32E2, Q32E2);
+crate::impl_convert!(P32E2);
 
 impl From<f32> for P32E2 {
     fn from(float: f32) -> Self {
@@ -544,129 +544,6 @@ fn convert_u64_to_p32bits(a: u64) -> u32 {
             ui_a += 1;
         }
         ui_a as u32
-    }
-}
-
-impl From<Q32E2> for P32E2 {
-    #[inline]
-    fn from(q_a: Q32E2) -> Self {
-        (&q_a).into()
-    }
-}
-
-impl From<&Q32E2> for P32E2 {
-    fn from(q_a: &Q32E2) -> Self {
-        let mut bits_more = false;
-        let mut frac64_a = 0_u64;
-
-        if q_a.is_zero() {
-            return Self::ZERO;
-        } else if q_a.is_nar() {
-            return Self::NAR;
-        }
-
-        let mut u_z = q_a.clone().to_bits();
-
-        let sign = (u_z[0] & 0x_8000_0000_0000_0000) != 0;
-
-        if sign {
-            let mut j = u_z.iter_mut().rev();
-            while let Some(u) = j.next() {
-                if *u > 0 {
-                    *u = u.wrapping_neg();
-                    for w in j {
-                        *w = !*w;
-                    }
-                    break;
-                }
-            }
-        }
-        //minpos and maxpos
-
-        let mut no_lz = 0_isize;
-
-        let mut j = u_z.iter_mut().enumerate();
-        while let Some((i, u)) = j.next() {
-            if *u == 0 {
-                no_lz += 64;
-            } else {
-                let mut tmp = *u;
-                let mut no_lztmp = 0_isize;
-
-                while (tmp >> 63) == 0 {
-                    no_lztmp += 1;
-                    tmp <<= 1;
-                }
-
-                no_lz += no_lztmp;
-                frac64_a = tmp;
-                if (i != 7) && (no_lztmp != 0) {
-                    let (_, w) = j.next().unwrap();
-                    frac64_a += *w >> (64 - no_lztmp);
-                    if (*w & ((0x1_u64 << (64 - no_lztmp)) - 1)) != 0 {
-                        bits_more = true;
-                    }
-                }
-                for (_, w) in j {
-                    if *w > 0 {
-                        bits_more = true;
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-
-        //default dot is between bit 271 and 272, extreme left bit is bit 0. Last right bit is bit 511.
-        //Equations derived from quire32_mult  last_pos = 271 - (k_a<<2) - exp_a and first_pos = last_pos - frac_len
-        let k_a = ((271 - no_lz) >> 2) as i8;
-        let mut exp_a = 271 - (no_lz as i32) - ((k_a << 2) as i32);
-
-        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
-
-        let u_a = if reg_a > 30 {
-            //max or min pos. exp and frac does not matter.
-            if reg_sa {
-                0x7FFF_FFFF
-            } else {
-                0x1
-            }
-        } else {
-            //remove hidden bit
-            frac64_a &= 0x7FFF_FFFF_FFFF_FFFF;
-
-            let shift = reg_a + 35; //2 es bit, 1 sign bit and 1 r terminating bit , 31+4
-
-            let mut frac_a = frac64_a.checked_shr(shift as u32).unwrap_or(0) as u32;
-            let mut bit_n_plus_one = false;
-            if reg_a <= 28 {
-                bit_n_plus_one = ((frac64_a >> (shift - 1)) & 0x1) != 0;
-                exp_a <<= 28 - reg_a;
-                if (frac64_a << (65 - shift)) != 0 {
-                    bits_more = true;
-                }
-            } else {
-                if reg_a == 30 {
-                    bit_n_plus_one = (exp_a & 0x2) != 0;
-                    bits_more = (exp_a & 0x1) != 0;
-                    exp_a = 0;
-                } else if reg_a == 29 {
-                    bit_n_plus_one = (exp_a & 0x1) != 0;
-                    exp_a >>= 1; //taken care of by the pack algo
-                }
-                if frac64_a > 0 {
-                    frac_a = 0;
-                    bits_more = true;
-                }
-            }
-
-            let mut u_a = Self::pack_to_ui(regime, exp_a as u32, frac_a);
-            if bit_n_plus_one {
-                u_a += (u_a & 1) | (bits_more as u32);
-            }
-            u_a
-        };
-        Self::from_bits(u_a.with_sign(sign))
     }
 }
 

@@ -17,8 +17,10 @@ pub type P16 = P16E1;
 pub type Q16 = Q16E1;
 
 pub mod p32e2;
-pub use self::p32e2::{P32E2, Q32E2};
+pub use self::p32e2::P32E2;
 pub type P32 = P32E2;
+pub mod quire32;
+pub use self::quire32::Q32E2;
 pub type Q32 = Q32E2;
 
 #[cfg(feature = "nightly")]

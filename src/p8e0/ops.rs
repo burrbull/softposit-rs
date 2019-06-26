@@ -374,16 +374,13 @@ impl ops::Rem for P8E0 {
 crate::quire_add_sub!(P8E0, Q8E0);
 crate::quire_add_sub_array!(P8E0, Q8E0, 1, 2, 3, 4);
 
-pub(super) fn fdp_add(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
+pub(super) fn fdp_add(q: &mut Q8E0, mut ui_a: u8, mut ui_b: u8) {
     let uq_z1 = q.to_bits();
 
-    let mut ui_a = p_a.to_bits();
-    let mut ui_b = p_b.to_bits();
-
-    if q.is_nar() || p_a.is_nar() || p_b.is_nar() {
+    if q.is_nar() || ui_a == 0x80 || ui_b == 0x80 {
         *q = Q8E0::NAR;
         return;
-    } else if p_a.is_zero() || p_b.is_zero() {
+    } else if ui_a == 0 || ui_b == 0 {
         return;
     }
 
@@ -433,16 +430,13 @@ pub(super) fn fdp_add(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
 
 //q - (p_a*p_b)
 
-pub(super) fn fdp_sub(q: &mut Q8E0, p_a: P8E0, p_b: P8E0) {
+pub(super) fn fdp_sub(q: &mut Q8E0, mut ui_a: u8, mut ui_b: u8) {
     let uq_z1 = q.to_bits();
 
-    let mut ui_a = p_a.to_bits();
-    let mut ui_b = p_b.to_bits();
-
-    if q.is_nar() || p_a.is_nar() || p_b.is_nar() {
+    if q.is_nar() || ui_a == 0x80 || ui_b == 0x80 {
         *q = Q8E0::NAR;
         return;
-    } else if p_a.is_zero() || p_b.is_zero() {
+    } else if ui_a == 0 || ui_b == 0 {
         return;
     }
 

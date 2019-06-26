@@ -285,12 +285,16 @@ impl Q16E1 {
 
     #[inline]
     pub fn add_product(&mut self, p_a: P16E1, p_b: P16E1) {
-        ops::fdp_add(self, p_a, p_b);
+        let ui_a = p_a.to_bits();
+        let ui_b = p_b.to_bits();
+        ops::fdp_add(self, ui_a, ui_b);
     }
 
     #[inline]
     pub fn sub_product(&mut self, p_a: P16E1, p_b: P16E1) {
-        ops::fdp_sub(self, p_a, p_b);
+        let ui_a = p_a.to_bits();
+        let ui_b = p_b.to_bits();
+        ops::fdp_sub(self, ui_a, ui_b);
     }
 
     #[inline]

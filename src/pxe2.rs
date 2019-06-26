@@ -18,6 +18,9 @@ impl<const N: u32> PxE2<{ N }> {
     /// Zero.
     pub const ZERO: Self = Self::new(0);
 
+    /// Identity.
+    pub const ONE: Self = Self::new(0x_4000_0000);
+
     #[inline]
     pub const fn new(i: i32) -> Self {
         Self(i)
@@ -55,7 +58,7 @@ impl<const N: u32> PxE2<{ N }> {
     }
 
     #[inline]
-    fn pack_to_ui(regime: u32, exp_a: u32, frac_a: u32) -> u32 {
+    pub(crate) fn pack_to_ui(regime: u32, exp_a: u32, frac_a: u32) -> u32 {
         regime + exp_a + frac_a
     }
 
@@ -90,7 +93,7 @@ impl<const N: u32> PxE2<{ N }> {
     }
 
     #[inline]
-    fn calculate_regime(k: i8) -> (u32, bool, u8) {
+    pub(crate) fn calculate_regime(k: i8) -> (u32, bool, u8) {
         let reg;
         if k < 0 {
             reg = (-k) as u8;

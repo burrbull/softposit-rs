@@ -18,6 +18,9 @@ impl<const N: u32> PxE1<{ N }> {
     /// Zero.
     pub const ZERO: Self = Self::new(0);
 
+    /// Identity.
+    pub const ONE: Self = Self::new(0x_4000_0000);
+
     #[inline]
     pub const fn new(i: i32) -> Self {
         Self(i)

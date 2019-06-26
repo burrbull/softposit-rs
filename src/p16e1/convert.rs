@@ -3,7 +3,15 @@ use crate::WithSign;
 use core::convert::From;
 use core::f64;
 
-crate::impl_convert!(P16E1, Q16E1);
+impl From<P16E1> for Q16E1 {
+    #[inline]
+    fn from(a: P16E1) -> Self {
+        let mut q = Self::ZERO;
+        q += (a, P16E1::ONE);
+        q
+    }
+}
+crate::impl_convert!(P16E1);
 
 impl From<i32> for P16E1 {
     #[inline]
