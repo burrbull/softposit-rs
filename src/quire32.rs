@@ -138,8 +138,7 @@ impl<const N: u32> crate::Quire<PxE2<{ N }>> for Q32E2 {
         Self::from(p)
     }
     fn to_posit(&self) -> PxE2<{ N }> {
-        unimplemented!()
-        //PxE2::from(self)
+        PxE2::<{N}>::from(self)
     }
     fn from_bits(v: Self::Bits) -> Self {
         Self::from_bits(v)

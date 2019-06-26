@@ -148,6 +148,14 @@ impl From<&Q32E2> for P32E2 {
 }
 
 #[cfg(feature = "nightly")]
+impl<const N: u32> From<Q32E2> for PxE2<{ N }> {
+    #[inline]
+    fn from(q_a: Q32E2) -> Self {
+        (&q_a).into()
+    }
+}
+
+#[cfg(feature = "nightly")]
 impl<const N: u32> From<&Q32E2> for PxE2<{ N }> {
     fn from(q_a: &Q32E2) -> Self {
         let mut bits_more = false;
