@@ -424,9 +424,7 @@ fn ceil(p_a: P8E0) -> P8E0 {
     if sign {
         ui_a = ui_a.wrapping_neg();
     }
-    let u_a = if ui_a == 0 {
-        return p_a;
-    } else if ui_a <= 0x40 {
+    let u_a = if ui_a <= 0x40 {
         // 0 <= |pA| < 1 floor to zero.(if not negative and whole number)
         if sign && (ui_a != 0x40) {
             0x0
