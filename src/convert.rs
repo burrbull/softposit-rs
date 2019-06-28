@@ -1,6 +1,6 @@
-#[cfg(feature = "nightly")]
-use crate::PxE2;
 use crate::WithSign;
+#[cfg(feature = "nightly")]
+use crate::{PxE1, PxE2};
 use crate::{P16E1, P32E2, P8E0};
 use core::convert::From;
 
@@ -386,8 +386,8 @@ impl From<P32E2> for P8E0 {
                 //exp_frac32_a= ((exp_frac32_a)&0x3F) >> shift; //first 2 bits already empty (for sign and regime terminating bit)
                 (regime | (exp_frac32_a >> (reg_a + 26))) as u8
             };
-            if (exp_frac32_a & (0x200_0000 << reg_a)) != 0 {
-                let bits_more = exp_frac32_a & (0xFFFF_FFFF >> (7 - reg_a)) != 0;
+            if (exp_frac32_a & (0x_0200_0000 << reg_a)) != 0 {
+                let bits_more = exp_frac32_a & (0x_FFFF_FFFF >> (7 - reg_a)) != 0;
                 u_z += (u_z & 1) | (bits_more as u8);
             }
             u_z
@@ -414,24 +414,22 @@ impl<const N: u32> From<P32E2> for PxE2<{ N }> {
 
         let u_z = if N == 2 {
             if ui_a > 0 {
-                0x40000000
+                0x_4000_0000
             } else {
                 0
             }
-        } else if (N == 32) || (((0xFFFFFFFF_u32 >> N) & ui_a) == 0) {
+        } else if (N == 32) || (((0x_FFFF_FFFF_u32 >> N) & ui_a) == 0) {
             ui_a
         } else {
             let shift = 32 - N;
-            if (ui_a >> shift) != (0x7FFFFFFF >> shift) {
-                if ((0x80000000_u32 >> N) & ui_a) != 0 {
-                    if (((0x80000000_u32 >> (N - 1)) & ui_a) != 0)
-                        || (((0x7FFFFFFF_u32 >> N) & ui_a) != 0)
-                    {
-                        ui_a += 0x1 << shift;
-                    }
-                }
+            if ((ui_a >> shift) != (0x_7FFF_FFFF >> shift))
+                && (((0x_8000_0000_u32 >> N) & ui_a) != 0)
+                && ((((0x_8000_0000_u32 >> (N - 1)) & ui_a) != 0)
+                    || (((0x_7FFF_FFFF_u32 >> N) & ui_a) != 0))
+            {
+                ui_a += 0x1 << shift;
             }
-            let mut u_z = ui_a & (((-0x80000000_i32) >> (N - 1)) as u32);
+            let mut u_z = ui_a & Self::MASK;
             if u_z == 0 {
                 u_z = 0x1 << shift;
             }
@@ -458,7 +456,7 @@ impl<const N: u32> From<P16E1> for PxE2<{ N }> {
 
         let u_z = if N == 2 {
             if ui_a > 0 {
-                0x40000000
+                0x_4000_0000
             } else {
                 0
             }
@@ -470,24 +468,23 @@ impl<const N: u32> From<P16E1> for PxE2<{ N }> {
             exp_frac32_a |= ((k_a.abs() & 0x1) as u32) << 31;
             let mut reg_a: u32;
             let reg_sa: bool;
-            let regime: u32;
-            if k_a < 0 {
+            let regime = if k_a < 0 {
                 reg_a = ((-k_a + 1) >> 1) as u32;
                 if reg_a == 0 {
                     reg_a = 1;
                 }
                 reg_sa = false;
-                regime = 0x40000000 >> reg_a;
+                0x_4000_0000_u32 >> reg_a
             } else {
                 reg_a = (if k_a == 0 { 1 } else { (k_a + 2) >> 1 }) as u32;
                 reg_sa = true;
-                regime = 0x7FFFFFFF - (0x7FFFFFFF >> reg_a);
-            }
+                0x_7FFF_FFFF - (0x_7FFF_FFFF >> reg_a)
+            };
 
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sa {
-                    0x7FFFFFFF & (((-0x80000000_i32) >> (N - 1)) as u32)
+                    0x_7FFF_FFFF & Self::MASK
                 } else {
                     0x1 << (32 - N)
                 }
@@ -497,17 +494,15 @@ impl<const N: u32> From<P16E1> for PxE2<{ N }> {
                 let mut u_z = regime + exp_frac32_a;
 
                 let shift = 32 - N;
-                if (u_z >> shift) != (0x7FFFFFFF >> shift) {
-                    if ((0x80000000_u32 >> N) & u_z) != 0 {
-                        if (((0x80000000_u32 >> (N - 1)) & u_z) != 0)
-                            || (((0x7FFFFFFF_u32 >> N) & u_z) != 0)
-                        {
-                            u_z += 0x1 << shift;
-                        }
-                    }
+                if ((u_z >> shift) != (0x_7FFF_FFFF >> shift))
+                    && (((0x_8000_0000_u32 >> N) & u_z) != 0)
+                    && ((((0x_8000_0000_u32 >> (N - 1)) & u_z) != 0)
+                        || (((0x_7FFF_FFFF_u32 >> N) & u_z) != 0))
+                {
+                    u_z += 0x1 << shift;
                 }
 
-                u_z &= ((-0x80000000_i32) >> (N - 1)) as u32;
+                u_z &= Self::MASK;
                 if u_z == 0 {
                     u_z = 0x1 << shift;
                 }
@@ -535,7 +530,7 @@ impl<const N: u32> From<P8E0> for PxE2<{ N }> {
 
         let u_z = if N == 2 {
             if ui_a > 0 {
-                0x40000000
+                0x_4000_0000
             } else {
                 0
             }
@@ -545,8 +540,7 @@ impl<const N: u32> From<P8E0> for PxE2<{ N }> {
             let mut exp_frac32_a = (tmp as u32) << 22;
 
             let mut reg_a: u32;
-            let regime: u32;
-            if k_a < 0 {
+            let regime = if k_a < 0 {
                 reg_a = (-k_a) as u32;
                 // Place exponent bits
                 exp_frac32_a |= ((reg_a & 0x1) | ((reg_a + 1) & 0x2)) << 29;
@@ -555,7 +549,7 @@ impl<const N: u32> From<P8E0> for PxE2<{ N }> {
                 if reg_a == 0 {
                     reg_a = 1;
                 }
-                regime = 0x40000000 >> reg_a;
+                0x_4000_0000_u32 >> reg_a
             } else {
                 exp_frac32_a |= ((k_a & 0x3) as u32) << 29;
 
@@ -563,29 +557,69 @@ impl<const N: u32> From<P8E0> for PxE2<{ N }> {
                 if reg_a == 0 {
                     reg_a = 1;
                 }
-                regime = 0x7FFFFFFF - (0x7FFFFFFF >> reg_a);
-            }
+                0x_7FFF_FFFF - (0x_7FFF_FFFF >> reg_a)
+            };
 
             exp_frac32_a >>= reg_a + 1; //2 because of sign and regime terminating bit
 
             let mut u_z = regime + exp_frac32_a;
 
             let shift = 32 - N;
-            if (u_z >> shift) != (0x7FFFFFFF >> shift) {
-                if ((0x80000000_u32 >> N) & u_z) != 0 {
-                    if (((0x80000000_u32 >> (N - 1)) & u_z) != 0)
-                        || (((0x7FFFFFFF_u32 >> N) & u_z) != 0)
-                    {
-                        u_z += 0x1 << shift;
-                    }
-                }
+            if ((u_z >> shift) != (0x_7FFF_FFFF >> shift))
+                && ((((0x_8000_0000_u32 >> N) & u_z) != 0)
+                    && ((((0x_8000_0000_u32 >> (N - 1)) & u_z) != 0)
+                        || (((0x_7FFF_FFFF_u32 >> N) & u_z) != 0)))
+            {
+                u_z += 0x1 << shift;
             }
-            u_z &= ((-0x80000000_i32) >> (N - 1)) as u32;
+            u_z &= Self::MASK;
             if u_z == 0 {
                 u_z = 0x1 << shift;
             }
             u_z
         };
+        Self::from_bits(u_z.with_sign(sign))
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<const N: u32> From<P16E1> for PxE1<{ N }> {
+    fn from(p_a: P16E1) -> Self {
+        let mut ui_a = (p_a.to_bits() as u32) << 16;
+
+        if (ui_a == 0x_8000_0000) || (ui_a == 0) {
+            return Self::from_bits(ui_a);
+        }
+
+        let sign = Self::sign_ui(ui_a);
+        if sign {
+            ui_a = ui_a.wrapping_neg();
+        }
+
+        let u_z = if N == 2 {
+            if ui_a > 0 {
+                0x_4000_0000
+            } else {
+                0
+            }
+        } else if (N == 32) || (((0x_FFFF_FFFF_u32 >> N) & ui_a) == 0) {
+            ui_a
+        } else {
+            let shift = 32 - N;
+            if ((ui_a >> shift) != (0x_7FFF_FFFF >> shift))
+                && (((0x_8000_0000_u32 >> N) & ui_a) != 0)
+                && (((0x_8000_0000_u32 >> (N - 1)) & ui_a) != 0
+                    || ((0x_7FFF_FFFF_u32 >> N) & ui_a) != 0)
+            {
+                ui_a += 0x1 << shift;
+            }
+            let mut u_z = ui_a & Self::MASK;
+            if u_z == 0 {
+                u_z = 0x1 << shift;
+            }
+            u_z
+        };
+
         Self::from_bits(u_z.with_sign(sign))
     }
 }

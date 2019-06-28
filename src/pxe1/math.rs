@@ -14,7 +14,7 @@ impl<const N: u32> PxE1<{ N }> {
     fn mul_add_ui(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> Self {
         let mut bits_more = false;
         //NaR
-        if (ui_a == 0x8000_0000) || (ui_b == 0x8000_0000) || (ui_c == 0x8000_0000) {
+        if (ui_a == 0x_8000_0000) || (ui_b == 0x_8000_0000) || (ui_c == 0x_8000_0000) {
             return Self::NAR;
         } else if (ui_a == 0) || (ui_b == 0) {
             return match op {
@@ -41,7 +41,11 @@ impl<const N: u32> PxE1<{ N }> {
         if N == 2 {
             let reg_sa = Self::sign_reg_ui(ui_a);
             let reg_sb = Self::sign_reg_ui(ui_b);
-            let mut u_z = if reg_sa & reg_sb { 0x40000000_u32 } else { 0x0 };
+            let mut u_z = if reg_sa & reg_sb {
+                0x_4000_0000_u32
+            } else {
+                0x0
+            };
             if sign_z {
                 // i.e. negative prod
                 if sign_c {
@@ -52,9 +56,9 @@ impl<const N: u32> PxE1<{ N }> {
                     u_z = if ui_c == u_z {
                         0
                     } else if u_z > 0 {
-                        0x40000000
+                        0x_4000_0000
                     } else {
-                        0xC0000000
+                        0x_C000_0000
                     };
                 }
             } else {
@@ -63,25 +67,25 @@ impl<const N: u32> PxE1<{ N }> {
                     u_z = if ui_c == u_z {
                         0
                     } else if u_z > 0 {
-                        0x40000000
+                        0x_4000_0000
                     } else {
-                        0xC0000000
+                        0x_C000_0000
                     };
                 } else {
                     //C is positive
                     u_z |= ui_c;
                 }
             }
-            return Self::from_bits(u_z);
+            Self::from_bits(u_z)
         } else {
             let (mut k_a, tmp) = Self::separate_bits_tmp(ui_a);
             let mut exp_a = (tmp >> 29) as i32; //to get 2 bits
-            let frac_a = (tmp << 2) | 0x8000_0000;
+            let frac_a = (tmp << 2) | 0x_8000_0000;
 
             let (k_b, tmp) = Self::separate_bits_tmp(ui_b);
             k_a += k_b;
             exp_a += (tmp >> 29) as i32;
-            let mut frac64_z = (frac_a as u64) * (((tmp << 2) | 0x8000_0000) as u64);
+            let mut frac64_z = (frac_a as u64) * (((tmp << 2) | 0x_8000_0000) as u64);
 
             if exp_a > 1 {
                 k_a += 1;
@@ -171,7 +175,7 @@ impl<const N: u32> PxE1<{ N }> {
                     if (frac64_z & 0x1) != 0 {
                         bits_more = false;
                     }
-                    frac64_z = (frac64_z >> 1) & 0x7FFF_FFFF_FFFF_FFFF;
+                    frac64_z = (frac64_z >> 1) & 0x_7FFF_FFFF_FFFF_FFFF;
                 } else {
                     //for subtract cases
                     if frac64_z != 0 {
@@ -180,7 +184,7 @@ impl<const N: u32> PxE1<{ N }> {
                             frac64_z <<= 2;
                         }
                     }
-                    let ecarry = ((0x4000000000000000 & frac64_z) >> 62) != 0;
+                    let ecarry = ((0x_4000_0000_0000_0000 & frac64_z) >> 62) != 0;
 
                     if !ecarry {
                         if exp_z == 0 {
@@ -201,7 +205,7 @@ impl<const N: u32> PxE1<{ N }> {
             let u_z = if reg_z > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sz {
-                    0x7FFFFFFF & (((-0x80000000_i32) >> (N - 1)) as u32)
+                    0x_7FFF_FFFF & Self::MASK
                 } else {
                     0x1 << (32 - N)
                 }
@@ -210,14 +214,15 @@ impl<const N: u32> PxE1<{ N }> {
                 let mut frac_z: u32;
                 if reg_z < N {
                     //remove hidden bits
-                    frac64_z &= 0x3FFFFFFFFFFFFFFF;
+                    frac64_z &= 0x_3FFF_FFFF_FFFF_FFFF;
                     frac_z = (frac64_z >> (reg_z + 33)) as u32; //frac32Z>>16;
 
                     if reg_z != (N - 2) {
                         bit_n_plus_one =
-                            ((0x8000000000000000_u64 >> (N - reg_z - 1)) & frac64_z) != 0;
-                        bits_more = ((0x7FFFFFFFFFFFFFFF_u64 >> (N - reg_z - 1)) & frac64_z) != 0;
-                        frac_z &= ((-0x80000000_i32) >> (N - 1)) as u32;
+                            ((0x_8000_0000_0000_0000_u64 >> (N - reg_z - 1)) & frac64_z) != 0;
+                        bits_more =
+                            ((0x_7FFF_FFFF_FFFF_FFFF_u64 >> (N - reg_z - 1)) & frac64_z) != 0;
+                        frac_z &= Self::MASK;
                     } else if frac64_z > 0 {
                         frac_z = 0;
                         bits_more = true;
@@ -228,7 +233,7 @@ impl<const N: u32> PxE1<{ N }> {
                     }
                 } else {
                     regime = if reg_sz {
-                        regime & (((-0x80000000_i32) >> (N - 1)) as u32)
+                        regime & Self::MASK
                     } else {
                         regime << (32 - N)
                     };
@@ -251,13 +256,13 @@ impl<const N: u32> PxE1<{ N }> {
 
     #[inline]
     pub fn round(p_a: Self) -> Self {
-        let mut mask = 0x2000_0000_u32;
+        let mut mask = 0x_2000_0000_u32;
         let mut scale = 0_u32;
 
         let u_a: u32;
 
         let mut ui_a = p_a.to_bits();
-        let sign = (ui_a & 0x8000_0000) != 0;
+        let sign = (ui_a & 0x_8000_0000) != 0;
 
         // sign is True if pA > NaR.
         if sign {
@@ -268,7 +273,7 @@ impl<const N: u32> PxE1<{ N }> {
             return Self::ZERO;
         } else if ui_a < 0x_4800_0000 {
             // 1/2 < x < 3/2 rounds to 1.
-            u_a = 0x4000_0000;
+            u_a = 0x_4000_0000;
         } else if ui_a <= 0x_5400_0000 {
             // 3/2 <= x <= 5/2 rounds to 2.
             u_a = 0x_5000_0000;
@@ -277,13 +282,11 @@ impl<const N: u32> PxE1<{ N }> {
             if N > 8 {
                 return p_a; // This also takes care of the NaR case, 0x80000000.
             } else {
-                let bit_n_plus_one = ((0x80000000_u32 >> N) & ui_a) != 0;
-                let tmp = (0x7FFFFFFF_u32 >> N) & ui_a; //bitsMore
-                let bit_last = (0x80000000_u32 >> (N - 1)) & ui_a;
-                if bit_n_plus_one {
-                    if (bit_last | tmp) != 0 {
-                        ui_a += bit_last;
-                    }
+                let bit_n_plus_one = ((0x_8000_0000_u32 >> N) & ui_a) != 0;
+                let tmp = (0x_7FFF_FFFF_u32 >> N) & ui_a; //bitsMore
+                let bit_last = (0x_8000_0000_u32 >> (N - 1)) & ui_a;
+                if bit_n_plus_one && ((bit_last | tmp) != 0) {
+                    ui_a += bit_last;
                 }
                 u_a = ui_a;
             }

@@ -230,13 +230,13 @@ impl<const N: u32> From<&Q32E2> for PxE2<{ N }> {
         let u_a = if reg_a > (N - 2) {
             //max or min pos. exp and frac does not matter.
             if reg_sa {
-                0x7FFFFFFF & (((-0x80000000_i32) >> (N - 1)) as u32)
+                0x_7FFF_FFFF & Self::MASK
             } else {
                 0x1 << (32 - N)
             }
         } else {
             //remove hidden bit
-            frac64_a &= 0x7FFF_FFFF_FFFF_FFFF;
+            frac64_a &= 0x_7FFF_FFFF_FFFF_FFFF;
 
             let shift = reg_a + 35; //2 es bit, 1 sign bit and 1 r terminating bit , 31+4
             let mut frac_a = (frac64_a >> shift) as u32;
@@ -264,7 +264,7 @@ impl<const N: u32> From<&Q32E2> for PxE2<{ N }> {
                 }
             } else {
                 regime = if reg_sa {
-                    regime & (((-0x80000000_i32) >> (N - 1)) as u32)
+                    regime & Self::MASK
                 } else {
                     regime << (32 - N)
                 };
@@ -273,8 +273,7 @@ impl<const N: u32> From<&Q32E2> for PxE2<{ N }> {
             }
 
             exp_a <<= 28 - reg_a;
-            let mut u_a = Self::pack_to_ui(regime, exp_a as u32, frac_a)
-                & (((-0x80000000_i32) >> (N - 1)) as u32);
+            let mut u_a = Self::pack_to_ui(regime, exp_a as u32, frac_a) & Self::MASK;
 
             if bit_n_plus_one {
                 u_a += (((u_a >> (32 - N)) & 0x1) | (bits_more as u32)) << (32 - N);

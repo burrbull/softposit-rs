@@ -35,6 +35,7 @@ impl<const N: u32> From<PxE2<{ N }>> for f64 {
 }
 
 impl<const N: u32> From<f64> for PxE2<{ N }> {
+    #[allow(clippy::cognitive_complexity)]
     fn from(mut float: f64) -> Self {
         let mut reg: u32;
         let mut frac = 0_u32;
@@ -118,7 +119,7 @@ impl<const N: u32> From<f64> for PxE2<{ N }> {
 
                 if reg > (N - 2) {
                     if reg_s {
-                        0x7FFFFFFF & (((-0x80000000_i32) >> (N - 1)) as u32)
+                        0x_7FFF_FFFF & Self::MASK
                     } else {
                         0x1 << (32 - N)
                     }
@@ -196,7 +197,7 @@ impl<const N: u32> From<f64> for PxE2<{ N }> {
 
             if reg > (N - 2) {
                 if reg_s {
-                    0x7FFFFFFF & (((-0x80000000_i32) >> (N - 1)) as u32)
+                    0x_7FFF_FFFF & Self::MASK
                 } else {
                     0x1 << (32 - N)
                 }
@@ -235,8 +236,8 @@ impl<const N: u32> From<f64> for PxE2<{ N }> {
 impl<const N: u32> From<i32> for PxE2<{ N }> {
     #[inline]
     fn from(mut i_a: i32) -> Self {
-        if i_a < -2147483135 {
-            Self::from_bits(0x80500000);
+        if i_a < -2_147_483_135 {
+            Self::from_bits(0x_8050_0000);
         }
 
         let sign = i_a.is_negative();
@@ -245,14 +246,14 @@ impl<const N: u32> From<i32> for PxE2<{ N }> {
         }
 
         let ui_a = if (N == 2) && (i_a > 0) {
-            0x40000000
-        } else if i_a > 2147483135 {
+            0x_4000_0000
+        } else if i_a > 2_147_483_135 {
             //2147483136 to 2147483647 rounds to P32 value (2147483648)=> 0x7FB00000
-            let mut ui_a = 0x7FB00000; // 2147483648
+            let mut ui_a = 0x_7FB0_0000; // 2147483648
             if N < 10 {
-                ui_a &= ((-0x80000000_i32) >> (N - 1)) as u32;
+                ui_a &= Self::MASK;
             } else if N < 12 {
-                ui_a = 0x7FF00000 & (((-0x80000000_i32) >> (N - 1)) as u32);
+                ui_a = 0x_7FF0_0000 & Self::MASK;
             }
             ui_a
         } else {
@@ -266,12 +267,12 @@ impl<const N: u32> From<u32> for PxE2<{ N }> {
     #[inline]
     fn from(a: u32) -> Self {
         let ui_a = if (N == 2) && (a > 0) {
-            0x40000000
-        } else if a > 0xFFFFFBFF {
+            0x_4000_0000
+        } else if a > 0x_FFFF_FBFF {
             //4294966271
-            let mut ui_a = 0x7FC00000; // 4294967296
+            let mut ui_a = 0x_7FC0_0000; // 4294967296
             if N < 12 {
-                ui_a &= ((-0x80000000_i32) >> (N - 1)) as u32;
+                ui_a &= Self::MASK;
             }
             ui_a
         } else {
@@ -283,7 +284,7 @@ impl<const N: u32> From<u32> for PxE2<{ N }> {
 
 fn convert_u32_to_px2bits<const N: u32>(a: u32) -> u32 {
     let mut log2 = 31_i8; //length of bit (e.g. 4294966271) in int (32 but because we have only 32 bits, so one bit off to accomdate that fact)
-    let mut mask = 0x80000000_u32;
+    let mut mask = 0x_8000_0000_u32;
     if a < 0x2 {
         a << 30
     } else {
@@ -300,38 +301,32 @@ fn convert_u32_to_px2bits<const N: u32>(a: u32) -> u32 {
         let mut ui_a: u32;
         if k >= (N - 2) {
             //maxpos
-            ui_a = 0x7FFFFFFF & (((-0x80000000_i32) >> (N - 1)) as u32);
+            ui_a = 0x_7FFF_FFFF & PxE2::<{ N }>::MASK;
         } else if k == (N - 3) {
             //bitNPlusOne-> first exp bit //bitLast is zero
-            ui_a = 0x7FFFFFFF ^ (0x3FFFFFFF >> k);
+            ui_a = 0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k);
             if ((exp_a & 0x2) != 0) && (((exp_a & 0x1) | frac_a) != 0) {
                 //bitNPlusOne //bitsMore
-                ui_a |= 0x80000000_u32 >> (N - 1);
+                ui_a |= 0x_8000_0000_u32 >> (N - 1);
             }
         } else if k == (N - 4) {
-            ui_a = (0x7FFFFFFF ^ (0x3FFFFFFF >> k)) | ((exp_a & 0x2) << (27 - k));
-            if (exp_a & 0x1) != 0 {
-                if (((0x80000000_u32 >> (N - 1)) & ui_a) | frac_a) != 0 {
-                    ui_a += 0x80000000_u32 >> (N - 1);
-                }
+            ui_a = (0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k)) | ((exp_a & 0x2) << (27 - k));
+            if ((exp_a & 0x1) != 0) && ((((0x_8000_0000_u32 >> (N - 1)) & ui_a) | frac_a) != 0) {
+                ui_a += 0x_8000_0000_u32 >> (N - 1);
             }
         } else if k == (N - 5) {
-            ui_a = (0x7FFFFFFF ^ (0x3FFFFFFF >> k)) | (exp_a << (27 - k));
+            ui_a = (0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k)) | (exp_a << (27 - k));
             mask = 0x8 << (k - N);
-            if (mask & frac_a) != 0 {
+            if ((mask & frac_a) != 0) && ((((mask - 1) & frac_a) | (exp_a & 0x1)) != 0) {
                 //bitNPlusOne
-                if (((mask - 1) & frac_a) | (exp_a & 0x1)) != 0 {
-                    ui_a += 0x80000000_u32 >> (N - 1);
-                }
+                ui_a += 0x_8000_0000_u32 >> (N - 1);
             }
         } else {
-            ui_a = ((0x7FFFFFFF ^ (0x3FFFFFFF >> k)) | (exp_a << (27 - k)) | frac_a >> (k + 4))
-                & (((-0x80000000_i32) >> (N - 1)) as u32);;
+            ui_a = ((0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k)) | (exp_a << (27 - k)) | frac_a >> (k + 4))
+                & PxE2::<{ N }>::MASK;
             mask = 0x8 << (k - N); //bitNPlusOne
-            if (mask & frac_a) != 0 {
-                if (((mask - 1) & frac_a) | ((mask << 1) & frac_a)) != 0 {
-                    ui_a += 0x80000000_u32 >> (N - 1);
-                }
+            if ((mask & frac_a) != 0) && ((((mask - 1) & frac_a) | ((mask << 1) & frac_a)) != 0) {
+                ui_a += 0x_8000_0000_u32 >> (N - 1);
             }
         }
         ui_a
@@ -347,12 +342,12 @@ impl<const N: u32> From<i64> for PxE2<{ N }> {
         }
 
         let ui_a = if (N == 2) && (i_a > 0) {
-            0x40000000
-        } else if i_a > 0x7FFDFFFFFFFFFFFF {
+            0x_4000_0000
+        } else if i_a > 0x_7FFD_FFFF_FFFF_FFFF {
             //9222809086901354495
-            let mut ui_a = 0x7FFFB000; // P32: 9223372036854775808
+            let mut ui_a = 0x_7FFF_B000; // P32: 9223372036854775808
             if N < 18 {
-                ui_a &= ((-0x80000000_i32) >> (N - 1)) as u32;
+                ui_a &= Self::MASK;
             }
             ui_a
         } else {
@@ -366,12 +361,12 @@ impl<const N: u32> From<u64> for PxE2<{ N }> {
     #[inline]
     fn from(a: u64) -> Self {
         let ui_a = if (N == 2) && (a > 0) {
-            0x40000000
-        } else if a > 0xFFFBFFFFFFFFFFFF {
+            0x_4000_0000
+        } else if a > 0x_FFFB_FFFF_FFFF_FFFF {
             //18445618173802708991
-            let mut ui_a = 0x7FFFC000; // 18446744073709552000
+            let mut ui_a = 0x_7FFF_C000; // 18446744073709552000
             if N < 18 {
-                ui_a &= ((-0x80000000_i32) >> (N - 1)) as u32;
+                ui_a &= Self::MASK;
             }
             ui_a
         } else {
@@ -383,7 +378,7 @@ impl<const N: u32> From<u64> for PxE2<{ N }> {
 
 fn convert_u64_to_px2bits<const N: u32>(a: u64) -> u32 {
     let mut log2 = 63_i8; //length of bit (e.g. 18445618173802708991) in int (64 but because we have only 64 bits, so one bit off to accommodate that fact)
-    let mut mask = 0x8000000000000000_u64;
+    let mut mask = 0x_8000_0000_0000_0000_u64;
     if a < 0x2 {
         (a as u32) << 30
     } else {
@@ -401,39 +396,39 @@ fn convert_u64_to_px2bits<const N: u32>(a: u64) -> u32 {
         let mut ui_a: u32;
         if k >= (N - 2) {
             //maxpos
-            ui_a = 0x7FFFFFFF & (((-0x80000000_i32) >> (N - 1)) as u32);
+            ui_a = 0x_7FFF_FFFF & PxE2::<{ N }>::MASK;
         } else if k == (N - 3) {
             //bitNPlusOne-> first exp bit //bitLast is zero
-            ui_a = 0x7FFFFFFF ^ (0x3FFFFFFF >> k);
+            ui_a = 0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k);
             if ((exp_a & 0x2) != 0) && (((exp_a & 0x1) as u64 | frac64_a) != 0) {
                 //bitNPlusOne //bitsMore
-                ui_a |= 0x80000000_u32 >> (N - 1);
+                ui_a |= 0x_8000_0000_u32 >> (N - 1);
             }
         } else if k == (N - 4) {
-            ui_a = (0x7FFFFFFF ^ (0x3FFFFFFF >> k)) | ((exp_a & 0x2) << (27 - k));
-            if (exp_a & 0x1) != 0 {
-                if (((0x80000000_u32 >> (N - 1)) & ui_a) != 0) || (frac64_a != 0) {
-                    ui_a += 0x80000000_u32 >> (N - 1);
-                }
+            ui_a = (0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k)) | ((exp_a & 0x2) << (27 - k));
+            if ((exp_a & 0x1) != 0)
+                && ((((0x_8000_0000_u32 >> (N - 1)) & ui_a) != 0) || (frac64_a != 0))
+            {
+                ui_a += 0x_8000_0000_u32 >> (N - 1);
             }
         } else if k == (N - 5) {
-            ui_a = (0x7FFFFFFF ^ (0x3FFFFFFF >> k)) | (exp_a << (27 - k));
-            mask = 0x800000000_u64 << (k + 32 - N);
+            ui_a = (0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k)) | (exp_a << (27 - k));
+            mask = 0x_0008_0000_0000_u64 << (k + 32 - N);
             if (mask & frac64_a) != 0 {
                 //bitNPlusOne
                 if (((mask - 1) & frac64_a) | ((exp_a & 0x1) as u64)) != 0 {
-                    ui_a += 0x80000000_u32 >> (N - 1);
+                    ui_a += 0x_8000_0000_u32 >> (N - 1);
                 }
             }
         } else {
-            ui_a = (0x7FFFFFFF ^ (0x3FFFFFFF >> k))
+            ui_a = (0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k))
                 | (exp_a << (27 - k))
-                | (((frac64_a >> (k + 36)) as u32) & (((-0x80000000_i32) >> (N - 1)) as u32));
-            mask = 0x800000000_u64 << (k + 32 - N); //bitNPlusOne position
-            if (mask & frac64_a) != 0 {
-                if (((mask - 1) & frac64_a) | ((mask << 1) & frac64_a)) != 0 {
-                    ui_a += 0x80000000_u32 >> (N - 1);
-                }
+                | (((frac64_a >> (k + 36)) as u32) & PxE2::<{ N }>::MASK);
+            mask = 0x_0008_0000_0000_u64 << (k + 32 - N); //bitNPlusOne position
+            if ((mask & frac64_a) != 0)
+                && ((((mask - 1) & frac64_a) | ((mask << 1) & frac64_a)) != 0)
+            {
+                ui_a += 0x_8000_0000_u32 >> (N - 1);
             }
         }
         ui_a

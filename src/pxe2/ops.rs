@@ -105,7 +105,7 @@ impl<const N: u32> PxE2<{ N }> {
             let reg_sa = Self::sign_reg_ui(ui_a);
             let reg_sb = Self::sign_reg_ui(ui_b);
             if reg_sa | reg_sb {
-                0x40000000
+                0x_4000_0000
             } else {
                 0x0
             }
@@ -131,7 +131,7 @@ impl<const N: u32> PxE2<{ N }> {
 
             frac64_a += frac64_b;
 
-            let rcarry = (0x8000_0000_0000_0000 & frac64_a) != 0; //first left bit
+            let rcarry = (0x_8000_0000_0000_0000 & frac64_a) != 0; //first left bit
             if rcarry {
                 exp_a += 1;
                 if exp_a > 3 {
@@ -147,20 +147,20 @@ impl<const N: u32> PxE2<{ N }> {
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sa {
-                    0x7FFFFFFF & (((-0x80000000_i32) >> (N - 1)) as u32)
+                    0x_7FFF_FFFF & Self::MASK
                 } else {
                     0x1 << (32 - N)
                 }
             } else {
                 //remove hidden bits
-                frac64_a = (frac64_a & 0x3FFFFFFFFFFFFFFF) >> reg_a + 2; // 2 bits exp
+                frac64_a = (frac64_a & 0x_3FFF_FFFF_FFFF_FFFF) >> (reg_a + 2); // 2 bits exp
                 frac_a = (frac64_a >> 32) as u32;
 
                 //regime length is smaller than length of posit
                 let mut bit_n_plus_one = false;
                 if reg_a < N {
                     if reg_a <= (N - 4) {
-                        bit_n_plus_one = (((0x80000000_u64) << (32 - N)) & frac64_a) != 0;
+                        bit_n_plus_one = (((0x_8000_0000_u64) << (32 - N)) & frac64_a) != 0;
                     //exp_a <<= (28-reg_a);
                     } else {
                         if reg_a == (N - 2) {
@@ -177,25 +177,21 @@ impl<const N: u32> PxE2<{ N }> {
                     }
                 } else {
                     regime = if reg_sa {
-                        regime & (((-0x80000000_i32) >> (N - 1)) as u32)
+                        regime & Self::MASK
                     } else {
                         regime << (32 - N)
                     };
                     exp_a = 0;
                     frac_a = 0;
                 }
-                frac_a &= ((-0x80000000_i32) >> (N - 1)) as u32;
+                frac_a &= Self::MASK;
 
                 exp_a <<= 28 - reg_a;
                 let mut u_z = Self::pack_to_ui(regime, exp_a as u32, frac_a);
 
                 //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
                 if bit_n_plus_one {
-                    let bits_more = if ((0xFFFF_FFFF_FFFF_FFFF_u64 >> (N + 1)) & frac64_a) != 0 {
-                        true
-                    } else {
-                        false
-                    };
+                    let bits_more = ((0x_FFFF_FFFF_FFFF_FFFF_u64 >> (N + 1)) & frac64_a) != 0;
                     u_z += (((u_z >> (32 - N)) & 1) | (bits_more as u32)) << (32 - N);
                 }
                 u_z
@@ -232,7 +228,7 @@ impl<const N: u32> PxE2<{ N }> {
             if reg_sa == reg_sb {
                 0
             } else {
-                0x40000000
+                0x_4000_0000
             }
         } else {
             let (mut k_a, mut exp_a, mut frac_a) = Self::separate_bits(ui_a);
@@ -277,20 +273,20 @@ impl<const N: u32> PxE2<{ N }> {
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sa {
-                    0x7FFFFFFF & (((-0x80000000_i32) >> (N - 1)) as u32)
+                    0x_7FFF_FFFF & Self::MASK
                 } else {
                     0x1 << (32 - N)
                 }
             } else {
                 //remove hidden bits
-                frac64_a = (frac64_a & 0x3FFFFFFFFFFFFFFF) >> reg_a + 2; // 2 bits exp
+                frac64_a = (frac64_a & 0x_3FFF_FFFF_FFFF_FFFF) >> (reg_a + 2); // 2 bits exp
                 frac_a = (frac64_a >> 32) as u32;
 
                 //regime length is smaller than length of posit
                 let mut bit_n_plus_one = false;
                 if reg_a < N {
                     if reg_a <= (N - 4) {
-                        bit_n_plus_one = (((0x80000000_u64) << (32 - N)) & frac64_a) != 0;
+                        bit_n_plus_one = (((0x_8000_0000_u64) << (32 - N)) & frac64_a) != 0;
                     //exp_a <<= (28-reg_a);
                     } else {
                         if reg_a == (N - 2) {
@@ -307,25 +303,21 @@ impl<const N: u32> PxE2<{ N }> {
                     }
                 } else {
                     regime = if reg_sa {
-                        regime & (((-0x80000000_i32) >> (N - 1)) as u32)
+                        regime & Self::MASK
                     } else {
                         regime << (32 - N)
                     };
                     exp_a = 0;
                     frac_a = 0;
                 }
-                frac_a &= ((-0x80000000_i32) >> (N - 1)) as u32;
+                frac_a &= Self::MASK;
 
                 exp_a <<= 28 - reg_a;
                 let mut u_z = Self::pack_to_ui(regime, exp_a as u32, frac_a);
 
                 //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
                 if bit_n_plus_one {
-                    let bits_more = if ((0xFFFF_FFFF_FFFF_FFFF_u64 >> (N + 1)) & frac64_a) != 0 {
-                        true
-                    } else {
-                        false
-                    };
+                    let bits_more = ((0x_FFFF_FFFF_FFFF_FFFF_u64 >> (N + 1)) & frac64_a) != 0;
                     u_z += (((u_z >> (32 - N)) & 1) | (bits_more as u32)) << (32 - N);
                 }
                 u_z
@@ -365,7 +357,7 @@ impl<const N: u32> ops::Mul for PxE2<{ N }> {
             let reg_sa = Self::sign_reg_ui(ui_a);
             let reg_sb = Self::sign_reg_ui(ui_b);
             if reg_sa & reg_sb {
-                0x40000000
+                0x_4000_0000
             } else {
                 0x0
             }
@@ -398,13 +390,13 @@ impl<const N: u32> ops::Mul for PxE2<{ N }> {
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sa {
-                    0x7FFFFFFF & (((-0x80000000_i32) >> (N - 1)) as u32)
+                    0x_7FFF_FFFF & Self::MASK
                 } else {
                     0x1 << (32 - N)
                 }
             } else {
                 //remove carry and rcarry bits and shift to correct position (2 bits exp, so + 1 than 16 bits)
-                frac64_z = (frac64_z & 0xFFFFFFFFFFFFFFF) >> reg_a;
+                frac64_z = (frac64_z & 0x_0FFF_FFFF_FFFF_FFFF) >> reg_a;
                 frac_a = (frac64_z >> 32) as u32;
 
                 //regime length is smaller than length of posit
@@ -412,9 +404,9 @@ impl<const N: u32> ops::Mul for PxE2<{ N }> {
                 let mut bits_more = false;
                 if reg_a < N {
                     if reg_a <= (N - 4) {
-                        bit_n_plus_one = ((0x8000000000000000_u64 >> N) & frac64_z) != 0;
-                        bits_more = ((0x7FFFFFFFFFFFFFFF >> N) & frac64_z) != 0;
-                        frac_a &= ((-0x80000000_i32) >> (N - 1)) as u32;
+                        bit_n_plus_one = ((0x_8000_0000_0000_0000_u64 >> N) & frac64_z) != 0;
+                        bits_more = ((0x_7FFF_FFFF_FFFF_FFFF >> N) & frac64_z) != 0;
+                        frac_a &= Self::MASK;
                     } else {
                         if reg_a == (N - 2) {
                             bit_n_plus_one = (exp_a & 0x2) != 0;
@@ -433,7 +425,7 @@ impl<const N: u32> ops::Mul for PxE2<{ N }> {
                     }
                 } else {
                     regime = if reg_sa {
-                        regime & (((-0x80000000_i32) >> (N - 1)) as u32)
+                        regime & Self::MASK
                     } else {
                         regime << (32 - N)
                     };
@@ -481,7 +473,7 @@ impl<const N: u32> ops::Div for PxE2<{ N }> {
         };
 
         let u_z = if N == 2 {
-            0x40000000
+            0x_4000_0000
         } else {
             let (mut k_a, mut exp_a, mut frac_a) = Self::separate_bits(ui_a);
 
@@ -517,13 +509,13 @@ impl<const N: u32> ops::Div for PxE2<{ N }> {
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sa {
-                    0x7FFFFFFF & (((-0x80000000_i32) >> (N - 1)) as u32)
+                    0x_7FFF_FFFF & Self::MASK
                 } else {
                     0x1 << (32 - N)
                 }
             } else {
                 //remove carry and rcarry bits and shift to correct position
-                let frac64_z = (frac64_z & 0x3FFFFFFF) as u32;
+                let frac64_z = (frac64_z & 0x_3FFF_FFFF) as u32;
                 frac_a = frac64_z >> (reg_a + 2);
 
                 //regime length is smaller than length of posit
@@ -531,9 +523,9 @@ impl<const N: u32> ops::Div for PxE2<{ N }> {
                 let mut bits_more = false;
                 if reg_a < N {
                     if reg_a <= (N - 4) {
-                        bit_n_plus_one = ((0x80000000_u32 >> (N - reg_a - 2)) & frac64_z) != 0;
-                        bits_more = ((0x7FFFFFFF >> (N - reg_a - 2)) & frac64_z) != 0;
-                        frac_a &= ((-0x80000000_i32) >> (N - 1)) as u32;
+                        bit_n_plus_one = ((0x_8000_0000_u32 >> (N - reg_a - 2)) & frac64_z) != 0;
+                        bits_more = ((0x_7FFF_FFFF >> (N - reg_a - 2)) & frac64_z) != 0;
+                        frac_a &= Self::MASK;
                     } else {
                         if reg_a == (N - 2) {
                             bit_n_plus_one = (exp_a & 0x2) != 0;
@@ -555,7 +547,7 @@ impl<const N: u32> ops::Div for PxE2<{ N }> {
                     }
                 } else {
                     regime = if reg_sa {
-                        regime & (((-0x80000000_i32) >> (N - 1)) as u32)
+                        regime & Self::MASK
                     } else {
                         regime << (32 - N)
                     };

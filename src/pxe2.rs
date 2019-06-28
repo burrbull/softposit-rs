@@ -44,6 +44,7 @@ impl<const N: u32> PxE2<{ N }> {
 }
 
 impl<const N: u32> PxE2<{ N }> {
+    pub(crate) const MASK: u32 = (((-0x_8000_0000_i32) >> (N - 1)) as u32);
     pub const SIGN_MASK: u32 = 0x_8000_0000;
     pub const REGIME_SIGN_MASK: u32 = 0x_4000_0000;
 
