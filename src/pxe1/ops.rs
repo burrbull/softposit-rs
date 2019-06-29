@@ -137,7 +137,6 @@ impl<const N: u32> PxE1<{ N }> {
             }
 
             let (mut regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
-            let reg_a = reg_a as u32;
 
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
@@ -252,7 +251,6 @@ impl<const N: u32> PxE1<{ N }> {
             }
 
             let (mut regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
-            let reg_a = reg_a as u32;
 
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
@@ -366,7 +364,6 @@ impl<const N: u32> ops::Mul for PxE1<{ N }> {
             }
 
             let (mut regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
-            let reg_a = reg_a as u32;
 
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
@@ -475,7 +472,6 @@ impl<const N: u32> ops::Div for PxE1<{ N }> {
             }
 
             let (mut regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
-            let reg_a = reg_a as u32;
 
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.

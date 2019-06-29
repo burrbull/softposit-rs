@@ -172,14 +172,8 @@ impl P16E1 {
     }
 
     #[inline]
-    fn pack_to_ui(regime: u16, reg_a: u8, exp_a: u16, frac_a: u16) -> u16 {
-        regime
-            + (if reg_a == 14 {
-                0
-            } else {
-                exp_a << (13 - reg_a)
-            })
-            + frac_a
+    fn pack_to_ui(regime: u16, reg: u32, exp: u16, frac: u16) -> u16 {
+        regime + (if reg == 14 { 0 } else { exp << (13 - reg) }) + frac
     }
 
     #[inline]
@@ -229,18 +223,14 @@ impl P16E1 {
     }
 
     #[inline]
-    fn calculate_regime(k: i8) -> (u16, bool, u8) {
+    fn calculate_regime(k: i8) -> (u16, bool, u32) {
         let reg;
         if k < 0 {
-            reg = (-k) as u8;
-            (0x4000_u16.checked_shr(reg as u32).unwrap_or(0), false, reg)
+            reg = (-k) as u32;
+            (0x4000_u16.checked_shr(reg).unwrap_or(0), false, reg)
         } else {
-            reg = (k + 1) as u8;
-            (
-                0x7fff - 0x7fff_u16.checked_shr(reg as u32).unwrap_or(0),
-                true,
-                reg,
-            )
+            reg = (k + 1) as u32;
+            (0x7fff - 0x7fff_u16.checked_shr(reg).unwrap_or(0), true, reg)
         }
     }
 }

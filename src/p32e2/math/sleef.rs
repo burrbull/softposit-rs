@@ -406,7 +406,7 @@ pub fn cos(mut d: P32E2) -> P32E2 {
     let q: i32;
 
     if d.abs() < TRIGRANGEMAX {
-        q = 1 + 2 * i32::from((d * P32E2::FRAC_1_PI).floor());
+        q = 1 + 2 * i32::from((d * P32E2::FRAC_1_PI - HALF).round());
         let qf = P32E2::from(q);
         let mut quire = Q32E2::init();
         quire += (d, ONE);

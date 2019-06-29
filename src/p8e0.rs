@@ -207,18 +207,14 @@ impl P8E0 {
     }
 
     #[inline]
-    fn calculate_regime(k: i8) -> (u8, bool, u8) {
+    fn calculate_regime(k: i8) -> (u8, bool, u32) {
         let reg;
         if k < 0 {
-            reg = (-k) as u8;
-            (0x40_u8.checked_shr(reg as u32).unwrap_or(0), false, reg)
+            reg = (-k) as u32;
+            (0x40_u8.checked_shr(reg).unwrap_or(0), false, reg)
         } else {
-            reg = (k + 1) as u8;
-            (
-                0x7f - 0x7f_u8.checked_shr(reg as u32).unwrap_or(0),
-                true,
-                reg,
-            )
+            reg = (k + 1) as u32;
+            (0x7f - 0x7f_u8.checked_shr(reg).unwrap_or(0), true, reg)
         }
     }
 }

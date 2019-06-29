@@ -225,7 +225,6 @@ impl<const N: u32> From<&Q32E2> for PxE2<{ N }> {
         let mut exp_a = 271 - (no_lz as i32) - ((k_a << 2) as i32);
 
         let (mut regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
-        let reg_a = reg_a as u32;
 
         let u_a = if reg_a > (N - 2) {
             //max or min pos. exp and frac does not matter.
