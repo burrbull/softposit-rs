@@ -457,13 +457,6 @@ impl ops::Rem for P16E1 {
 }
 
 #[cfg(test)]
-fn ulp(x: P16E1, y: P16E1) -> i16 {
-    let xi = x.to_bits() as i16;
-    let yi = y.to_bits() as i16;
-    (xi - yi).abs()
-}
-
-#[cfg(test)]
 fn test_ops(fun: fn(P16E1, P16E1, f64, f64) -> (P16E1, f64)) {
     use rand::Rng;
     let mut rng = rand::thread_rng();

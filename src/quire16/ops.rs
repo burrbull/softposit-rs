@@ -220,6 +220,13 @@ pub(super) fn fdp_sub(q: &mut Q16E1, mut ui_a: u16, mut ui_b: u16) {
     *q = if q_z.is_nar() { Q16E1::ZERO } else { q_z }
 }
 
+#[cfg(test)]
+fn ulp(x: P16E1, y: P16E1) -> i16 {
+    let xi = x.to_bits() as i16;
+    let yi = y.to_bits() as i16;
+    (xi - yi).abs()
+}
+
 #[test]
 fn test_quire_mul_add() {
     use rand::Rng;
