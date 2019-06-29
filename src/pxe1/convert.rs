@@ -438,3 +438,73 @@ impl<const N: u32> From<PxE1<{ N }>> for i64 {
         i_z.with_sign(sign) as i64
     }
 }
+
+fn convert_u64_to_px1bits<const N: u32>(a: u64) -> u32 {
+    let mut log2 = 63_i8;//60;//length of bit (e.g. 576460752303423488 = 2^59) in int (64 but because we have only 64 bits, so one bit off to accommodate that fact)
+    let mut mask = 0x_8000_0000_0000_0000_u64;
+    if a < 0x2 {
+        (a as u32) << 30
+    } else {
+        let mut frac64_a = a;
+        while (frac64_a & mask) == 0 {
+            log2 -= 1;
+            frac64_a <<= 1;
+        }
+
+        let k = (log2 >> 1) as u32;
+
+        let exp_a = (log2 & 0x1) as u32;
+        frac64_a ^= mask;
+
+        let mut ui_a: u32;
+        if k >= (N - 2) {
+            //maxpos
+            ui_a = 0x_7FFF_FFFF & PxE1::<{ N }>::MASK;
+        } else if k == (N - 3) {
+            //bitNPlusOne-> exp bit //bitLast is zero
+            ui_a = 0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k);
+            if ((exp_a & 0x1) != 0) && (frac64_a != 0) {
+                //bitNPlusOne //bitsMore
+                ui_a |= 0x_8000_0000_u32 >> (N - 1);
+            }
+        } else if k == (N - 4) {
+            //bitLast = regime terminating bit
+            ui_a = (0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k)) | (exp_a << (28 - k));
+            mask = 0x_0008_0000_0000_u64 << (k + 32 - N);
+            if (mask & frac64_a) != 0 {
+                //bitNPlusOne
+                if (((mask - 1) & frac64_a) | ((exp_a & 0x1) as u64)) != 0 {
+                    ui_a += 0x_8000_0000_u32 >> (N - 1);
+                }
+            }
+        } else {
+            ui_a = (0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k))
+                | (exp_a << (28 - k))
+                | (((frac64_a >> (k + 36)) as u32) & PxE1::<{ N }>::MASK);
+            mask = 0x_0008_0000_0000_u64 << (k + 32 - N); //bitNPlusOne position
+            if ((mask & frac64_a) != 0)
+                && ((((mask - 1) & frac64_a) | ((mask << 1) & frac64_a)) != 0)
+            {
+                ui_a += 0x_8000_0000_u32 >> (N - 1);
+            }
+        }
+        ui_a
+    }
+}
+
+impl<const N: u32> From<u64> for PxE1<{ N }> {
+    #[inline]
+    fn from(a: u64) -> Self {
+        let ui_a = if a == 0x_8000_0000_0000_0000 {
+            0x_8000_0000
+        } else if (N == 2) && (a > 0) {
+            0x_4000_0000
+        } else if a > 0x_8000_0000_0000_0000 {
+            //576460752303423488 -> wrong number need to change
+            0x_7FFF_FFFF & ((0x_8000_0000_u64 >> (N - 1)) as u32) // 1152921504606847000
+        } else {
+            convert_u64_to_px1bits::<{ N }>(a)
+        };
+        Self::from_bits(ui_a)
+    }
+}
