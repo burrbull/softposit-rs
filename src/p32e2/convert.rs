@@ -192,8 +192,8 @@ impl From<P32E2> for f64 {
         } else if p_a.is_nar() {
             f64::NAN
         } else {
-            let sign_a = P32E2::sign_ui(ui_a);
-            if sign_a {
+            let sign_a = ui_a & P32E2::SIGN_MASK;
+            if sign_a != 0 {
                 ui_a = ui_a.wrapping_neg();
             }
             let (k_a, tmp) = P32E2::separate_bits_tmp(ui_a);
@@ -201,7 +201,7 @@ impl From<P32E2> for f64 {
             let frac_a = ((tmp << 3) as u64) << 20;
             let exp_a = (((k_a as u64) << 2) + ((tmp >> 29) as u64)).wrapping_add(1023) << 52;
 
-            f64::from_bits(exp_a + frac_a + (((sign_a as u64) & 0x1) << 63))
+            f64::from_bits(exp_a + frac_a + ((sign_a as u64) << 32))
         }
     }
 }

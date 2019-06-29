@@ -1,6 +1,6 @@
 use core::mem;
 
-//mod convert;
+mod convert;
 mod math;
 mod ops;
 

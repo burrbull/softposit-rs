@@ -20,8 +20,8 @@ impl<const N: u32> From<PxE2<{ N }>> for f64 {
         } else if p_a.is_nar() {
             f64::NAN
         } else {
-            let sign_a = PxE2::<{ N }>::sign_ui(ui_a);
-            if sign_a {
+            let sign_a = ui_a & 0x_8000_0000;
+            if sign_a != 0 {
                 ui_a = ui_a.wrapping_neg();
             }
             let (k_a, tmp) = PxE2::<{ N }>::separate_bits_tmp(ui_a);
@@ -29,7 +29,7 @@ impl<const N: u32> From<PxE2<{ N }>> for f64 {
             let frac_a = ((tmp << 3) as u64) << 20;
             let exp_a = (((k_a as u64) << 2) + ((tmp >> 29) as u64)).wrapping_add(1023) << 52;
 
-            f64::from_bits(exp_a + frac_a + (((sign_a as u64) & 0x1) << 63))
+            f64::from_bits(exp_a + frac_a + ((sign_a as u64) << 32))
         }
     }
 }
@@ -47,13 +47,7 @@ impl<const N: u32> From<f64> for PxE2<{ N }> {
             return Self::ZERO;
         } else if !float.is_finite() {
             return Self::NAR;
-        } /* else if float >= 1.329_227_995_784_916_e36 {
-              //maxpos
-              return Self::MAX;
-          } else if float <= -1.329_227_995_784_916_e36 {
-              // -maxpos
-              return Self::MIN;
-          }*/
+        }
 
         let sign = float < 0.;
 
@@ -61,12 +55,6 @@ impl<const N: u32> From<f64> for PxE2<{ N }> {
             0x4000_0000
         } else if float == -1. {
             0xC000_0000
-        /*} else if (float <= 7.523_163_845_262_64_e-37) && !sign {
-            //minpos
-            0x1
-        } else if (float >= -7.523_163_845_262_64_e-37) && sign {
-            //-minpos
-            0xFFFF_FFFF*/
         } else if (float > 1.) || (float < -1.) {
             if sign {
                 //Make negative numbers positive for easier computation

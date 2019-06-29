@@ -1,7 +1,7 @@
 use super::{P16E1, Q16E1};
 use crate::WithSign;
 use core::convert::From;
-use core::f64;
+use core::{f32, f64};
 
 impl From<P16E1> for Q16E1 {
     #[inline]
@@ -534,8 +534,25 @@ impl From<f64> for P16E1 {
 
 impl From<P16E1> for f32 {
     #[inline]
-    fn from(a: P16E1) -> Self {
-        f64::from(a) as f32
+    fn from(p_a: P16E1) -> Self {
+        let mut ui_a = p_a.to_bits();
+
+        if p_a.is_zero() {
+            0.
+        } else if p_a.is_nar() {
+            f32::NAN
+        } else {
+            let sign_a = ui_a & P16E1::SIGN_MASK;
+            if sign_a != 0 {
+                ui_a = ui_a.wrapping_neg();
+            }
+            let (k_a, tmp) = P16E1::separate_bits_tmp(ui_a);
+
+            let frac_a = ((tmp << 2) as u32) << 7;
+            let exp_a = (((k_a as u32) << 1) + ((tmp >> 14) as u32)).wrapping_add(127) << 23;
+
+            f32::from_bits(exp_a + frac_a + ((sign_a as u32) << 16))
+        }
     }
 }
 
@@ -549,8 +566,8 @@ impl From<P16E1> for f64 {
         } else if p_a.is_nar() {
             f64::NAN
         } else {
-            let sign_a = P16E1::sign_ui(ui_a);
-            if sign_a {
+            let sign_a = ui_a & P16E1::SIGN_MASK;
+            if sign_a != 0 {
                 ui_a = ui_a.wrapping_neg();
             }
             let (k_a, tmp) = P16E1::separate_bits_tmp(ui_a);
@@ -558,7 +575,7 @@ impl From<P16E1> for f64 {
             let frac_a = ((tmp << 2) as u64) << 36;
             let exp_a = (((k_a as u64) << 1) + ((tmp >> 14) as u64)).wrapping_add(1023) << 52;
 
-            f64::from_bits(exp_a + frac_a + (((sign_a as u64) & 0x1) << 63))
+            f64::from_bits(exp_a + frac_a + ((sign_a as u64) << 48))
         }
     }
 }
@@ -668,6 +685,15 @@ fn convert_p16_f64() {
     for n in -0x_8000_i16..0x_7fff {
         let p = P16E1::new(n);
         let f = f64::from(p);
+        assert_eq!(p, P16E1::from(f));
+    }
+}
+
+#[test]
+fn convert_p16_f32() {
+    for n in -0x_8000_i16..0x_7fff {
+        let p = P16E1::new(n);
+        let f = f32::from(p);
         assert_eq!(p, P16E1::from(f));
     }
 }

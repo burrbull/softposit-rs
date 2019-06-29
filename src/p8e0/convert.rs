@@ -1,7 +1,7 @@
 use super::{P8E0, Q8E0};
 use crate::WithSign;
 use core::convert::From;
-use core::f64;
+use core::{f32, f64};
 
 impl From<P8E0> for Q8E0 {
     #[inline]
@@ -194,8 +194,25 @@ impl From<f64> for P8E0 {
 
 impl From<P8E0> for f32 {
     #[inline]
-    fn from(a: P8E0) -> Self {
-        f64::from(a) as f32
+    fn from(p_a: P8E0) -> Self {
+        let mut ui_a = p_a.to_bits();
+
+        if p_a.is_zero() {
+            0.
+        } else if p_a.is_nar() {
+            f32::NAN
+        } else {
+            let sign_a = ui_a & P8E0::SIGN_MASK;
+            if sign_a != 0 {
+                ui_a = ui_a.wrapping_neg();
+            }
+            let (k_a, tmp) = P8E0::separate_bits_tmp(ui_a);
+
+            let frac_a = ((tmp << 1) as u32) << 15;
+            let exp_a = (k_a as u32).wrapping_add(127) << 23;
+
+            f32::from_bits(exp_a + frac_a + ((sign_a as u32) << 24))
+        }
     }
 }
 
@@ -209,8 +226,8 @@ impl From<P8E0> for f64 {
         } else if p_a.is_nar() {
             f64::NAN
         } else {
-            let sign_a = P8E0::sign_ui(ui_a);
-            if sign_a {
+            let sign_a = ui_a & P8E0::SIGN_MASK;
+            if sign_a != 0 {
                 ui_a = ui_a.wrapping_neg();
             }
             let (k_a, tmp) = P8E0::separate_bits_tmp(ui_a);
@@ -218,7 +235,7 @@ impl From<P8E0> for f64 {
             let frac_a = ((tmp << 1) as u64) << 44;
             let exp_a = (k_a as u64).wrapping_add(1023) << 52;
 
-            f64::from_bits(exp_a + frac_a + (((sign_a as u64) & 0x1) << 63))
+            f64::from_bits(exp_a + frac_a + ((sign_a as u64) << 56))
         }
     }
 }
@@ -595,6 +612,15 @@ fn convert_p8_f64() {
     for n in -0x_80_i8..0x_7f {
         let p = P8E0::new(n);
         let f = f64::from(p);
+        assert_eq!(p, P8E0::from(f));
+    }
+}
+
+#[test]
+fn convert_p8_f32() {
+    for n in -0x_80_i8..0x_7f {
+        let p = P8E0::new(n);
+        let f = f32::from(p);
         assert_eq!(p, P8E0::from(f));
     }
 }
