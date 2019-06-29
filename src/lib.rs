@@ -45,36 +45,25 @@ pub use polynom::Polynom;
 trait WithSign {
     fn with_sign(self, sign: bool) -> Self;
 }
-impl WithSign for u8 {
-    #[inline]
-    fn with_sign(self, sign: bool) -> Self {
-        if sign {
-            self.wrapping_neg()
-        } else {
-            self
-        }
+
+macro_rules! with_sign {
+    ($($uint:ty),*) => {
+        $(
+            impl WithSign for $uint {
+                #[inline]
+                fn with_sign(self, sign: bool) -> Self {
+                    if sign {
+                        self.wrapping_neg()
+                    } else {
+                        self
+                    }
+                }
+            }
+        )*
     }
 }
-impl WithSign for u16 {
-    #[inline]
-    fn with_sign(self, sign: bool) -> Self {
-        if sign {
-            self.wrapping_neg()
-        } else {
-            self
-        }
-    }
-}
-impl WithSign for u32 {
-    #[inline]
-    fn with_sign(self, sign: bool) -> Self {
-        if sign {
-            self.wrapping_neg()
-        } else {
-            self
-        }
-    }
-}
+
+with_sign!(u8, u16, u32, u64);
 
 fn lldiv(numer: i64, denom: i64) -> (i64, i64) {
     let mut quot = numer / denom;

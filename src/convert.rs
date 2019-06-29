@@ -809,6 +809,65 @@ impl<const N: u32> From<PxE2<{ N }>> for P8E0 {
     }
 }
 
+#[cfg(feature = "nightly")]
+impl<const N: u32> From<PxE1<{ N }>> for P8E0 {
+    #[inline]
+    fn from(p_a: PxE1<{ N }>) -> Self {
+        let mut ui_a = p_a.to_bits();
+
+        if (ui_a == 0x_8000_0000) || (ui_a == 0) {
+            return P8E0::from_bits((ui_a >> 24) as u8);
+        }
+
+        let sign = PxE1::<{ N }>::sign_ui(ui_a);
+
+        if sign {
+            ui_a = ui_a.wrapping_neg();
+        }
+
+        let (k_a, tmp) = PxE1::<{ N }>::separate_bits_tmp(ui_a);
+
+        let mut exp_frac32_a = 0_u32;
+        let mut reg_a = 0_i8;
+        let mut u_z: u8 = if (k_a < -3) || (k_a >= 3) {
+            if k_a < 0 {
+                0x1
+            } else {
+                0x7F
+            }
+        } else {
+            //2nd bit exp
+            exp_frac32_a = tmp;
+            let regime = if k_a < 0 {
+                reg_a = ((-k_a) << 1) - ((exp_frac32_a >> 30) as i8);
+                if reg_a == 0 {
+                    reg_a = 1;
+                }
+                0x40 >> reg_a
+            } else {
+                reg_a = if k_a == 0 {
+                    1 + ((exp_frac32_a >> 30) as i8)
+                } else {
+                    ((k_a + 1) << 1) + ((exp_frac32_a >> 30) as i8) - 1
+                };
+                0x7F - (0x7F >> reg_a)
+            };
+            if reg_a > 5 {
+                regime
+            } else {
+                regime + ((((exp_frac32_a) & 0x_3FFF_FFFF) >> (reg_a + 24)) as u8)
+            }
+        };
+
+        if (exp_frac32_a & (0x_0080_0000 << reg_a)) != 0 {
+            let bits_more = (exp_frac32_a & ((0x_0080_0000 << reg_a) - 1)) != 0;
+            u_z += (u_z & 1) | (bits_more as u8);
+        }
+
+        P8E0::from_bits(u_z.with_sign(sign))
+    }
+}
+
 #[cfg(feature = "alga")]
 crate::impl_subset_into!(
     u8 as P8E0, P16E1, P32E2;
