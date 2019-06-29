@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(feature = "nightly", feature(const_generics))]
+#![cfg_attr(feature = "nightly", feature(const_fn))]
 #![allow(clippy::cast_lossless)]
 #![allow(clippy::float_cmp)]
 #![allow(clippy::many_single_char_names)]
