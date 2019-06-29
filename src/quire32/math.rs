@@ -9,7 +9,7 @@ impl crate::MathConsts for Q32E2 {
         0x_0002_b7e1_5162_8aed,
         0x_2a6a_bf71_5880_9cf4,
         0x_f3c7_62e7_160f_38b4,
-        0x_da56_a784_d904_5190,
+        0x_da56_a784_d904_5191,
     );
     const FRAC_1_PI: Self = Self(
         0,
@@ -19,7 +19,7 @@ impl crate::MathConsts for Q32E2 {
         0x_0000_517c_c1b7_2722,
         0x_0a94_fe13_abe8_fa9a,
         0x_6ee0_6db1_4acc_9e21,
-        0x_c820_ff28_b1d5_ef5d,
+        0x_c820_ff28_b1d5_ef5e,
     );
     const FRAC_1_SQRT_2: Self = Self(
         0,
@@ -29,7 +29,7 @@ impl crate::MathConsts for Q32E2 {
         0x_0000_b504_f333_f9de,
         0x_6484_597d_89b3_754a,
         0x_be9f_1d6f_60ba_893b,
-        0x_a84c_ed17_ac85_8333,
+        0x_a84c_ed17_ac85_8334,
     );
     const FRAC_2_PI: Self = Self(
         0,
@@ -39,7 +39,7 @@ impl crate::MathConsts for Q32E2 {
         0x_0000_a2f9_836e_4e44,
         0x_1529_fc27_57d1_f534,
         0x_ddc0_db62_9599_3c43,
-        0x_9041_fe51_63ab_debb,
+        0x_9041_fe51_63ab_debc,
     );
     const FRAC_2_SQRT_PI: Self = Self(
         0,
@@ -79,7 +79,7 @@ impl crate::MathConsts for Q32E2 {
         0x_0000_c90f_daa2_2168,
         0x_c234_c4c6_628b_80dc,
         0x_1cd1_2902_4e08_8a67,
-        0x_cc74_020b_bea6_3b13,
+        0x_cc74_020b_bea6_3b14,
     );
     const FRAC_PI_6: Self = Self(
         0,
@@ -89,7 +89,7 @@ impl crate::MathConsts for Q32E2 {
         0x_0000_860a_91c1_6b9b,
         0x_2c23_2dd9_9707_ab3d,
         0x_688b_70ac_3405_b19a,
-        0x_884d_56b2_7f19_7cb7,
+        0x_884d_56b2_7f19_7cb8,
     );
     const FRAC_PI_8: Self = Self(
         0,
@@ -99,7 +99,7 @@ impl crate::MathConsts for Q32E2 {
         0x_0000_6487_ed51_10b4,
         0x_611a_6263_3145_c06e,
         0x_0e68_9481_2704_4533,
-        0x_e63a_0105_df53_1d89,
+        0x_e63a_0105_df53_1d8a,
     );
     const LN_10: Self = Self(
         0,
@@ -109,7 +109,7 @@ impl crate::MathConsts for Q32E2 {
         0x_0002_4d76_3776_aaa2,
         0x_b05b_a95b_58ae_0b4c,
         0x_28a3_8a3f_b3e7_6977,
-        0x_e43a_0f18_7a08_07c0,
+        0x_e43a_0f18_7a08_07c1,
     );
     const LN_2: Self = Self(
         0,
@@ -119,7 +119,7 @@ impl crate::MathConsts for Q32E2 {
         0x_0000_b172_17f7_d1cf,
         0x_79ab_c9e3_b398_03f2,
         0x_f6af_40f3_4326_7298,
-        0x_b62d_8a0d_175b_8baa,
+        0x_b62d_8a0d_175b_8bab,
     );
     const LOG10_E: Self = Self(
         0,

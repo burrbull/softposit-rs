@@ -24,6 +24,20 @@ impl<const N: u32> ops::SubAssign for PxE1<{ N }> {
     }
 }
 
+impl<const N: u32> ops::MulAssign for PxE1<{ N }> {
+    #[inline]
+    fn mul_assign(&mut self, other: Self) {
+        *self = *self * other
+    }
+}
+
+impl<const N: u32> ops::DivAssign for PxE1<{ N }> {
+    #[inline]
+    fn div_assign(&mut self, other: Self) {
+        *self = *self / other
+    }
+}
+
 impl<const N: u32> ops::Add for PxE1<{ N }> {
     type Output = Self;
     #[inline]

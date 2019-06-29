@@ -1,4 +1,5 @@
-use super::{P16E1, Q16E1};
+use super::P16E1;
+use crate::Q16E1;
 use crate::{MulAddType, WithSign};
 
 const HALF: P16E1 = P16E1::new(0x_3000);

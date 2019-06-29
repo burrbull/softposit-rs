@@ -8,13 +8,17 @@
 #![allow(clippy::verbose_bit_mask)]
 
 pub mod p8e0;
-pub use self::p8e0::{P8E0, Q8E0};
+pub use self::p8e0::P8E0;
 pub type P8 = P8E0;
+pub mod quire8;
+pub use self::quire8::Q8E0;
 pub type Q8 = Q8E0;
 
 pub mod p16e1;
-pub use self::p16e1::{P16E1, Q16E1};
+pub use self::p16e1::P16E1;
 pub type P16 = P16E1;
+pub mod quire16;
+pub use self::quire16::Q16E1;
 pub type Q16 = Q16E1;
 
 pub mod p32e2;

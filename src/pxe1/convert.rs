@@ -440,7 +440,7 @@ impl<const N: u32> From<PxE1<{ N }>> for i64 {
 }
 
 fn convert_u64_to_px1bits<const N: u32>(a: u64) -> u32 {
-    let mut log2 = 63_i8;//60;//length of bit (e.g. 576460752303423488 = 2^59) in int (64 but because we have only 64 bits, so one bit off to accommodate that fact)
+    let mut log2 = 63_i8; //60;//length of bit (e.g. 576460752303423488 = 2^59) in int (64 but because we have only 64 bits, so one bit off to accommodate that fact)
     let mut mask = 0x_8000_0000_0000_0000_u64;
     if a < 0x2 {
         (a as u32) << 30
