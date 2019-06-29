@@ -13,6 +13,9 @@ Such types are supported now:
 * P16E1 or P16: 16-bit posit with ES=1;
 * P8E0 or P8: 8-bit posit without exponent bits.
 
+Initial suppot of generic types PxE1{N} and PxE2{N}.
+Requires nightly rustc and `nightly` feature to be enabled.
+
 ## Examples
 
 ### Convert from f64, Add
