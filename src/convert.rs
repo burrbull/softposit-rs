@@ -810,6 +810,88 @@ impl<const N: u32> From<PxE2<{ N }>> for P8E0 {
 }
 
 #[cfg(feature = "nightly")]
+impl<const N: u32> From<PxE1<{ N }>> for P32E2 {
+    #[inline]
+    fn from(p_a: PxE1<{ N }>) -> Self {
+        let mut ui_a = p_a.to_bits();
+
+        if (ui_a == 0x_8000_0000) || (ui_a == 0) {
+            return Self::from_bits(ui_a);
+        }
+        let sign = PxE2::<{ N }>::sign_ui(ui_a);
+        if sign {
+            ui_a = ui_a.wrapping_neg();
+        }
+
+        let (k_a, tmp) = PxE1::<{ N }>::separate_bits_tmp(ui_a);
+
+        //2nd bit exp
+        let mut exp_frac32_a = tmp;
+
+        let mut reg_a: u32;
+        let regime = if k_a < 0 {
+            reg_a = (-k_a) as u32;
+            exp_frac32_a |= (reg_a & 0x1) << 31;
+            reg_a = (reg_a + 1) >> 1;
+            if reg_a == 0 {
+                reg_a = 1;
+            }
+            0x_4000_0000_u32.checked_shr(reg_a).unwrap_or(0)
+        } else {
+            exp_frac32_a |= ((k_a & 0x1) as u32) << 31;
+            reg_a = if k_a == 0 { 1 } else { ((k_a + 2) >> 1) as u32 };
+            0x_7fff_ffff - 0x_7fff_ffff_u32.checked_shr(reg_a).unwrap_or(0)
+        };
+
+        let bit_n_plus_one = ((exp_frac32_a >> (reg_a + 1)) & 0x1) != 0;
+        let bits_more = (exp_frac32_a & (0x_7FFF_FFFF >> (31 - reg_a))) != 0;
+
+        exp_frac32_a >>= reg_a + 2; //2 because of sign and regime terminating bit
+        let mut u_z = regime + exp_frac32_a;
+
+        if bit_n_plus_one {
+            u_z += (u_z & 1) | (bits_more as u32);
+        }
+
+        Self::from_bits(u_z.with_sign(sign))
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<const N: u32> From<PxE1<{ N }>> for P16E1 {
+    #[inline]
+    fn from(p_a: PxE1<{ N }>) -> Self {
+        let mut ui_a = p_a.to_bits();
+
+        if (ui_a == 0x_8000_0000) || (ui_a == 0) {
+            return Self::from_bits((ui_a >> 16) as u16);
+        }
+
+        let sign = PxE1::<{ N }>::sign_ui(ui_a);
+        if sign {
+            ui_a = ui_a.wrapping_neg();
+        }
+
+        let u_z = if (ui_a & 0xFFFF) == 0 {
+            (ui_a >> 16) as u16
+        } else {
+            if ((ui_a >> 16) != 0x7FFF)
+                && (((0x_8000_u32 & ui_a) != 0)
+                    && (((0x_0001_0000_u32 & ui_a) != 0) || ((0x_7FFF_u32 & ui_a) != 0)))
+            {
+                ui_a += 0x_0001_0000_u32;
+            }
+            let mut u_z = (ui_a >> 16) as u16;
+            if u_z == 0 {
+                u_z = 0x1;
+            }
+            u_z
+        };
+        Self::from_bits(u_z.with_sign(sign))
+    }
+}
+
+#[cfg(feature = "nightly")]
 impl<const N: u32> From<PxE1<{ N }>> for P8E0 {
     #[inline]
     fn from(p_a: PxE1<{ N }>) -> Self {
