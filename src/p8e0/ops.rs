@@ -366,8 +366,8 @@ impl P8E0 {
 
 impl ops::Rem for P8E0 {
     type Output = Self;
-    fn rem(self, _other: Self) -> Self {
-        unimplemented!()
+    fn rem(self, other: Self) -> Self {
+        self - (self / other).trunc() * other
     }
 }
 

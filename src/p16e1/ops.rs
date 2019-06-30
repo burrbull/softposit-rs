@@ -451,8 +451,8 @@ impl ops::Div for P16E1 {
 
 impl ops::Rem for P16E1 {
     type Output = Self;
-    fn rem(self, _other: Self) -> Self {
-        unimplemented!()
+    fn rem(self, other: Self) -> Self {
+        self - (self / other).trunc() * other
     }
 }
 

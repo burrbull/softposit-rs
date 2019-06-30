@@ -201,61 +201,6 @@ impl<const N: u32> From<f64> for PxE1<{ N }> {
     }
 }
 
-impl<const N: u32> From<PxE1<{ N }>> for u32 {
-    #[inline]
-    fn from(p_a: PxE1<{ N }>) -> Self {
-        let mut ui_a = p_a.to_bits();
-        //NaR
-        if (ui_a >= 0x_8000_0000) && (ui_a <= 0x_3000_0000) {
-            // 0 <= |pA| <= 1/2 rounds to zero.
-            0
-        } else if ui_a < 0x_4800_0000 {
-            // 1/2 < x < 3/2 rounds to 1.
-            1
-        } else if ui_a <= 0x_5400_0000 {
-            // 3/2 <= x <= 5/2 rounds to 2.
-            2
-        } else if ui_a > 0x_7FFF_BFFF {
-            //4294836223
-            4_294_967_295
-        } else {
-            // Decode the posit, left-justifying as we go.
-            let mut scale = 0_u32;
-
-            ui_a -= 0x_4000_0000; // Strip off first regime bit (which is a 1).
-            while (0x_2000_0000 & ui_a) != 0 {
-                // Increment scale by 2 for each regime sign bit.
-                scale += 2; // Regime sign bit is always 1 in this range.
-                ui_a = (ui_a - 0x_2000_0000) << 1; // Remove the bit; line up the next regime bit.
-            }
-            ui_a <<= 1; // Skip over termination bit, which is 0.
-            if (0x_2000_0000 & ui_a) != 0 {
-                scale += 1;
-            } // If exponent is 1, increment the scale.
-            let mut i_z64 = ((ui_a | 0x_2000_0000) as u64) << 33; // Left-justify fraction in 64-bit result (one left bit padding)
-
-            let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
-
-            let bit_last = i_z64 & mask; // Extract the bit, without shifting it.
-            mask >>= 1;
-            let mut tmp = i_z64 & mask;
-            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-            i_z64 ^= tmp; // Erase the bit, if it was set.
-            tmp = i_z64 & (mask - 1); // tmp has any remaining bits. // This is bits_more
-            i_z64 ^= tmp; // Erase those bits, if any were set.
-
-            if bit_n_plus_one {
-                // logic for round to nearest, tie to even
-                if (bit_last | tmp) != 0 {
-                    i_z64 += mask << 1;
-                }
-            }
-
-            (i_z64 >> (62 - scale)) as u32 // Right-justify the integer.
-        }
-    }
-}
-
 impl<const N: u32> From<PxE1<{ N }>> for i32 {
     #[inline]
     fn from(p_a: PxE1<{ N }>) -> Self {
@@ -272,106 +217,71 @@ impl<const N: u32> From<PxE1<{ N }>> for i32 {
             ui_a = ui_a.wrapping_neg(); // A is now |A|.
         }
 
-        if ui_a <= 0x_3000_0000 {
-            // 0 <= |pA| <= 1/2 rounds to zero.
-            return 0;
-        }
-        let i_z = if ui_a < 0x_4800_0000 {
-            // 1/2 < x < 3/2 rounds to 1.
-            1
-        } else if ui_a <= 0x_5400_0000 {
-            // 3/2 <= x <= 5/2 rounds to 2.
-            2
-        } else if ui_a > 0x_7FFF_9FFF {
-            //2147418112
-            return if sign { -2_147_483_648 } else { 2_147_483_647 };
-        } else {
-            // Decode the posit, left-justifying as we go.
-            let mut scale = 0_u32;
-
-            ui_a -= 0x_4000_0000; // Strip off first regime bit (which is a 1).
-            while (0x_2000_0000 & ui_a) != 0 {
-                // Increment scale by 2 for each regime sign bit.
-                scale += 2; // Regime sign bit is always 1 in this range.
-                ui_a = (ui_a - 0x_2000_0000) << 1; // Remove the bit; line up the next regime bit.
-            }
-            ui_a <<= 1; // Skip over termination bit, which is 0.
-            if (0x_2000_0000 & ui_a) != 0 {
-                scale += 1;
-            } // If exponent is 1, increment the scale.
-            let mut i_z64 = ((ui_a | 0x_2000_0000) as u64) << 33; // Left-justify fraction in 64-bit result (one left bit padding)
-
-            let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
-
-            let bit_last = i_z64 & mask; // Extract the bit, without shifting it.
-            mask >>= 1;
-            let mut tmp = i_z64 & mask;
-            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-            i_z64 ^= tmp; // Erase the bit, if it was set.
-            tmp = i_z64 & (mask - 1); // tmp has any remaining bits. // This is bits_more
-            i_z64 ^= tmp; // Erase those bits, if any were set.
-
-            if bit_n_plus_one {
-                // logic for round to nearest, tie to even
-                if (bit_last | tmp) != 0 {
-                    i_z64 += mask << 1;
-                }
-            }
-
-            (i_z64 >> (62 - scale)) as u32 // Right-justify the integer.
-        };
+        let i_z = convert_px1bits_to_u32(ui_a);
         i_z.with_sign(sign) as i32
     }
 }
 
-impl<const N: u32> From<PxE1<{ N }>> for u64 {
+impl<const N: u32> From<PxE1<{ N }>> for u32 {
     #[inline]
     fn from(p_a: PxE1<{ N }>) -> Self {
-        let mut ui_a = p_a.to_bits();
+        let ui_a = p_a.to_bits();
         //NaR
-        if (ui_a >= 0x_8000_0000) && (ui_a <= 0x_3000_0000) {
-            // 0 <= |pA| <= 1/2 rounds to zero.
+        if ui_a >= 0x_8000_0000 {
             0
-        } else if ui_a < 0x_4800_0000 {
-            // 1/2 < x < 3/2 rounds to 1.
-            1
-        } else if ui_a <= 0x_5400_0000 {
-            // 3/2 <= x <= 5/2 rounds to 2.
-            2
         } else {
-            // Decode the posit, left-justifying as we go.
-            let mut scale = 0_u32;
-
-            ui_a -= 0x_4000_0000; // Strip off first regime bit (which is a 1).
-            while (0x_2000_0000 & ui_a) != 0 {
-                // Increment scale by 2 for each regime sign bit.
-                scale += 2; // Regime sign bit is always 1 in this range.
-                ui_a = (ui_a - 0x_2000_0000) << 1; // Remove the bit; line up the next regime bit.
-            }
-            ui_a <<= 1; // Skip over termination bit, which is 0.
-            if (0x_2000_0000 & ui_a) != 0 {
-                scale += 1;
-            } // If exponent is 1, increment the scale.
-            let mut i_z = ((ui_a | 0x_2000_0000) as u64) << 33; // Left-justify fraction in 64-bit result (one left bit padding)
-            let mut mask = 0x_4000_0000_0000_0000 >> scale; // Point to the last bit of the integer part.
-
-            let bit_last = i_z & mask; // Extract the bit, without shifting it.
-            mask >>= 1;
-            let mut tmp = i_z & mask;
-            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-            i_z ^= tmp; // Erase the bit, if it was set.
-            tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
-            i_z ^= tmp; // Erase those bits, if any were set.
-
-            if bit_n_plus_one {
-                // logic for round to nearest, tie to even
-                if (bit_last | tmp) != 0 {
-                    i_z += mask << 1;
-                }
-            }
-
-            i_z >> (62 - scale) // Right-justify the integer.
+            convert_px1bits_to_u32(ui_a)
         }
+    }
+}
+
+fn convert_px1bits_to_u32(mut ui_a: u32) -> u32 {
+    if ui_a <= 0x_3000_0000 {
+        // 0 <= |pA| <= 1/2 rounds to zero.
+        0
+    } else if ui_a < 0x_4800_0000 {
+        // 1/2 < x < 3/2 rounds to 1.
+        1
+    } else if ui_a <= 0x_5400_0000 {
+        // 3/2 <= x <= 5/2 rounds to 2.
+        2
+    } else if ui_a > 0x_7FFF_BFFF {
+        //4294836223
+        4_294_967_295
+    } else {
+        // Decode the posit, left-justifying as we go.
+        let mut scale = 0_u32;
+
+        ui_a -= 0x_4000_0000; // Strip off first regime bit (which is a 1).
+        while (0x_2000_0000 & ui_a) != 0 {
+            // Increment scale by 2 for each regime sign bit.
+            scale += 2; // Regime sign bit is always 1 in this range.
+            ui_a = (ui_a - 0x_2000_0000) << 1; // Remove the bit; line up the next regime bit.
+        }
+        ui_a <<= 1; // Skip over termination bit, which is 0.
+        if (0x_2000_0000 & ui_a) != 0 {
+            scale += 1;
+        } // If exponent is 1, increment the scale.
+        let mut i_z64 = ((ui_a | 0x_2000_0000) as u64) << 33; // Left-justify fraction in 64-bit result (one left bit padding)
+
+        let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
+
+        let bit_last = i_z64 & mask; // Extract the bit, without shifting it.
+        mask >>= 1;
+        let mut tmp = i_z64 & mask;
+        let bit_n_plus_one = tmp != 0; // "True" if nonzero.
+        i_z64 ^= tmp; // Erase the bit, if it was set.
+        tmp = i_z64 & (mask - 1); // tmp has any remaining bits. // This is bits_more
+        i_z64 ^= tmp; // Erase those bits, if any were set.
+
+        if bit_n_plus_one {
+            // logic for round to nearest, tie to even
+            if (bit_last | tmp) != 0 {
+                i_z64 += mask << 1;
+            }
+        }
+
+        (i_z64 >> (62 - scale)) as u32 // Right-justify the integer.
     }
 }
 
@@ -391,51 +301,68 @@ impl<const N: u32> From<PxE1<{ N }>> for i64 {
             ui_a = ui_a.wrapping_neg(); // A is now |A|.
         }
 
-        if ui_a <= 0x_3000_0000 {
-            // 0 <= |pA| <= 1/2 rounds to zero.
-            return 0;
-        }
-        let i_z = if ui_a < 0x_4800_0000 {
-            // 1/2 < x < 3/2 rounds to 1.
-            1
-        } else if ui_a <= 0x_5400_0000 {
-            // 3/2 <= x <= 5/2 rounds to 2.
-            2
-        } else {
-            // Decode the posit, left-justifying as we go.
-            let mut scale = 0_u32;
+        let i_z = convert_px1bits_to_u64(ui_a);
 
-            ui_a -= 0x_4000_0000; // Strip off first regime bit (which is a 1).
-            while (0x_2000_0000 & ui_a) != 0 {
-                // Increment scale by 2 for each regime sign bit.
-                scale += 2; // Regime sign bit is always 1 in this range.
-                ui_a = (ui_a - 0x_2000_0000) << 1; // Remove the bit; line up the next regime bit.
-            }
-            ui_a <<= 1; // Skip over termination bit, which is 0.
-            if (0x_2000_0000 & ui_a) != 0 {
-                scale += 1;
-            } // If exponent is 1, increment the scale.
-            let mut i_z = ((ui_a | 0x_2000_0000) as u64) << 33; // Left-justify fraction in 64-bit result (one left bit padding)
-            let mut mask = 0x_4000_0000_0000_0000 >> scale; // Point to the last bit of the integer part.
-
-            let bit_last = i_z & mask; // Extract the bit, without shifting it.
-            mask >>= 1;
-            let mut tmp = i_z & mask;
-            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-            i_z ^= tmp; // Erase the bit, if it was set.
-            tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
-            i_z ^= tmp; // Erase those bits, if any were set.
-
-            if bit_n_plus_one {
-                // logic for round to nearest, tie to even
-                if (bit_last | tmp) != 0 {
-                    i_z += mask << 1;
-                }
-            }
-
-            i_z >> (62 - scale) // Right-justify the integer.
-        };
         i_z.with_sign(sign) as i64
+    }
+}
+
+impl<const N: u32> From<PxE1<{ N }>> for u64 {
+    #[inline]
+    fn from(p_a: PxE1<{ N }>) -> Self {
+        let ui_a = p_a.to_bits();
+        //NaR
+        if ui_a >= 0x_8000_0000 {
+            0
+        } else {
+            convert_px1bits_to_u64(ui_a)
+        }
+    }
+}
+
+fn convert_px1bits_to_u64(mut ui_a: u32) -> u64 {
+    if ui_a <= 0x_3000_0000 {
+        // 0 <= |pA| <= 1/2 rounds to zero.
+        0
+    } else if ui_a < 0x_4800_0000 {
+        // 1/2 < x < 3/2 rounds to 1.
+        1
+    } else if ui_a <= 0x_5400_0000 {
+        // 3/2 <= x <= 5/2 rounds to 2.
+        2
+    } else {
+        // Decode the posit, left-justifying as we go.
+        let mut scale = 0_u32;
+
+        ui_a -= 0x_4000_0000; // Strip off first regime bit (which is a 1).
+        while (0x_2000_0000 & ui_a) != 0 {
+            // Increment scale by 2 for each regime sign bit.
+            scale += 2; // Regime sign bit is always 1 in this range.
+            ui_a = (ui_a - 0x_2000_0000) << 1; // Remove the bit; line up the next regime bit.
+        }
+        ui_a <<= 1; // Skip over termination bit, which is 0.
+        if (0x_2000_0000 & ui_a) != 0 {
+            scale += 1;
+        } // If exponent is 1, increment the scale.
+        let mut i_z = ((ui_a | 0x_2000_0000) as u64) << 33; // Left-justify fraction in 64-bit result (one left bit padding)
+        let mut mask = 0x_4000_0000_0000_0000 >> scale; // Point to the last bit of the integer part.
+
+        let bit_last = i_z & mask; // Extract the bit, without shifting it.
+        mask >>= 1;
+        let mut tmp = i_z & mask;
+        let bit_n_plus_one = tmp != 0; // "True" if nonzero.
+        i_z ^= tmp; // Erase the bit, if it was set.
+        tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
+        i_z ^= tmp; // Erase those bits, if any were set.
+
+        if bit_n_plus_one {
+            // logic for round to nearest, tie to even
+            if (bit_last | tmp) != 0 {
+                i_z += mask << 1;
+            }
+        }
+
+        i_z >> (62 - scale) // Right-justify the integer.
     }
 }
 

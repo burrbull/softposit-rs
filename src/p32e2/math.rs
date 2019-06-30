@@ -47,7 +47,6 @@ impl P32E2 {
     pub fn round(self) -> Self {
         round(self)
     }
-    // TODO: optimize
     #[inline]
     pub fn trunc(self) -> Self {
         if self > Self::ZERO {

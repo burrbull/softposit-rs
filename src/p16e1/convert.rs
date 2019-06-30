@@ -27,28 +27,6 @@ impl From<u32> for P16E1 {
     }
 }
 
-impl From<i64> for P16E1 {
-    #[inline]
-    fn from(mut i_a: i64) -> Self {
-        if i_a < -134_217_728 {
-            //-2147483648 to -134217729 rounds to P32 value -268435456
-            return Self::MIN;
-        }
-        let sign = i_a.is_negative();
-        if sign {
-            i_a = -i_a;
-        }
-        Self::from_bits(convert_u64_to_p16bits(i_a as u64).with_sign(sign))
-    }
-}
-
-impl From<u64> for P16E1 {
-    #[inline]
-    fn from(a: u64) -> Self {
-        Self::from_bits(convert_u64_to_p16bits(a))
-    }
-}
-
 fn convert_u32_to_p16bits(a: u32) -> u16 {
     if a > 0x0800_0000 {
         0x7FFF
@@ -77,59 +55,25 @@ fn convert_u32_to_p16bits(a: u32) -> u16 {
     }
 }
 
-impl From<P16E1> for i32 {
+impl From<i64> for P16E1 {
     #[inline]
-    fn from(p_a: P16E1) -> Self {
-        let mut i_z: i32;
-
-        let mut ui_a = p_a.to_bits(); // Copy of the input.
-                                      //NaR
-        if ui_a == 0x8000 {
-            #[allow(overflowing_literals)]
-            return 0x8000_0000;
+    fn from(mut i_a: i64) -> Self {
+        if i_a < -134_217_728 {
+            //-2147483648 to -134217729 rounds to P32 value -268435456
+            return Self::MIN;
         }
-
-        let sign = ui_a > 0x8000; // sign is True if pA > NaR.
+        let sign = i_a.is_negative();
         if sign {
-            ui_a = ui_a.wrapping_neg(); // A is now |A|.
+            i_a = -i_a;
         }
-        if ui_a <= 0x3000 {
-            // 0 <= |pA| <= 1/2 rounds to zero.
-            return 0;
-        } else if ui_a < 0x4800 {
-            // 1/2 < x < 3/2 rounds to 1.
-            i_z = 1;
-        } else if ui_a <= 0x5400 {
-            // 3/2 <= x <= 5/2 rounds to 2.
-            i_z = 2;
-        } else {
-            let (scale, bits) = P16E1::calculate_scale(ui_a);
+        Self::from_bits(convert_u64_to_p16bits(i_a as u64).with_sign(sign))
+    }
+}
 
-            i_z = (((bits as u32) | 0x2000) << 17) as i32; // Left-justify fraction in 32-bit result (one left bit padding)
-            let mut mask: i32 = 0x4000_0000 >> scale; // Point to the last bit of the integer part.
-
-            let bit_last = i_z & mask; // Extract the bit, without shifting it.
-            mask >>= 1;
-            let mut tmp = i_z & mask;
-            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-            i_z ^= tmp; // Erase the bit, if it was set.
-            tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
-            i_z ^= tmp; // Erase those bits, if any were set.
-
-            if bit_n_plus_one {
-                // logic for round to nearest, tie to even
-                if (bit_last | tmp) != 0 {
-                    i_z += mask << 1;
-                }
-            }
-
-            i_z = ((i_z as u32) >> (30 - scale)) as i32; // Right-justify the integer.
-        }
-
-        if sign {
-            i_z = -i_z; // Apply the sign of the input.
-        }
-        i_z
+impl From<u64> for P16E1 {
+    #[inline]
+    fn from(a: u64) -> Self {
+        Self::from_bits(convert_u64_to_p16bits(a))
     }
 }
 
@@ -160,6 +104,102 @@ fn convert_u64_to_p16bits(a: u64) -> u16 {
     }
 }
 
+impl From<P16E1> for i32 {
+    #[inline]
+    fn from(p_a: P16E1) -> Self {
+        let mut ui_a = p_a.to_bits(); // Copy of the input.
+                                      //NaR
+        if ui_a == 0x8000 {
+            return -0x8000_0000;
+        }
+
+        let sign = ui_a > 0x8000; // sign is True if pA > NaR.
+        if sign {
+            ui_a = ui_a.wrapping_neg(); // A is now |A|.
+        }
+        let i_z = convert_p16bits_to_u32(ui_a);
+
+        i_z.with_sign(sign) as i32
+    }
+}
+
+impl From<P16E1> for u32 {
+    #[inline]
+    fn from(p_a: P16E1) -> Self {
+        let ui_a = p_a.to_bits(); // Copy of the input.
+                                  //NaR
+        if ui_a == 0x8000 {
+            return 0x8000_0000;
+        } else if ui_a > 0x8000 {
+            return 0; //negative
+        }
+        convert_p16bits_to_u32(ui_a)
+    }
+}
+
+fn convert_p16bits_to_u32(ui_a: u16) -> u32 {
+    if ui_a <= 0x3000 {
+        // 0 <= |pA| <= 1/2 rounds to zero.
+        0
+    } else if ui_a < 0x4800 {
+        // 1/2 < x < 3/2 rounds to 1.
+        1
+    } else if ui_a <= 0x5400 {
+        // 3/2 <= x <= 5/2 rounds to 2.
+        2
+    } else {
+        let (scale, bits) = P16E1::calculate_scale(ui_a);
+
+        let mut i_z = ((bits as u32) | 0x2000) << 17; // Left-justify fraction in 32-bit result (one left bit padding)
+        let mut mask = 0x4000_0000_u32 >> scale; // Point to the last bit of the integer part.
+
+        let bit_last = (i_z & mask) != 0; // Extract the bit, without shifting it.
+        mask >>= 1;
+        let mut tmp = i_z & mask;
+        let bit_n_plus_one = tmp != 0; // "True" if nonzero.
+        i_z ^= tmp; // Erase the bit, if it was set.
+        tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
+        i_z ^= tmp; // Erase those bits, if any were set.
+
+        if bit_n_plus_one {
+            // logic for round to nearest, tie to even
+            if ((bit_last as u32) | tmp) != 0 {
+                i_z += mask << 1;
+            }
+        }
+        i_z >> (30 - scale) // Right-justify the integer.
+    }
+}
+
+fn convert_p16bits_to_u64(ui_a: u16) -> u64 {
+    if ui_a <= 0x3000 {
+        0
+    } else if ui_a < 0x4800 {
+        1
+    } else if ui_a <= 0x5400 {
+        2
+    } else {
+        let (scale, bits) = P16E1::calculate_scale(ui_a);
+
+        let mut i_z = ((bits as u64) | 0x2000) << 49;
+
+        let mut mask = 0x4000_0000_0000_0000_u64 >> scale;
+
+        let bit_last = (i_z & mask) != 0;
+        mask >>= 1;
+        let mut tmp = i_z & mask;
+        let bit_n_plus_one = tmp != 0;
+        i_z ^= tmp;
+        tmp = i_z & (mask - 1); // bits_more
+        i_z ^= tmp;
+
+        if bit_n_plus_one && (((bit_last as u64) | tmp) != 0) {
+            i_z += mask << 1;
+        }
+        i_z >> (62 - scale)
+    }
+}
+
 impl From<P16E1> for i64 {
     #[inline]
     fn from(p_a: P16E1) -> Self {
@@ -175,82 +215,9 @@ impl From<P16E1> for i64 {
             ui_a = ui_a.wrapping_neg();
         }
 
-        let mut i_z = if ui_a <= 0x3000 {
-            0
-        } else if ui_a < 0x4800 {
-            1
-        } else if ui_a <= 0x5400 {
-            2
-        } else {
-            let (scale, bits) = P16E1::calculate_scale(ui_a);
+        let i_z = convert_p16bits_to_u64(ui_a);
 
-            let mut i_z = ((bits as i64) | 0x2000) << 49;
-
-            let mut mask = 0x4000_0000_0000_0000_i64 >> scale;
-
-            let bit_last = (i_z & mask) != 0;
-            mask >>= 1;
-            let mut tmp = i_z & mask;
-            let bit_n_plus_one = tmp != 0;
-            i_z ^= tmp;
-            tmp = i_z & (mask - 1); // bits_more
-            i_z ^= tmp;
-
-            if bit_n_plus_one && (((bit_last as i64) | tmp) != 0) {
-                i_z += mask << 1;
-            }
-            i_z >>= 62 - scale;
-            i_z
-        };
-        if sign {
-            i_z = -i_z;
-        }
-        i_z
-    }
-}
-
-impl From<P16E1> for u32 {
-    #[inline]
-    fn from(p_a: P16E1) -> Self {
-        let ui_a = p_a.to_bits(); // Copy of the input.
-                                  //NaR
-        if ui_a == 0x8000 {
-            return 0x8000_0000;
-        } else if ui_a > 0x8000 {
-            return 0; //negative
-        }
-        if ui_a <= 0x3000 {
-            // 0 <= |pA| <= 1/2 rounds to zero.
-            0
-        } else if ui_a < 0x4800 {
-            // 1/2 < x < 3/2 rounds to 1.
-            1
-        } else if ui_a <= 0x5400 {
-            // 3/2 <= x <= 5/2 rounds to 2.
-            2
-        } else {
-            let (scale, bits) = P16E1::calculate_scale(ui_a);
-
-            let mut i_z = ((bits as u32) | 0x2000) << 17; // Left-justify fraction in 32-bit result (one left bit padding)
-            let mut mask = 0x4000_0000_u32 >> scale; // Point to the last bit of the integer part.
-
-            let bit_last = (i_z & mask) != 0; // Extract the bit, without shifting it.
-            mask >>= 1;
-            let mut tmp = i_z & mask;
-            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-            i_z ^= tmp; // Erase the bit, if it was set.
-            tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
-            i_z ^= tmp; // Erase those bits, if any were set.
-
-            if bit_n_plus_one {
-                // logic for round to nearest, tie to even
-                if ((bit_last as u32) | tmp) != 0 {
-                    i_z += mask << 1;
-                }
-            }
-            i_z >>= 30 - scale; // Right-justify the integer.
-            i_z
-        }
+        i_z.with_sign(sign) as i64
     }
 }
 
@@ -266,34 +233,7 @@ impl From<P16E1> for u64 {
         else if ui_a > 0x8000 {
             return 0;
         }
-
-        if ui_a <= 0x3000 {
-            0
-        } else if ui_a < 0x4800 {
-            1
-        } else if ui_a <= 0x5400 {
-            2
-        } else {
-            let (scale, bits) = P16E1::calculate_scale(ui_a);
-
-            let mut i_z = ((bits as u64) | 0x2000) << 49;
-
-            let mut mask = 0x4000_0000_0000_0000_u64 >> scale;
-
-            let bit_last = (i_z & mask) != 0;
-            mask >>= 1;
-            let mut tmp = i_z & mask;
-            let bit_n_plus_one = tmp != 0;
-            i_z ^= tmp;
-            tmp = i_z & (mask - 1); // bits_more
-            i_z ^= tmp;
-
-            if bit_n_plus_one && (((bit_last as u64) | tmp) != 0) {
-                i_z += mask << 1;
-            }
-            i_z >>= 62 - scale;
-            i_z
-        }
+        convert_p16bits_to_u64(ui_a)
     }
 }
 
@@ -587,5 +527,29 @@ fn convert_p16_f32() {
         let p = P16E1::new(n);
         let f = f32::from(p);
         assert_eq!(p, P16E1::from(f));
+    }
+}
+
+#[test]
+fn convert_p16_i32() {
+    for n in -0x_8000_i16..0x_7fff {
+        let p = P16E1::new(n);
+        let f = f64::from(p).round();
+        if p % P16E1::new(0x_3000) == P16E1::ZERO {
+            continue;
+        }
+        assert_eq!(i32::from(p), f as i32);
+    }
+}
+
+#[test]
+fn convert_p16_i64() {
+    for n in -0x_8000_i16..0x_7fff {
+        let p = P16E1::new(n);
+        let f = f64::from(p).round();
+        if p % P16E1::new(0x_3000) == P16E1::ZERO {
+            continue;
+        }
+        assert_eq!(i64::from(p), f as i64);
     }
 }

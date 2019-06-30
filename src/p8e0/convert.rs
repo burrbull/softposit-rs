@@ -235,10 +235,7 @@ impl From<P8E0> for f64 {
 impl From<P8E0> for i32 {
     #[inline]
     fn from(p_a: P8E0) -> Self {
-        let mut i_z: i32;
-
         let mut ui_a = p_a.to_bits();
-
         //NaR
         if ui_a == 0x80 {
             return -0x8000_0000;
@@ -248,48 +245,62 @@ impl From<P8E0> for i32 {
         if sign {
             ui_a = ui_a.wrapping_neg(); // A is now |A|.
         }
-        if ui_a <= 0x20 {
-            // 0 <= |p_a| <= 1/2 rounds to zero.
-            return 0;
-        } else if ui_a < 0x50 {
-            // 1/2 < x < 3/2 rounds to 1.
-            i_z = 1;
-        } else {
-            let (scale, bits) = P8E0::calculate_scale(ui_a);
+        let i_z = convert_p8bits_to_u32(ui_a);
 
-            i_z = (((bits as u32) | 0x40) << 24) as i32; // Left-justify fraction in 32-bit result (one left bit padding)
-            let mut mask = 0x4000_0000_i32 >> scale; // Point to the last bit of the integer part.
+        i_z.with_sign(sign) as i32
+    }
+}
 
-            let bit_last = (i_z & mask) != 0; // Extract the bit, without shifting it.
-            mask >>= 1;
-            let mut tmp = i_z & mask;
-            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-            i_z ^= tmp; // Erase the bit, if it was set.
-            tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
-            i_z ^= tmp; // Erase those bits, if any were set.
+impl From<P8E0> for u32 {
+    #[inline]
+    fn from(p_a: P8E0) -> Self {
+        let ui_a = p_a.to_bits();
 
-            if bit_n_plus_one {
-                // logic for round to nearest, tie to even
-                if (bit_last as i32 | tmp) != 0 {
-                    i_z += mask << 1;
-                }
+        //NaR
+        if ui_a == 0x80 {
+            return 0x8000_0000;
+        } else if ui_a > 0x80 {
+            return 0; //negative
+        }
+        convert_p8bits_to_u32(ui_a)
+    }
+}
+
+fn convert_p8bits_to_u32(ui_a: u8) -> u32 {
+    if ui_a <= 0x20 {
+        // 0 <= |p_a| <= 1/2 rounds to zero.
+        0
+    } else if ui_a < 0x50 {
+        // 1/2 < x < 3/2 rounds to 1.
+        1
+    } else {
+        let (scale, bits) = P8E0::calculate_scale(ui_a);
+
+        let mut i_z = ((bits as u32) | 0x40) << 24; // Left-justify fraction in 32-bit result (one left bit padding)
+
+        let mut mask = 0x4000_0000_u32 >> scale; // Point to the last bit of the integer part.
+
+        let bit_last = (i_z & mask) != 0; // Extract the bit, without shifting it.
+        mask >>= 1;
+        let mut tmp = i_z & mask;
+        let bit_n_plus_one = tmp != 0; // "True" if nonzero.
+        i_z ^= tmp; // Erase the bit, if it was set.
+        tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
+        i_z ^= tmp; // Erase those bits, if any were set.
+
+        if bit_n_plus_one {
+            // logic for round to nearest, tie to even
+            if (bit_last as u32 | tmp) != 0 {
+                i_z += mask << 1;
             }
-
-            i_z = ((i_z as u32) >> (30 - scale)) as i32; // Right-justify the integer.
         }
-
-        if sign {
-            i_z = -i_z; // Apply the sign of the input.
-        }
-        i_z
+        i_z >> (30 - scale) // Right-justify the integer.
     }
 }
 
 impl From<P8E0> for i64 {
     #[inline]
     fn from(p_a: P8E0) -> Self {
-        let mut i_z: i64;
-
         let mut ui_a = p_a.to_bits();
 
         //NaR
@@ -302,95 +313,15 @@ impl From<P8E0> for i64 {
             ui_a = ui_a.wrapping_neg();
         }
 
-        if ui_a <= 0x20 {
-            // 0 <= |p_a| <= 1/2 rounds to zero.
-            return 0;
-        } else if ui_a < 0x50 {
-            // 1/2 < x < 3/2 rounds to 1.
-            i_z = 1;
-        } else {
-            let (scale, bits) = P8E0::calculate_scale(ui_a);
+        let i_z = convert_p8bits_to_u64(ui_a);
 
-            i_z = (((bits as u64) | 0x40) << 55) as i64; // Left-justify fraction in 32-bit result (one left bit padding)
-
-            let mut mask = 0x2000_0000_0000_0000_i64 >> scale; // Point to the last bit of the integer part.
-
-            let bit_last = (i_z & mask) != 0; // Extract the bit, without shifting it.
-            mask >>= 1;
-            let mut tmp = i_z & mask;
-            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-            i_z ^= tmp; // Erase the bit, if it was set.
-            tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
-            i_z ^= tmp; // Erase those bits, if any were set.
-
-            if bit_n_plus_one {
-                // logic for round to nearest, tie to even
-                if (bit_last as i64 | tmp) != 0 {
-                    i_z += mask << 1;
-                }
-            }
-            i_z = ((i_z as u64) >> (61 - scale)) as i64; // Right-justify the integer.
-        }
-
-        if sign {
-            i_z = -i_z; // Apply the sign of the input.
-        }
-        i_z
-    }
-}
-
-impl From<P8E0> for u32 {
-    #[inline]
-    fn from(p_a: P8E0) -> Self {
-        let mut i_z: u32;
-
-        let ui_a = p_a.to_bits();
-
-        //NaR
-        if ui_a == 0x80 {
-            return 0x8000_0000;
-        } else if ui_a > 0x80 {
-            return 0; //negative
-        }
-        if ui_a <= 0x20 {
-            // 0 <= |p_a| <= 1/2 rounds to zero.
-            return 0;
-        } else if ui_a < 0x50 {
-            // 1/2 < x < 3/2 rounds to 1.
-            i_z = 1;
-        } else {
-            let (scale, bits) = P8E0::calculate_scale(ui_a);
-
-            i_z = ((bits as u32) | 0x40) << 24; // Left-justify fraction in 32-bit result (one left bit padding)
-
-            let mut mask = 0x4000_0000_u32 >> scale; // Point to the last bit of the integer part.
-
-            let bit_last = (i_z & mask) != 0; // Extract the bit, without shifting it.
-            mask >>= 1;
-            let mut tmp = i_z & mask;
-            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-            i_z ^= tmp; // Erase the bit, if it was set.
-            tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
-            i_z ^= tmp; // Erase those bits, if any were set.
-
-            if bit_n_plus_one {
-                // logic for round to nearest, tie to even
-                if (bit_last as u32 | tmp) != 0 {
-                    i_z += mask << 1;
-                }
-            }
-            i_z >>= 30 - scale; // Right-justify the integer.
-        }
-
-        i_z
+        i_z.with_sign(sign) as i64
     }
 }
 
 impl From<P8E0> for u64 {
     #[inline]
     fn from(p_a: P8E0) -> Self {
-        let mut i_z: u64;
-
         let ui_a = p_a.to_bits();
         //NaR
         if ui_a == 0x80 {
@@ -398,37 +329,39 @@ impl From<P8E0> for u64 {
         } else if ui_a > 0x80 {
             return 0; //negative
         }
-        if ui_a <= 0x20 {
-            // 0 <= |p_a| <= 1/2 rounds to zero.
-            return 0;
-        } else if ui_a < 0x50 {
-            // 1/2 < x < 3/2 rounds to 1.
-            i_z = 1;
-        } else {
-            let (scale, bits) = P8E0::calculate_scale(ui_a);
+        convert_p8bits_to_u64(ui_a)
+    }
+}
 
-            i_z = ((bits as u64) | 0x40) << 55; // Left-justify fraction in 32-bit result (one left bit padding)
+fn convert_p8bits_to_u64(ui_a: u8) -> u64 {
+    if ui_a <= 0x20 {
+        // 0 <= |p_a| <= 1/2 rounds to zero.
+        0
+    } else if ui_a < 0x50 {
+        // 1/2 < x < 3/2 rounds to 1.
+        1
+    } else {
+        let (scale, bits) = P8E0::calculate_scale(ui_a);
 
-            let mut mask = 0x2000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
+        let mut i_z = ((bits as u64) | 0x40) << 55; // Left-justify fraction in 32-bit result (one left bit padding)
 
-            let bit_last = (i_z & mask) != 0; // Extract the bit, without shifting it.
-            mask >>= 1;
-            let mut tmp = i_z & mask;
-            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-            i_z ^= tmp; // Erase the bit, if it was set.
-            tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
-            i_z ^= tmp; // Erase those bits, if any were set.
+        let mut mask = 0x2000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
 
-            if bit_n_plus_one {
-                // logic for round to nearest, tie to even
-                if (bit_last as u64 | tmp) != 0 {
-                    i_z += mask << 1;
-                }
+        let bit_last = (i_z & mask) != 0; // Extract the bit, without shifting it.
+        mask >>= 1;
+        let mut tmp = i_z & mask;
+        let bit_n_plus_one = tmp != 0; // "True" if nonzero.
+        i_z ^= tmp; // Erase the bit, if it was set.
+        tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
+        i_z ^= tmp; // Erase those bits, if any were set.
+
+        if bit_n_plus_one {
+            // logic for round to nearest, tie to even
+            if (bit_last as u64 | tmp) != 0 {
+                i_z += mask << 1;
             }
-            i_z >>= 61 - scale; // Right-justify the integer.
         }
-
-        i_z
+        i_z >> (61 - scale) // Right-justify the integer.
     }
 }
 

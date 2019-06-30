@@ -46,7 +46,6 @@ impl P16E1 {
     pub fn round(self) -> Self {
         round(self)
     }
-    // TODO: optimize
     #[inline]
     pub fn trunc(self) -> Self {
         if self > Self::ZERO {
@@ -706,33 +705,33 @@ fn exp(p_a: P16E1) -> P16E1 {
         let p1 = q.to_posit(); // c6 * t + c5, solo precision
 
         q.clear();
-        q += (p1, t1);
+        q += (t1, p1);
         q += (P16E1::new(0x0A60), P16E1::new(0x28B8));
         let (p1, p2) = q.into_two_posits(); // (...) * t + c4, duo precision
 
         let mut q = Q16E1::init();
         q += (t1, (p1, p2));
-        q += (p1, t2);
+        q += (t2, p1);
         q += (P16E1::new(0x0B80), P16E1::new(0x4E50));
         let (p1, p2) = q.into_two_posits(); // (...) * t + c3, duo precision
 
         let mut q = Q16E1::init();
         q += (t1, (p1, p2));
-        q += (p1, t2);
+        q += (t2, p1);
         q += (P16E1::new(0x11F0), P16E1::new(0x58C1));
         let (p1, p2, p3) = q.into_three_posits(); // (...) * t + c2, trio precision
 
         let mut q = Q16E1::init();
         q += (t1, (p1, p2, p3));
-        q += (p1, t2);
+        q += (t2, p1);
         q += (P16E1::new(0x2D78), P16E1::new(0x4816));
-        q += (P16E1::new(0x0180), P16E1::new(0x0180));
+        q += (P16E1::new(0x0180), P16E1::new(0x0180)); // == 0x_0008 * ONE
         let (p1, p2, p3) = q.into_three_posits(); // c1 term, trio precision
 
         let mut q = Q16E1::init();
         q += (t1, (p1, p2, p3));
-        q += (p1, t2);
-        q += (p1, t3);
+        q += (t2, p1);
+        q += (t3, p1);
         q += P16E1::ONE; // (...) * t + c0, (where c0 = 1).
         let (p1, p2, p3) = q.into_three_posits(); // polynomial for exp(x), trio precision
 
@@ -780,6 +779,19 @@ fn test_sqrt() {
         let f_a = f64::from(p_a);
         let p = p_a.sqrt();
         let f = f_a.sqrt();
+        assert_eq!(p, P16E1::from(f));
+    }
+}
+
+#[test]
+fn test_exp() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..crate::NTESTS16 {
+        let p_a: P16E1 = rng.gen();
+        let f_a = f64::from(p_a);
+        let p = p_a.exp();
+        let f = f_a.exp();
         assert_eq!(p, P16E1::from(f));
     }
 }

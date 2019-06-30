@@ -220,48 +220,9 @@ impl From<P32E2> for i32 {
             ui_a = ui_a.wrapping_neg();
         }
 
-        let i_z: i32 = if ui_a <= 0x3800_0000 {
-            0 // 0 <= |pA| <= 1/2 rounds to zero.
-        } else if ui_a < 0x4400_0000 {
-            1 // 1/2 < x < 3/2 rounds to 1.
-        } else if ui_a <= 0x4A00_0000 {
-            2 // 3/2 <= x <= 5/2 rounds to 2. // For speed. Can be commented out
-        } else if ui_a > 0x7FAF_FFFF {
-            //overflow so return max integer value
-            if sign {
-                -0x_8000_0000
-            } else {
-                0x7FFF_FFFF
-            }
-        } else {
-            let (scale, bits) = P32E2::calculate_scale(ui_a);
+        let i_z = convert_p32bits_to_u32(ui_a);
 
-            let mut i_z64 = (((bits as u64) | 0x1000_0000) & 0x1FFF_FFFF) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
-            let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
-
-            let bit_last = i_z64 & mask; // Extract the bit, without shifting it.
-            mask >>= 1;
-            let mut tmp = i_z64 & mask;
-            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-            i_z64 ^= tmp; // Erase the bit, if it was set.
-            tmp = i_z64 & (mask - 1); // tmp has any remaining bits. // This is bits_more
-            i_z64 ^= tmp; // Erase those bits, if any were set.
-
-            if bit_n_plus_one {
-                // logic for round to nearest, tie to even
-                if (bit_last | tmp) != 0 {
-                    i_z64 += mask << 1;
-                }
-            }
-
-            (i_z64 >> (62 - scale)) as i32 // Right-justify the integer.
-        };
-
-        if sign {
-            -i_z
-        } else {
-            i_z
-        }
+        i_z.with_sign(sign) as i32
     }
 }
 
@@ -278,38 +239,42 @@ impl From<P32E2> for u32 {
         if ui_a > 0x8000_0000 {
             return 0;
         }
-        if ui_a <= 0x3800_0000 {
-            0 // 0 <= |pA| <= 1/2 rounds to zero.
-        } else if ui_a < 0x4400_0000 {
-            1 // 1/2 < x < 3/2 rounds to 1.
-        } else if ui_a <= 0x4A00_0000 {
-            2 // 3/2 <= x <= 5/2 rounds to 2. // For speed. Can be commented out
-        } else if ui_a > 0x7FAF_FFFF {
-            //overflow so return max integer value
-            0x7FFF_FFFF
-        } else {
-            let (scale, bits) = P32E2::calculate_scale(ui_a);
+        convert_p32bits_to_u32(ui_a)
+    }
+}
 
-            let mut i_z64 = (((bits as u64) | 0x1000_0000) & 0x1FFF_FFFF) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
-            let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
+fn convert_p32bits_to_u32(ui_a: u32) -> u32 {
+    if ui_a <= 0x3800_0000 {
+        0 // 0 <= |pA| <= 1/2 rounds to zero.
+    } else if ui_a < 0x4400_0000 {
+        1 // 1/2 < x < 3/2 rounds to 1.
+    } else if ui_a <= 0x4A00_0000 {
+        2 // 3/2 <= x <= 5/2 rounds to 2. // For speed. Can be commented out
+    } else if ui_a > 0x7FAF_FFFF {
+        //overflow so return max integer value
+        0x7FFF_FFFF
+    } else {
+        let (scale, bits) = P32E2::calculate_scale(ui_a);
 
-            let bit_last = i_z64 & mask; // Extract the bit, without shifting it.
-            mask >>= 1;
-            let mut tmp = i_z64 & mask;
-            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-            i_z64 ^= tmp; // Erase the bit, if it was set.
-            tmp = i_z64 & (mask - 1); // tmp has any remaining bits. // This is bits_more
-            i_z64 ^= tmp; // Erase those bits, if any were set.
+        let mut i_z64 = (((bits as u64) | 0x1000_0000) & 0x1FFF_FFFF) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
+        let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
 
-            if bit_n_plus_one {
-                // logic for round to nearest, tie to even
-                if (bit_last | tmp) != 0 {
-                    i_z64 += mask << 1;
-                }
+        let bit_last = i_z64 & mask; // Extract the bit, without shifting it.
+        mask >>= 1;
+        let mut tmp = i_z64 & mask;
+        let bit_n_plus_one = tmp != 0; // "True" if nonzero.
+        i_z64 ^= tmp; // Erase the bit, if it was set.
+        tmp = i_z64 & (mask - 1); // tmp has any remaining bits. // This is bits_more
+        i_z64 ^= tmp; // Erase those bits, if any were set.
+
+        if bit_n_plus_one {
+            // logic for round to nearest, tie to even
+            if (bit_last | tmp) != 0 {
+                i_z64 += mask << 1;
             }
-
-            (i_z64 >> (62 - scale)) as u32 // Right-justify the integer.
         }
+
+        (i_z64 >> (62 - scale)) as u32 // Right-justify the integer.
     }
 }
 
@@ -327,53 +292,9 @@ impl From<P32E2> for i64 {
             ui_a = ui_a.wrapping_neg();
         }
 
-        if ui_a <= 0x3800_0000 {
-            return 0; // 0 <= |pA| <= 1/2 rounds to zero.
-        }
-        let i_z: i64 = if ui_a < 0x4400_0000 {
-            1 // 1/2 < x < 3/2 rounds to 1.
-        } else if ui_a <= 0x4A00_0000 {
-            2 // 3/2 <= x <= 5/2 rounds to 2.
-        } else if ui_a > 0x7FFF_AFFF {
-            if sign {
-                -9_223_372_036_854_775_808
-            } else {
-                0x7FFF_FFFF_FFFF_FFFF
-            }
-        } else {
-            let (scale, bits) = P32E2::calculate_scale(ui_a);
+        let i_z = convert_p32bits_to_u64(ui_a);
 
-            let mut i_z = (((bits as u64) | 0x1000_0000) & 0x1FFF_FFFF) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
-
-            if scale < 62 {
-                let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
-
-                let bit_last = i_z & mask; // Extract the bit, without shifting it.
-                mask >>= 1;
-                let mut tmp = i_z & mask;
-                let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-                i_z ^= tmp; // Erase the bit, if it was set.
-                tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
-                i_z ^= tmp; // Erase those bits, if any were set.
-
-                if bit_n_plus_one {
-                    // logic for round to nearest, tie to even
-                    if (bit_last | tmp) != 0 {
-                        i_z += mask << 1;
-                    }
-                }
-                i_z = (i_z as u64) >> (62 - scale); // Right-justify the integer.
-            } else if scale > 62 {
-                i_z = (i_z as u64) << (scale - 62);
-            }
-            i_z as i64
-        };
-
-        if sign {
-            -i_z
-        } else {
-            i_z
-        }
+        i_z.with_sign(sign) as i64
     }
 }
 
@@ -386,40 +307,49 @@ impl From<P32E2> for u64 {
         if ui_a == 0x8000_0000 {
             0x8000_0000_0000_0000
         //negative
-        } else if (ui_a > 0x8000_0000) || (ui_a <= 0x3800_0000) {
-            0 // 0 <= |pA| <= 1/2 rounds to zero.
-        } else if ui_a < 0x4400_0000 {
-            1 // 1/2 < x < 3/2 rounds to 1.
-        } else if ui_a <= 0x4A00_0000 {
-            2 // 3/2 <= x <= 5/2 rounds to 2. // For speed. Can be commented out
-        } else if ui_a > 0x7FFF_BFFF {
-            0xFFFF_FFFF_FFFF_FFFF
+        } else if ui_a > 0x8000_0000 {
+            0
         } else {
-            let (scale, bits) = P32E2::calculate_scale(ui_a);
+            convert_p32bits_to_u64(ui_a)
+        }
+    }
+}
 
-            let mut i_z: u64 = (((bits as u64) | 0x1000_0000) & 0x1FFF_FFFF) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
+fn convert_p32bits_to_u64(ui_a: u32) -> u64 {
+    if ui_a <= 0x3800_0000 {
+        0 // 0 <= |pA| <= 1/2 rounds to zero.
+    } else if ui_a < 0x4400_0000 {
+        1 // 1/2 < x < 3/2 rounds to 1.
+    } else if ui_a <= 0x4A00_0000 {
+        2 // 3/2 <= x <= 5/2 rounds to 2. // For speed. Can be commented out
+    } else if ui_a > 0x7FFF_BFFF {
+        0xFFFF_FFFF_FFFF_FFFF
+    } else {
+        let (scale, bits) = P32E2::calculate_scale(ui_a);
 
-            if scale < 62 {
-                let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
+        let mut i_z: u64 = (((bits as u64) | 0x1000_0000) & 0x1FFF_FFFF) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
 
-                let bit_last = i_z & mask; // Extract the bit, without shifting it.
-                mask >>= 1;
-                let mut tmp = i_z & mask;
-                let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-                i_z ^= tmp; // Erase the bit, if it was set.
-                tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
-                i_z ^= tmp; // Erase those bits, if any were set.
+        if scale < 62 {
+            let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
 
-                if bit_n_plus_one {
-                    // logic for round to nearest, tie to even
-                    if (bit_last | tmp) != 0 {
-                        i_z += mask << 1;
-                    }
+            let bit_last = i_z & mask; // Extract the bit, without shifting it.
+            mask >>= 1;
+            let mut tmp = i_z & mask;
+            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
+            i_z ^= tmp; // Erase the bit, if it was set.
+            tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
+            i_z ^= tmp; // Erase those bits, if any were set.
+
+            if bit_n_plus_one {
+                // logic for round to nearest, tie to even
+                if (bit_last | tmp) != 0 {
+                    i_z += mask << 1;
                 }
-                i_z >>= 62 - scale; // Right-justify the integer.
-            } else if scale > 62 {
-                i_z <<= scale - 62;
             }
+            i_z >> (62 - scale) // Right-justify the integer.
+        } else if scale > 62 {
+            i_z << (scale - 62)
+        } else {
             i_z
         }
     }
@@ -555,5 +485,33 @@ fn convert_p32_f64() {
         let p: P32E2 = rng.gen();
         let f = f64::from(p);
         assert_eq!(p, P32E2::from(f));
+    }
+}
+
+#[test]
+fn convert_p32_i32() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..100_000 {
+        let p: P32E2 = rng.gen();
+        let f = f64::from(p).round();
+        if p % P32E2::new(0x_3800_0000) == P32E2::ZERO {
+            continue;
+        }
+        assert_eq!(i32::from(p), f as i32);
+    }
+}
+
+#[test]
+fn convert_p32_i64() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..100_000 {
+        let p: P32E2 = rng.gen();
+        let f = f64::from(p).round();
+        if p % P32E2::new(0x_3800_0000) == P32E2::ZERO {
+            continue;
+        }
+        assert_eq!(i64::from(p), f as i64);
     }
 }
