@@ -1057,7 +1057,7 @@ macro_rules! quire_add_sub {
             fn add_assign(&mut self, rhs: ($posit, $posit)) {
                 let ui_a = (rhs.0).to_bits();
                 let ui_b = (rhs.1).to_bits();
-                fdp_add(self, ui_a, ui_b);
+                fdp(self, ui_a, ui_b, true);
             }
         }
 
@@ -1081,7 +1081,8 @@ macro_rules! quire_add_sub {
         impl ops::AddAssign<$posit> for $quire {
             #[inline]
             fn add_assign(&mut self, rhs: $posit) {
-                *self += (rhs, <$posit>::ONE);
+                let ui = rhs.to_bits();
+                fdp_one(self, ui, true);
             }
         }
 
@@ -1100,14 +1101,15 @@ macro_rules! quire_add_sub {
             fn sub_assign(&mut self, rhs: ($posit, $posit)) {
                 let ui_a = (rhs.0).to_bits();
                 let ui_b = (rhs.1).to_bits();
-                fdp_sub(self, ui_a, ui_b);
+                fdp(self, ui_a, ui_b, false);
             }
         }
 
         impl ops::SubAssign<$posit> for $quire {
             #[inline]
             fn sub_assign(&mut self, rhs: $posit) {
-                *self -= (rhs, <$posit>::ONE);
+                let ui = rhs.to_bits();
+                fdp_one(self, ui, false);
             }
         }
 
@@ -1165,7 +1167,7 @@ macro_rules! quire_add_sub_x {
             fn add_assign(&mut self, rhs: ($posit, $posit)) {
                 let ui_a = (rhs.0).to_bits();
                 let ui_b = (rhs.1).to_bits();
-                fdp_add(self, ui_a, ui_b);
+                fdp(self, ui_a, ui_b, true);
             }
         }
 
@@ -1192,7 +1194,8 @@ macro_rules! quire_add_sub_x {
         impl<const N: u32> ops::AddAssign<$posit> for $quire {
             #[inline]
             fn add_assign(&mut self, rhs: $posit) {
-                *self += (rhs, <$posit>::ONE);
+                let ui = rhs.to_bits();
+                fdp_one(self, ui, true);
             }
         }
 
@@ -1213,7 +1216,7 @@ macro_rules! quire_add_sub_x {
             fn sub_assign(&mut self, rhs: ($posit, $posit)) {
                 let ui_a = (rhs.0).to_bits();
                 let ui_b = (rhs.1).to_bits();
-                fdp_sub(self, ui_a, ui_b);
+                fdp(self, ui_a, ui_b, false);
             }
         }
 
@@ -1221,7 +1224,8 @@ macro_rules! quire_add_sub_x {
         impl<const N: u32> ops::SubAssign<$posit> for $quire {
             #[inline]
             fn sub_assign(&mut self, rhs: $posit) {
-                *self -= (rhs, <$posit>::ONE);
+                let ui = rhs.to_bits();
+                fdp_one(self, ui, false);
             }
         }
 

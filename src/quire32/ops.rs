@@ -10,7 +10,7 @@ crate::quire_add_sub_array!(P32E2, Q32E2, 1, 2, 3, 4);
 crate::quire_add_sub_x!(PxE2<{ N }>, Q32E2);
 crate::quire_add_sub_array_x!(PxE2<{ N }>, Q32E2, 1, 2, 3, 4);
 
-pub(super) fn fdp_add(q: &mut Q32E2, mut ui_a: u32, mut ui_b: u32) {
+pub(super) fn fdp(q: &mut Q32E2, mut ui_a: u32, mut ui_b: u32, plus: bool) {
     let u_z1 = q.to_bits();
 
     if q.is_nar() || ui_a == 0x_8000_0000 || ui_b == 0x_8000_0000 {
@@ -77,7 +77,7 @@ pub(super) fn fdp_add(q: &mut Q32E2, mut ui_a: u32, mut ui_b: u32) {
         }
     }
 
-    if sign_z2 {
+    if !(sign_z2 ^ plus) {
         let mut j = u_z2.iter_mut().rev();
         while let Some(u) = j.next() {
             if *u > 0 {
@@ -117,36 +117,28 @@ pub(super) fn fdp_add(q: &mut Q32E2, mut ui_a: u32, mut ui_b: u32) {
     *q = if q_z.is_nar() { Q32E2::ZERO } else { q_z }
 }
 
-pub(super) fn fdp_sub(q: &mut Q32E2, mut ui_a: u32, mut ui_b: u32) {
+pub(super) fn fdp_one(q: &mut Q32E2, mut ui_a: u32, plus: bool) {
     let u_z1 = q.to_bits();
 
-    if q.is_nar() || ui_a == 0x_8000_0000 || ui_b == 0x_8000_0000 {
+    if q.is_nar() || ui_a == 0x_8000_0000 {
         *q = Q32E2::NAR;
         return;
-    } else if ui_a == 0 || ui_b == 0 {
+    } else if ui_a == 0 {
         return;
     }
 
     //max pos (sign plus and minus)
     let sign_a = P32E2::sign_ui(ui_a);
-    let sign_b = P32E2::sign_ui(ui_b);
-    let sign_z2 = sign_a ^ sign_b;
 
     if sign_a {
         ui_a = ui_a.wrapping_neg();
-    }
-    if sign_b {
-        ui_b = ui_b.wrapping_neg();
     }
 
     let (mut k_a, tmp) = P32E2::separate_bits_tmp(ui_a);
     let mut exp_a = (tmp >> 29) as i32; //to get 2 bits
     let frac_a = (tmp << 2) | 0x_8000_0000;
 
-    let (k_b, tmp) = P32E2::separate_bits_tmp(ui_b);
-    k_a += k_b;
-    exp_a += (tmp >> 29) as i32;
-    let mut frac64_z = (frac_a as u64) * (((tmp << 2) | 0x_8000_0000) as u64);
+    let mut frac64_z = (frac_a as u64) << 31;
 
     if exp_a > 3 {
         k_a += 1;
@@ -184,8 +176,7 @@ pub(super) fn fdp_sub(q: &mut Q32E2, mut ui_a: u32, mut ui_b: u32) {
         }
     }
 
-    //This is the only difference from ADD (sign_z2) and (!sign_z2)
-    if !sign_z2 {
+    if !(sign_a ^ plus) {
         let mut j = u_z2.iter_mut().rev();
         while let Some(u) = j.next() {
             if *u > 0 {
@@ -198,7 +189,7 @@ pub(super) fn fdp_sub(q: &mut Q32E2, mut ui_a: u32, mut ui_b: u32) {
         }
     }
 
-    //Subtraction
+    //Addition
     let mut u_z: [u64; 8] = [0; 8];
     let mut rcarry_z = false;
     for (i, (u, (u1, u2))) in (0..8)
@@ -238,7 +229,7 @@ fn test_quire_mul_add() {
         let f_c = f64::from(p_c);
         let mut q = Q32E2::init();
         q += (p_a, p_b);
-        q += (p_c, P32E2::ONE);
+        q += p_c;
         let p = q.to_posit();
         let f = f_a.mul_add(f_b, f_c);
         assert_eq!(p, P32E2::from(f));
@@ -258,7 +249,7 @@ fn test_quire_mul_sub() {
         let f_c = f64::from(p_c);
         let mut q = Q32E2::init();
         q -= (p_a, p_b);
-        q += (p_c, P32E2::ONE);
+        q += p_c;
         let p = q.to_posit();
         let f = (-f_a).mul_add(f_b, f_c);
         assert_eq!(p, P32E2::from(f));

@@ -5,7 +5,7 @@ use core::ops;
 crate::quire_add_sub!(P16E1, Q16E1);
 crate::quire_add_sub_array!(P16E1, Q16E1, 1, 2, 3, 4);
 
-pub(super) fn fdp_add(q: &mut Q16E1, mut ui_a: u16, mut ui_b: u16) {
+pub(super) fn fdp(q: &mut Q16E1, mut ui_a: u16, mut ui_b: u16, plus: bool) {
     let u_z1 = q.to_bits();
 
     if q.is_nar() || ui_a == 0x_8000 || ui_b == 0x_8000 {
@@ -78,7 +78,7 @@ pub(super) fn fdp_add(q: &mut Q16E1, mut ui_a: u16, mut ui_b: u16) {
         }
     }
 
-    if sign_z2 {
+    if !(sign_z2 ^ plus) {
         if u_z2[1] > 0 {
             u_z2[1] = u_z2[1].wrapping_neg();
             u_z2[0] = !u_z2[0];
@@ -112,34 +112,26 @@ pub(super) fn fdp_add(q: &mut Q16E1, mut ui_a: u16, mut ui_b: u16) {
     *q = if q_z.is_nar() { Q16E1::ZERO } else { q_z }
 }
 
-pub(super) fn fdp_sub(q: &mut Q16E1, mut ui_a: u16, mut ui_b: u16) {
+pub(super) fn fdp_one(q: &mut Q16E1, mut ui_a: u16, plus: bool) {
     let u_z1 = q.to_bits();
 
-    if q.is_nar() || ui_a == 0x_8000 || ui_b == 0x_8000 {
+    if q.is_nar() || ui_a == 0x_8000 {
         *q = Q16E1::NAR;
         return;
-    } else if ui_a == 0 || ui_b == 0 {
+    } else if ui_a == 0 {
         return;
     }
 
     //max pos (sign plus and minus)
     let sign_a = P16E1::sign_ui(ui_a);
-    let sign_b = P16E1::sign_ui(ui_b);
-    let sign_z2 = sign_a ^ sign_b;
 
     if sign_a {
         ui_a = ui_a.wrapping_neg();
     }
-    if sign_b {
-        ui_b = ui_b.wrapping_neg();
-    }
 
     let (mut k_a, mut exp_a, frac_a) = P16E1::separate_bits(ui_a);
 
-    let (k_b, exp_b, frac_b) = P16E1::separate_bits(ui_b);
-    k_a += k_b;
-    exp_a += exp_b;
-    let mut frac32_z = (frac_a as u32) * (frac_b as u32);
+    let mut frac32_z = (frac_a as u32) << 14;
 
     if exp_a > 1 {
         k_a += 1;
@@ -185,8 +177,7 @@ pub(super) fn fdp_sub(q: &mut Q16E1, mut ui_a: u16, mut ui_b: u16) {
         }
     }
 
-    //This is the only difference from ADD (sign_z2) and (!sign_z2)
-    if !sign_z2 {
+    if !(sign_a ^ plus) {
         if u_z2[1] > 0 {
             u_z2[1] = u_z2[1].wrapping_neg();
             u_z2[0] = !u_z2[0];
@@ -195,9 +186,9 @@ pub(super) fn fdp_sub(q: &mut Q16E1, mut ui_a: u16, mut ui_b: u16) {
         }
     }
 
-    //Subtraction
-    let b1 = u_z1[1] & 0x1 != 0;
-    let b2 = u_z2[1] & 0x1 != 0;
+    //Addition
+    let b1 = u_z1[0] & 0x1 != 0;
+    let b2 = u_z2[0] & 0x1 != 0;
     let rcarryb = b1 & b2;
     let mut u_z: [u64; 2] = [0, (u_z1[1] >> 1) + (u_z2[1] >> 1) + (rcarryb as u64)];
 
@@ -207,7 +198,7 @@ pub(super) fn fdp_sub(q: &mut Q16E1, mut ui_a: u16, mut ui_b: u16) {
 
     let b1 = u_z1[0] & 0x1 != 0;
     let b2 = u_z2[0] & 0x1 != 0;
-    //let rcarryb = b1 & b2;
+    //rcarryb = b1 & b2 ;
     let rcarryb3 = (b1 as i8) + (b2 as i8) + (rcarry_z as i8);
 
     u_z[0] = (u_z1[0] >> 1) + (u_z2[0] >> 1) + (((rcarryb3 >> 1) & 0x1) as u64);
@@ -215,7 +206,7 @@ pub(super) fn fdp_sub(q: &mut Q16E1, mut ui_a: u16, mut ui_b: u16) {
 
     u_z[0] = u_z[0] << 1 | ((rcarryb3 & 0x1) as u64);
 
-    //Exception handling
+    //Exception handling for NaR
     let q_z = Q16E1::from_bits(u_z);
     *q = if q_z.is_nar() { Q16E1::ZERO } else { q_z }
 }
@@ -240,7 +231,7 @@ fn test_quire_mul_add() {
         let f_c = f64::from(p_c);
         let mut q = Q16E1::init();
         q += (p_a, p_b);
-        q += (p_c, P16E1::ONE);
+        q += p_c;
         let p = q.to_posit();
         let f = f_a.mul_add(f_b, f_c);
         assert!(ulp(p, P16E1::from(f)) <= 1);
@@ -260,7 +251,7 @@ fn test_quire_mul_sub() {
         let f_c = f64::from(p_c);
         let mut q = Q16E1::init();
         q -= (p_a, p_b);
-        q += (p_c, P16E1::ONE);
+        q += p_c;
         let p = q.to_posit();
         let f = (-f_a).mul_add(f_b, f_c);
         assert!(

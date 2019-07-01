@@ -49,14 +49,14 @@ impl Q32E2 {
     pub fn add_product(&mut self, p_a: P32E2, p_b: P32E2) {
         let ui_a = p_a.to_bits();
         let ui_b = p_b.to_bits();
-        ops::fdp_add(self, ui_a, ui_b);
+        ops::fdp(self, ui_a, ui_b, true);
     }
 
     #[inline]
     pub fn sub_product(&mut self, p_a: P32E2, p_b: P32E2) {
         let ui_a = p_a.to_bits();
         let ui_b = p_b.to_bits();
-        ops::fdp_sub(self, ui_a, ui_b);
+        ops::fdp(self, ui_a, ui_b, false);
     }
 
     #[inline]
@@ -155,12 +155,12 @@ impl<const N: u32> crate::Quire<PxE2<{ N }>> for Q32E2 {
     fn add_product(&mut self, p_a: PxE2<{ N }>, p_b: PxE2<{ N }>) {
         let ui_a = p_a.to_bits();
         let ui_b = p_b.to_bits();
-        ops::fdp_add(self, ui_a, ui_b);
+        ops::fdp(self, ui_a, ui_b, true);
     }
     fn sub_product(&mut self, p_a: PxE2<{ N }>, p_b: PxE2<{ N }>) {
         let ui_a = p_a.to_bits();
         let ui_b = p_b.to_bits();
-        ops::fdp_sub(self, ui_a, ui_b);
+        ops::fdp(self, ui_a, ui_b, false);
     }
     fn clear(&mut self) {
         Self::clear(self)
