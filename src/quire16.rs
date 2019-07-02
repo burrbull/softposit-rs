@@ -6,12 +6,12 @@ mod math;
 mod ops;
 
 #[derive(Clone, Debug)]
-pub struct Q16E1(i64, u64);
+pub struct Q16E1(i128);
 
 impl Q16E1 {
-    pub const ZERO: Self = Self(0, 0);
-    pub const ONE: Self = Self(0, 0x_0100_0000_0000_0000);
-    pub const NAR: Self = Self(-0x_8000_0000_0000_0000, 0);
+    pub const ZERO: Self = Self(0);
+    pub const ONE: Self = Self(0x_0100_0000_0000_0000__0000_0000_0000_0000);
+    pub const NAR: Self = Self(-0x_8000_0000_0000_0000__0000_0000_0000_0000);
 
     #[inline]
     pub const fn init() -> Self {
@@ -24,23 +24,23 @@ impl Q16E1 {
     }
 
     #[inline]
-    pub fn from_bits(v: [u64; 2]) -> Self {
+    pub fn from_bits(v: u128) -> Self {
         unsafe { mem::transmute(v) }
     }
 
     #[inline]
-    pub fn to_bits(&self) -> [u64; 2] {
+    pub fn to_bits(&self) -> u128 {
         unsafe { mem::transmute(self.clone()) }
     }
 
     #[inline]
     pub fn is_zero(&self) -> bool {
-        self.to_bits() == [0, 0]
+        self.to_bits() == Self::ZERO.to_bits()
     }
 
     #[inline]
     pub fn is_nar(&self) -> bool {
-        self.to_bits() == [0x8000_0000_0000_0000, 0]
+        self.to_bits() == Self::NAR.to_bits()
     }
 
     #[inline]
@@ -90,7 +90,7 @@ impl Q16E1 {
 }
 
 impl crate::Quire<P16E1> for Q16E1 {
-    type Bits = [u64; 2];
+    type Bits = u128;
     fn init() -> Self {
         Self::init()
     }

@@ -29,45 +29,21 @@ impl From<&Q16E1> for P16E1 {
 
         let mut u_z = q_a.to_bits();
 
-        let sign = (u_z[0] & 0x_8000_0000_0000_0000) != 0;
+        let sign = (u_z & 0x_8000_0000_0000_0000__0000_0000_0000_0000) != 0;
 
         if sign {
-            //probably need to do two's complement here before the rest.
-            if u_z[1] == 0 {
-                u_z[0] = u_z[0].wrapping_neg();
-            } else {
-                u_z[1] = u_z[1].wrapping_neg();
-                u_z[0] = !(u_z[0]);
-            }
+            u_z = u_z.wrapping_neg();
         }
 
         let mut no_lz = 0_i8;
-        let mut frac64_a;
-        let mut bits_more = false;
-        if u_z[0] == 0 {
-            no_lz += 64;
-            let mut tmp = u_z[1];
-
-            while (tmp >> 63) == 0 {
-                no_lz += 1;
-                tmp <<= 1;
-            }
-            frac64_a = tmp;
-        } else {
-            let mut tmp = u_z[0];
-            let mut no_lztmp = 0_i8;
-
-            while (tmp >> 63) == 0 {
-                no_lztmp += 1;
-                tmp <<= 1;
-            }
-            no_lz += no_lztmp;
-            frac64_a = tmp;
-            frac64_a += u_z[1] >> (64 - no_lztmp);
-            if (u_z[1] << no_lztmp) != 0 {
-                bits_more = true;
-            }
+        let mut tmp = u_z;
+        while (tmp >> 127) == 0 {
+            no_lz += 1;
+            tmp <<= 1;
         }
+        let mut bits_more = (u_z << no_lz) != 0;
+        let mut frac64_a = (tmp >> 64) as u64;
+
         //default dot is between bit 71 and 72, extreme left bit is bit 0. Last right bit is bit 127.
         //Equations derived from quire16_mult  last_pos = 71 - (k_a<<1) - exp_a and first_pos = last_pos - frac_len
         let k_a = (71 - no_lz) >> 1;

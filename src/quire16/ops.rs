@@ -50,62 +50,18 @@ pub(super) fn fdp(q: &mut Q16E1, mut ui_a: u16, mut ui_b: u16, plus: bool) {
 
     //default dot is between bit 71 and 72, extreme left bit is bit 0. Last right bit is bit 127.
     //Scale = 2^es * k + e  => 2k + e
-    let first_pos = 71 - ((k_a as i16) << 1) - (exp_a as i16);
-
-    //No worries about hidden bit moving before position 4 because fraction is right aligned so
-    //there are 16 spare bits
-    let mut u_z2: [u64; 2] = [0, 0];
-    if first_pos > 63 {
-        //This means entire fraction is in right 64 bits
-        u_z2[0] = 0;
-        let shift_right = first_pos - 99; //99 = 63+ 4+ 32
-        if shift_right < 0 {
-            //shiftLeft
-            u_z2[1] = (frac32_z as u64) << -shift_right;
-        } else {
-            u_z2[1] = (frac32_z as u64) >> shift_right;
-        }
+    let shift_right = -(28 + ((k_a as i16) << 1) + (exp_a as i16));
+    let mut u_z2 = if shift_right < 0 {
+        (frac32_z as u128) << -shift_right
     } else {
-        //frac32_z can be in both left64 and right64
-        let shift_right = first_pos - 35; // -35= -3-32
-        if shift_right < 0 {
-            u_z2[0] = (frac32_z as u64) << -shift_right;
-        } else {
-            u_z2[0] = (frac32_z as u64) >> shift_right;
-            u_z2[1] = (frac32_z as u64)
-                .checked_shl((64 - shift_right) as u32)
-                .unwrap_or(0);
-        }
-    }
+        (frac32_z as u128) >> shift_right
+    };
 
     if !(sign_z2 ^ plus) {
-        if u_z2[1] > 0 {
-            u_z2[1] = u_z2[1].wrapping_neg();
-            u_z2[0] = !u_z2[0];
-        } else {
-            u_z2[0] = u_z2[0].wrapping_neg();
-        }
+        u_z2 = u_z2.wrapping_neg();
     }
-
     //Addition
-    let b1 = u_z1[0] & 0x1 != 0;
-    let b2 = u_z2[0] & 0x1 != 0;
-    let rcarryb = b1 & b2;
-    let mut u_z: [u64; 2] = [0, (u_z1[1] >> 1) + (u_z2[1] >> 1) + (rcarryb as u64)];
-
-    let rcarry_z = (u_z[1] & 0x_8000_0000_0000_0000) != 0;
-
-    u_z[1] = u_z[1] << 1 | ((b1 ^ b2) as u64);
-
-    let b1 = u_z1[0] & 0x1 != 0;
-    let b2 = u_z2[0] & 0x1 != 0;
-    //rcarryb = b1 & b2 ;
-    let rcarryb3 = (b1 as i8) + (b2 as i8) + (rcarry_z as i8);
-
-    u_z[0] = (u_z1[0] >> 1) + (u_z2[0] >> 1) + (((rcarryb3 >> 1) & 0x1) as u64);
-    //rcarrySignZ = u_z[0]>>63;
-
-    u_z[0] = u_z[0] << 1 | ((rcarryb3 & 0x1) as u64);
+    let u_z = u_z2.wrapping_add(u_z1);
 
     //Exception handling for NaR
     let q_z = Q16E1::from_bits(u_z);
@@ -130,7 +86,6 @@ pub(super) fn fdp_one(q: &mut Q16E1, mut ui_a: u16, plus: bool) {
     }
 
     let (mut k_a, mut exp_a, frac_a) = P16E1::separate_bits(ui_a);
-
     let mut frac32_z = (frac_a as u32) << 14;
 
     if exp_a > 1 {
@@ -149,62 +104,18 @@ pub(super) fn fdp_one(q: &mut Q16E1, mut ui_a: u16, plus: bool) {
 
     //default dot is between bit 71 and 72, extreme left bit is bit 0. Last right bit is bit 127.
     //Scale = 2^es * k + e  => 2k + e
-    let first_pos = 71 - ((k_a as i16) << 1) - (exp_a as i16);
-
-    //No worries about hidden bit moving before position 4 because fraction is right aligned so
-    //there are 16 spare bits
-    let mut u_z2: [u64; 2] = [0, 0];
-    if first_pos > 63 {
-        //This means entire fraction is in right 64 bits
-        u_z2[0] = 0;
-        let shift_right = first_pos - 99; //99 = 63+ 4+ 32
-        if shift_right < 0 {
-            //shiftLeft
-            u_z2[1] = (frac32_z as u64) << -shift_right;
-        } else {
-            u_z2[1] = (frac32_z as u64) >> shift_right;
-        }
+    let shift_right = -(28 + ((k_a as i16) << 1) + (exp_a as i16));
+    let mut u_z2 = if shift_right < 0 {
+        (frac32_z as u128) << -shift_right
     } else {
-        //frac32_z can be in both left64 and right64
-        let shift_right = first_pos - 35; // -35= -3-32
-        if shift_right < 0 {
-            u_z2[0] = (frac32_z as u64) << -shift_right;
-        } else {
-            u_z2[0] = (frac32_z as u64) >> shift_right;
-            u_z2[1] = (frac32_z as u64)
-                .checked_shl((64 - shift_right) as u32)
-                .unwrap_or(0);
-        }
-    }
+        (frac32_z as u128) >> shift_right
+    };
 
     if !(sign_a ^ plus) {
-        if u_z2[1] > 0 {
-            u_z2[1] = u_z2[1].wrapping_neg();
-            u_z2[0] = !u_z2[0];
-        } else {
-            u_z2[0] = u_z2[0].wrapping_neg();
-        }
+        u_z2 = u_z2.wrapping_neg();
     }
-
     //Addition
-    let b1 = u_z1[0] & 0x1 != 0;
-    let b2 = u_z2[0] & 0x1 != 0;
-    let rcarryb = b1 & b2;
-    let mut u_z: [u64; 2] = [0, (u_z1[1] >> 1) + (u_z2[1] >> 1) + (rcarryb as u64)];
-
-    let rcarry_z = (u_z[1] & 0x_8000_0000_0000_0000) != 0;
-
-    u_z[1] = u_z[1] << 1 | ((b1 ^ b2) as u64);
-
-    let b1 = u_z1[0] & 0x1 != 0;
-    let b2 = u_z2[0] & 0x1 != 0;
-    //rcarryb = b1 & b2 ;
-    let rcarryb3 = (b1 as i8) + (b2 as i8) + (rcarry_z as i8);
-
-    u_z[0] = (u_z1[0] >> 1) + (u_z2[0] >> 1) + (((rcarryb3 >> 1) & 0x1) as u64);
-    //rcarrySignZ = u_z[0]>>63;
-
-    u_z[0] = u_z[0] << 1 | ((rcarryb3 & 0x1) as u64);
+    let u_z = u_z2.wrapping_add(u_z1);
 
     //Exception handling for NaR
     let q_z = Q16E1::from_bits(u_z);
