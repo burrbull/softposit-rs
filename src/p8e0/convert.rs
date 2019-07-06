@@ -238,7 +238,7 @@ impl From<P8E0> for i32 {
         let mut ui_a = p_a.to_bits();
         //NaR
         if ui_a == 0x80 {
-            return -0x8000_0000;
+            return i32::min_value();
         }
 
         let sign = ui_a > 0x80; // sign is True if p_a > NaR.
@@ -256,10 +256,7 @@ impl From<P8E0> for u32 {
     fn from(p_a: P8E0) -> Self {
         let ui_a = p_a.to_bits();
 
-        //NaR
-        if ui_a == 0x80 {
-            return 0x8000_0000;
-        } else if ui_a > 0x80 {
+        if ui_a >= 0x80 {
             return 0; //negative
         }
         convert_p8bits_to_u32(ui_a)
@@ -305,7 +302,7 @@ impl From<P8E0> for i64 {
 
         //NaR
         if ui_a == 0x80 {
-            return -0x8000_0000_0000_0000;
+            return i64::min_value();
         }
 
         let sign = (ui_a & 0x_80) != 0;
@@ -323,10 +320,8 @@ impl From<P8E0> for u64 {
     #[inline]
     fn from(p_a: P8E0) -> Self {
         let ui_a = p_a.to_bits();
-        //NaR
-        if ui_a == 0x80 {
-            return 0x8000_0000_0000_0000;
-        } else if ui_a > 0x80 {
+
+        if ui_a >= 0x80 {
             return 0; //negative
         }
         convert_p8bits_to_u64(ui_a)
