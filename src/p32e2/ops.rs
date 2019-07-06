@@ -1,6 +1,6 @@
 use super::P32E2;
 use crate::WithSign;
-use core::ops;
+use core::{mem, ops};
 
 impl ops::Neg for P32E2 {
     type Output = Self;
@@ -97,8 +97,6 @@ impl ops::Div for P32E2 {
     type Output = Self;
     #[inline]
     fn div(self, other: Self) -> Self {
-        let mut u_z: u32;
-
         let mut ui_a = self.to_bits();
         let mut ui_b = other.to_bits();
 
@@ -148,31 +146,35 @@ impl ops::Div for P32E2 {
             }
         }
 
-        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
+        let (regime, reg_s, reg_len) = Self::calculate_regime(k_a);
 
-        if reg_a > 30 {
+        let u_z = if reg_len > 30 {
             //max or min pos. exp and frac does not matter.
-            u_z = if reg_sa { 0x7FFF_FFFF } else { 0x1 };
+            if reg_s {
+                0x7FFF_FFFF
+            } else {
+                0x1
+            }
         } else {
             //remove carry and rcarry bits and shift to correct position
             frac64_z &= 0x3FFF_FFFF;
 
-            frac_a = (frac64_z >> (reg_a + 2)) as u32;
+            frac_a = (frac64_z >> (reg_len + 2)) as u32;
 
             let mut bit_n_plus_one = false;
             let mut bits_more = false;
-            if reg_a <= 28 {
-                bit_n_plus_one = ((frac64_z >> (reg_a + 1)) & 0x1) != 0;
-                exp_a <<= 28 - reg_a;
+            if reg_len <= 28 {
+                bit_n_plus_one = ((frac64_z >> (reg_len + 1)) & 0x1) != 0;
+                exp_a <<= 28 - reg_len;
                 if bit_n_plus_one {
-                    bits_more = (((1 << (reg_a + 1)) - 1) & frac64_z) != 0;
+                    bits_more = (((1 << (reg_len + 1)) - 1) & frac64_z) != 0;
                 }
             } else {
-                if reg_a == 30 {
+                if reg_len == 30 {
                     bit_n_plus_one = (exp_a & 0x2) != 0;
                     bits_more = (exp_a & 0x1) != 0;
                     exp_a = 0;
-                } else if reg_a == 29 {
+                } else if reg_len == 29 {
                     bit_n_plus_one = (exp_a & 0x1) != 0;
                     exp_a >>= 1; //taken care of by the pack algo
                 }
@@ -181,17 +183,48 @@ impl ops::Div for P32E2 {
                     bits_more = true;
                 }
             }
-            if rem != 0 {
-                bits_more = true;
-            }
 
-            u_z = Self::pack_to_ui(regime, exp_a as u32, frac_a);
+            let mut u_z = Self::pack_to_ui(regime, exp_a as u32, frac_a);
             if bit_n_plus_one {
+                if rem != 0 {
+                    bits_more = true;
+                }
                 u_z += (u_z & 1) | (bits_more as u32);
             }
-        }
+            u_z
+        };
 
         Self::from_bits(u_z.with_sign(sign_z))
+    }
+}
+
+impl P32E2 {
+    #[inline]
+    fn form_ui(reg_len: u32, regime: u32, mut exp: i32, frac64: u64) -> u32 {
+        let mut bit_n_plus_one = false;
+
+        let frac = if reg_len <= 28 {
+            bit_n_plus_one = (0x8000_0000 & frac64) != 0;
+            exp <<= 28 - reg_len;
+            (frac64 >> 32) as u32
+        } else {
+            if reg_len == 30 {
+                bit_n_plus_one = (exp & 0x2) != 0;
+                exp = 0;
+            } else if reg_len == 29 {
+                bit_n_plus_one = (exp & 0x1) != 0;
+                exp >>= 1; //taken care of by the pack algo
+            }
+            0
+        };
+        //sign is always zero
+        let mut u_z = Self::pack_to_ui(regime, exp as u32, frac);
+        //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+        if bit_n_plus_one {
+            let bits_more = (0x7FFF_FFFF & frac64) != 0;
+            u_z += (u_z & 1) | (bits_more as u32);
+        }
+        u_z
     }
 }
 
@@ -220,65 +253,44 @@ impl ops::Mul for P32E2 {
             ui_b = ui_b.wrapping_neg()
         };
 
-        let (mut k_a, mut exp_a, mut frac_a) = Self::separate_bits(ui_a);
+        let (mut k_a, mut exp_a, frac_a) = Self::separate_bits(ui_a);
 
         let (k_b, exp_b, frac_b) = Self::separate_bits(ui_b);
         k_a += k_b;
         exp_a += exp_b;
-        let mut frac64_z = (frac_a as u64) * (frac_b as u64);
+        let mut frac64 = (frac_a as u64) * (frac_b as u64);
 
         if exp_a > 3 {
             k_a += 1;
             exp_a &= 0x3; // -=4
         }
 
-        let rcarry = (frac64_z >> 61) != 0; //3rd bit of frac64_z
+        let rcarry = (frac64 >> 61) != 0; //3rd bit of frac64
         if rcarry {
             exp_a += 1;
             if exp_a > 3 {
                 k_a += 1;
                 exp_a &= 0x3;
             }
-            frac64_z >>= 1;
+            frac64 >>= 1;
         }
-        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
+        let (regime, reg_s, reg_len) = Self::calculate_regime(k_a);
 
-        let u_z = if reg_a > 30 {
+        let u_z = if reg_len > 30 {
             //max or min pos. exp and frac does not matter.
-            if reg_sa {
+            if reg_s {
                 0x7FFF_FFFF
             } else {
                 0x1
             }
         } else {
             //remove carry and rcarry bits and shift to correct position (2 bits exp, so + 1 than 16 bits)
-            frac64_z = (frac64_z & 0xFFF_FFFF_FFFF_FFFF) >> reg_a;
-            frac_a = (frac64_z >> 32) as u32;
-
-            let mut bit_n_plus_one = false;
-            if reg_a <= 28 {
-                bit_n_plus_one = (0x8000_0000 & frac64_z) != 0;
-                exp_a <<= 28 - reg_a;
-            } else {
-                if reg_a == 30 {
-                    bit_n_plus_one = (exp_a & 0x2) != 0;
-                    exp_a = 0;
-                } else if reg_a == 29 {
-                    bit_n_plus_one = (exp_a & 0x1) != 0;
-                    exp_a >>= 1; //taken care of by the pack algo
-                }
-                if frac_a > 0 {
-                    frac_a = 0;
-                }
-            }
-            //sign is always zero
-            let mut u_z = Self::pack_to_ui(regime, exp_a as u32, frac_a);
-            //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-            if bit_n_plus_one {
-                let bits_more = (0x7FFF_FFFF & frac64_z) != 0;
-                u_z += (u_z & 1) | (bits_more as u32);
-            }
-            u_z
+            Self::form_ui(
+                reg_len,
+                regime,
+                exp_a,
+                (frac64 & 0x_0FFF_FFFF_FFFF_FFFF) >> reg_len,
+            )
         };
 
         Self::from_bits(u_z.with_sign(sign_z))
@@ -295,80 +307,50 @@ impl P32E2 {
         }
 
         if (ui_a as i32) < (ui_b as i32) {
-            ui_a ^= ui_b;
-            ui_b ^= ui_a;
-            ui_a ^= ui_b;
+            mem::swap(&mut ui_a, &mut ui_b);
         }
 
         let (mut k_a, mut exp_a, frac_a) = Self::separate_bits(ui_a);
 
-        let mut frac64_a = (frac_a as u64) << 32;
+        let mut frac64 = (frac_a as u64) << 32;
 
         let (k_b, exp_b, frac_b) = Self::separate_bits(ui_b);
 
         let mut shift_right = (k_a as i16) - (k_b as i16);
-        let mut frac64_b = (frac_b as u64) << 32;
 
         //This is 4kZ + expZ; (where kZ=k_a-kB and expZ=exp_a-expB)
         shift_right = (shift_right << 2) + (exp_a as i16) - (exp_b as i16);
 
-        //Manage CLANG (LLVM) compiler when shifting right more than number of bits
-        if shift_right > 63 {
-            frac64_b = 0;
-        } else {
-            frac64_b >>= shift_right;
-        }
+        frac64 += ((frac_b as u64) << 32)
+            .checked_shr(shift_right as u32)
+            .unwrap_or(0);
 
-        frac64_a += frac64_b;
-
-        let rcarry = (0x8000_0000_0000_0000 & frac64_a) != 0; //first left bit
+        let rcarry = (0x8000_0000_0000_0000 & frac64) != 0; //first left bit
         if rcarry {
             exp_a += 1;
             if exp_a > 3 {
                 k_a += 1;
                 exp_a &= 0x3;
             }
-            frac64_a >>= 1;
+            frac64 >>= 1;
         }
-        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
+        let (regime, reg_s, reg_len) = Self::calculate_regime(k_a);
 
-        let u_z = if reg_a > 30 {
+        let u_z = if reg_len > 30 {
             //max or min pos. exp and frac does not matter.
-            if reg_sa {
+            if reg_s {
                 0x7FFF_FFFF
             } else {
                 0x1
             }
         } else {
             //remove hidden bits
-            frac64_a = (frac64_a & 0x3FFF_FFFF_FFFF_FFFF) >> (reg_a + 2); // 2 bits exp
-
-            let mut frac_a = (frac64_a >> 32) as u32;
-
-            let mut bit_n_plus_one = false;
-            if reg_a <= 28 {
-                bit_n_plus_one = (0x8000_0000 & frac64_a) != 0;
-                exp_a <<= 28 - reg_a;
-            } else {
-                if reg_a == 30 {
-                    bit_n_plus_one = (exp_a & 0x2) != 0;
-                    exp_a = 0;
-                } else if reg_a == 29 {
-                    bit_n_plus_one = (exp_a & 0x1) != 0;
-                    exp_a >>= 1;
-                }
-                if frac_a > 0 {
-                    frac_a = 0;
-                }
-            }
-
-            let mut u_z = Self::pack_to_ui(regime, exp_a as u32, frac_a);
-            //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-            if bit_n_plus_one {
-                let bits_more = (0x7FFF_FFFF & frac64_a) != 0;
-                u_z += (u_z & 1) | (bits_more as u32);
-            }
-            u_z
+            Self::form_ui(
+                reg_len,
+                regime,
+                exp_a,
+                (frac64 & 0x3FFF_FFFF_FFFF_FFFF) >> (reg_len + 2),
+            )
         };
 
         Self::from_bits(u_z.with_sign(sign))
@@ -388,15 +370,13 @@ impl P32E2 {
             return Self::ZERO;
         }
         if (ui_a as i32) < (ui_b as i32) {
-            ui_a ^= ui_b;
-            ui_b ^= ui_a;
-            ui_a ^= ui_b;
+            mem::swap(&mut ui_a, &mut ui_b);
             sign = !sign; //A becomes B
         }
 
         let (mut k_a, mut exp_a, frac_a) = Self::separate_bits(ui_a);
 
-        let mut frac64_a = (frac_a as u64) << 32;
+        let mut frac64 = (frac_a as u64) << 32;
 
         let (k_b, exp_b, frac_b) = Self::separate_bits(ui_b);
 
@@ -406,18 +386,18 @@ impl P32E2 {
         shift_right = (shift_right << 2) + (exp_a as i16) - (exp_b as i16);
 
         if shift_right > 63 {
-            return Self::from_bits(if sign { ui_a.wrapping_neg() } else { ui_a });
+            return Self::from_bits(ui_a.with_sign(sign));
         } else {
             frac64_b >>= shift_right;
         }
 
-        frac64_a -= frac64_b;
+        frac64 -= frac64_b;
 
-        while (frac64_a >> 59) == 0 {
+        while (frac64 >> 59) == 0 {
             k_a -= 1;
-            frac64_a <<= 4;
+            frac64 <<= 4;
         }
-        let mut ecarry = (0x4000_0000_0000_0000 & frac64_a) != 0; //(0x4000_0000_0000_0000 & frac64_a)>>62;
+        let mut ecarry = (0x4000_0000_0000_0000 & frac64) != 0; //(0x4000_0000_0000_0000 & frac64)>>62;
         while !ecarry {
             if exp_a == 0 {
                 k_a -= 1;
@@ -425,49 +405,27 @@ impl P32E2 {
             } else {
                 exp_a -= 1;
             }
-            frac64_a <<= 1;
-            ecarry = (0x4000_0000_0000_0000 & frac64_a) != 0;
+            frac64 <<= 1;
+            ecarry = (0x4000_0000_0000_0000 & frac64) != 0;
         }
 
-        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
+        let (regime, reg_s, reg_len) = Self::calculate_regime(k_a);
 
-        let u_z = if reg_a > 30 {
+        let u_z = if reg_len > 30 {
             //max or min pos. exp and frac does not matter.
-            if reg_sa {
+            if reg_s {
                 0x7FFF_FFFF
             } else {
                 0x1
             }
         } else {
             //remove hidden bits
-            frac64_a = (frac64_a & 0x3FFF_FFFF_FFFF_FFFF) >> (reg_a + 2); // 2 bits exp
-
-            let mut frac_a = (frac64_a >> 32) as u32;
-
-            let mut bit_n_plus_one = false;
-            if reg_a <= 28 {
-                bit_n_plus_one = (0x8000_0000 & frac64_a) != 0;
-                exp_a <<= 28 - reg_a;
-            } else {
-                if reg_a == 30 {
-                    bit_n_plus_one = (exp_a & 0x2) != 0;
-                    exp_a = 0;
-                } else if reg_a == 29 {
-                    bit_n_plus_one = (exp_a & 0x1) != 0;
-                    exp_a >>= 1;
-                }
-                if frac_a > 0 {
-                    frac_a = 0;
-                }
-            }
-
-            let mut u_z = Self::pack_to_ui(regime, exp_a as u32, frac_a);
-            //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-            if bit_n_plus_one {
-                let bits_more = (0x7FFF_FFFF & frac64_a) != 0;
-                u_z += (u_z & 1) | (bits_more as u32);
-            }
-            u_z
+            Self::form_ui(
+                reg_len,
+                regime,
+                exp_a,
+                (frac64 & 0x3FFF_FFFF_FFFF_FFFF) >> (reg_len + 2),
+            )
         };
 
         Self::from_bits(u_z.with_sign(sign))

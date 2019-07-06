@@ -225,13 +225,13 @@ impl P16E1 {
 
     #[inline]
     pub(crate) fn calculate_regime(k: i8) -> (u16, bool, u32) {
-        let reg;
+        let len;
         if k < 0 {
-            reg = (-k) as u32;
-            (0x4000_u16.checked_shr(reg).unwrap_or(0), false, reg)
+            len = (-k) as u32;
+            (0x4000_u16.checked_shr(len).unwrap_or(0), false, len)
         } else {
-            reg = (k + 1) as u32;
-            (0x7fff - 0x7fff_u16.checked_shr(reg).unwrap_or(0), true, reg)
+            len = (k + 1) as u32;
+            (0x7fff - 0x7fff_u16.checked_shr(len).unwrap_or(0), true, len)
         }
     }
 }

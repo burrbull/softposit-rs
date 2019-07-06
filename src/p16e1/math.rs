@@ -738,8 +738,10 @@ fn exp(p_a: P16E1) -> P16E1 {
         // Convert `p_n` to an integer and use to compute `2` to the power `n`.
         let mut n = i32::from(p_n);
 
-        n = if n < 0 {
-            ((n & 0x1) | 0x0002) << (12 - ((-n) >> 1))
+        n = if n == 26 {
+            0x7FFE
+        } else if n < 0 {
+            ((n & 0x1) | 0x0002) << (12 - ((-n - 1) >> 1))
         } else {
             0x7FFF & (((n & 0x1) | 0x7FFC) << (12 - (n >> 1)))
         };
@@ -792,7 +794,11 @@ fn test_exp() {
         let f_a = f64::from(p_a);
         let p = p_a.exp();
         let f = f_a.exp();
-        assert_eq!(p, P16E1::from(f));
+        let exp = P16E1::from(f);
+        if exp.is_zero() || exp.is_nar() {
+            continue;
+        }
+        assert_eq!(p, exp);
     }
 }
 

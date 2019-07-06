@@ -1,6 +1,6 @@
 use super::PxE2;
 use crate::WithSign;
-use core::ops;
+use core::{mem, ops};
 
 impl<const N: u32> ops::Neg for PxE2<{ N }> {
     type Output = Self;
@@ -96,9 +96,7 @@ impl<const N: u32> PxE2<{ N }> {
         }
 
         if (ui_a as i32) < (ui_b as i32) {
-            ui_a ^= ui_b;
-            ui_b ^= ui_a;
-            ui_a ^= ui_b;
+            mem::swap(&mut ui_a, &mut ui_b);
         }
 
         let u_z = if N == 2 {
@@ -215,9 +213,7 @@ impl<const N: u32> PxE2<{ N }> {
         }
 
         if (ui_a as i32) < (ui_b as i32) {
-            ui_a ^= ui_b;
-            ui_b ^= ui_a;
-            ui_a ^= ui_b;
+            mem::swap(&mut ui_a, &mut ui_b);
             sign = !sign; //A becomes B
         }
 
