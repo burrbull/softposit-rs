@@ -220,6 +220,14 @@ impl From<P32E2> for i32 {
             ui_a = ui_a.wrapping_neg();
         }
 
+        if ui_a > 0x_7faf_ffff {
+            return if sign {
+                i32::min_value()
+            } else {
+                i32::max_value()
+            };
+        };
+
         let i_z = convert_p32bits_to_u32(ui_a);
 
         i_z.with_sign(sign) as i32
@@ -284,13 +292,21 @@ impl From<P32E2> for i64 {
         let mut ui_a = p_a.to_bits();
 
         if ui_a == 0x8000_0000 {
-            return (ui_a as i64) << 32;
+            return i64::min_value();
         }
 
         let sign = (ui_a & 0x8000_0000) != 0;
         if sign {
             ui_a = ui_a.wrapping_neg();
         }
+
+        if ui_a > 0x_7fff_afff {
+            return if sign {
+                i64::min_value()
+            } else {
+                i64::max_value()
+            };
+        };
 
         let i_z = convert_p32bits_to_u64(ui_a);
 
@@ -498,6 +514,9 @@ fn convert_p32_i32() {
         if p % P32E2::new(0x_3800_0000) == P32E2::ZERO {
             continue;
         }
+        if f as i32 == i32::min_value() {
+            continue;
+        }
         assert_eq!(i32::from(p), f as i32);
     }
 }
@@ -510,6 +529,9 @@ fn convert_p32_i64() {
         let p: P32E2 = rng.gen();
         let f = f64::from(p).round();
         if p % P32E2::new(0x_3800_0000) == P32E2::ZERO {
+            continue;
+        }
+        if f as i64 == i64::min_value() {
             continue;
         }
         assert_eq!(i64::from(p), f as i64);
