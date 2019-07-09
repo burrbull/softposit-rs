@@ -213,40 +213,31 @@ mod kernel {
     }
 }
 
-#[inline]
-pub fn signf(d: P32E2) -> P32E2 {
-    mulsign(ONE, d)
-}
-
 /// Power function
 ///
 /// This function returns the value of ***x*** raised to the power of ***y***.
 pub fn pow(x: P32E2, y: P32E2) -> P32E2 {
-    let p1_23 = P32E2::from(1u32 << 23);
-    let yisint = (y == y.round()) || (y.abs() >= p1_23);
-    let yisodd = ((1 & (i32::from(y))) != 0) && yisint && (y.abs() < p1_23);
-
-    let mut result = kernel::exp(kernel::log(x.abs()) * y);
-
-    result *= if x >= ZERO {
-        ONE
-    } else if !yisint {
-        P32E2::NAR
-    } else if yisodd {
-        -ONE
-    } else {
-        ONE
-    };
-
-    //let efx = mulsign(x.abs() - ONE, y);
     if (y == ZERO) || (x == ONE) {
         ONE
     } else if x.is_nar() || y.is_nar() {
         P32E2::NAR
     } else if x == ZERO {
-        (if yisodd { signf(x) } else { ONE }) * (if -y < ZERO { ZERO } else { P32E2::NAR })
+        if -y < ZERO { ZERO } else { P32E2::NAR }
     } else {
-        result
+        let p1_23 = P32E2::from(1u32 << 23);
+        let yisint = (y == y.round()) || (y.abs() >= p1_23);
+        let yisodd = ((1 & (i32::from(y))) != 0) && yisint && (y.abs() < p1_23);
+
+        kernel::exp(kernel::log(x.abs()) * y)
+            * if x >= ZERO {
+                ONE
+            } else if !yisint {
+                P32E2::NAR
+            } else if yisodd {
+                -ONE
+            } else {
+                ONE
+            }
     }
 }
 
@@ -259,6 +250,9 @@ fn test_pow() {
         0x_5200_0000,
         5,
     );
+    assert_eq!(pow(ZERO, -ONE), NAR);
+    assert_eq!(pow(ZERO, ZERO), ONE);
+    assert_eq!(pow(ZERO, ONE), ZERO);
 }
 
 /// Arc tangent function of two variables
