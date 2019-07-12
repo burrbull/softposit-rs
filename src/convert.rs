@@ -429,7 +429,7 @@ impl<const N: u32> From<P32E2> for PxE2<{ N }> {
             {
                 ui_a += 0x1 << shift;
             }
-            let mut u_z = ui_a & Self::MASK;
+            let mut u_z = ui_a & Self::mask();
             if u_z == 0 {
                 u_z = 0x1 << shift;
             }
@@ -484,7 +484,7 @@ impl<const N: u32> From<P16E1> for PxE2<{ N }> {
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sa {
-                    0x_7FFF_FFFF & Self::MASK
+                    0x_7FFF_FFFF & Self::mask()
                 } else {
                     0x1 << (32 - N)
                 }
@@ -502,7 +502,7 @@ impl<const N: u32> From<P16E1> for PxE2<{ N }> {
                     u_z += 0x1 << shift;
                 }
 
-                u_z &= Self::MASK;
+                u_z &= Self::mask();
                 if u_z == 0 {
                     u_z = 0x1 << shift;
                 }
@@ -562,7 +562,7 @@ impl<const N: u32> From<P32E2> for PxE1<{ N }> {
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sa {
-                    0x_7FFF_FFFF & Self::MASK
+                    0x_7FFF_FFFF & Self::mask()
                 } else {
                     0x1 << (32 - N)
                 }
@@ -575,7 +575,7 @@ impl<const N: u32> From<P32E2> for PxE1<{ N }> {
                 } else {
                     exp_frac32_a = 0;
                 }
-                let mut u_z = regime + (exp_frac32_a & Self::MASK);
+                let mut u_z = regime + (exp_frac32_a & Self::mask());
 
                 if u_z == 0 {
                     u_z = 0x1 << (32 - N);
@@ -653,7 +653,7 @@ impl<const N: u32> From<P8E0> for PxE1<{ N }> {
                 u_z += 0x1 << shift;
             }
 
-            u_z &= Self::MASK;
+            u_z &= Self::mask();
             if u_z == 0 {
                 u_z = 0x1 << shift;
             }
@@ -723,7 +723,7 @@ impl<const N: u32> From<P8E0> for PxE2<{ N }> {
             {
                 u_z += 0x1 << shift;
             }
-            u_z &= Self::MASK;
+            u_z &= Self::mask();
             if u_z == 0 {
                 u_z = 0x1 << shift;
             }
@@ -764,7 +764,7 @@ impl<const N: u32> From<P16E1> for PxE1<{ N }> {
             {
                 ui_a += 0x1 << shift;
             }
-            let mut u_z = ui_a & Self::MASK;
+            let mut u_z = ui_a & Self::mask();
             if u_z == 0 {
                 u_z = 0x1 << shift;
             }
@@ -838,7 +838,7 @@ impl<const M: u32, const N: u32> From<PxE2<{ M }>> for PxE1<{ N }> {
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sa {
-                    0x_7FFF_FFFF & Self::MASK
+                    0x_7FFF_FFFF & Self::mask()
                 } else {
                     0x1 << (32 - N)
                 }
@@ -851,7 +851,7 @@ impl<const M: u32, const N: u32> From<PxE2<{ M }>> for PxE1<{ N }> {
                 } else {
                     exp_frac32_a = 0;
                 }
-                let mut u_z = regime + (exp_frac32_a & Self::MASK);
+                let mut u_z = regime + (exp_frac32_a & Self::mask());
 
                 if u_z == 0 {
                     u_z = 0x1 << (32 - N);
@@ -913,7 +913,7 @@ impl<const M: u32, const N: u32> From<PxE1<{ M }>> for PxE2<{ N }> {
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sa {
-                    0x_7FFF_FFFF & Self::MASK
+                    0x_7FFF_FFFF & Self::mask()
                 } else {
                     0x1 << (32 - N)
                 }
@@ -921,7 +921,7 @@ impl<const M: u32, const N: u32> From<PxE1<{ M }>> for PxE2<{ N }> {
                 let bit_n_plus_one = ((exp_frac32_a >> (reg_a + 33 - N)) & 0x1) != 0;
                 let bits_more = (exp_frac32_a & (0x_7FFF_FFFF >> (N - reg_a - 2))) != 0;
                 exp_frac32_a >>= reg_a + 2; //2 because of sign and regime terminating bit
-                let mut u_z = regime + (exp_frac32_a & Self::MASK);
+                let mut u_z = regime + (exp_frac32_a & Self::mask());
 
                 if u_z == 0 {
                     u_z = 0x1_u32 << (32 - N);

@@ -144,7 +144,7 @@ impl<const N: u32> PxE2<{ N }> {
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sa {
-                    0x_7FFF_FFFF & Self::MASK
+                    0x_7FFF_FFFF & Self::mask()
                 } else {
                     0x1 << (32 - N)
                 }
@@ -174,14 +174,14 @@ impl<const N: u32> PxE2<{ N }> {
                     }
                 } else {
                     regime = if reg_sa {
-                        regime & Self::MASK
+                        regime & Self::mask()
                     } else {
                         regime << (32 - N)
                     };
                     exp_a = 0;
                     frac_a = 0;
                 }
-                frac_a &= Self::MASK;
+                frac_a &= Self::mask();
 
                 exp_a <<= 28 - reg_a;
                 let mut u_z = Self::pack_to_ui(regime, exp_a as u32, frac_a);
@@ -267,7 +267,7 @@ impl<const N: u32> PxE2<{ N }> {
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sa {
-                    0x_7FFF_FFFF & Self::MASK
+                    0x_7FFF_FFFF & Self::mask()
                 } else {
                     0x1 << (32 - N)
                 }
@@ -297,14 +297,14 @@ impl<const N: u32> PxE2<{ N }> {
                     }
                 } else {
                     regime = if reg_sa {
-                        regime & Self::MASK
+                        regime & Self::mask()
                     } else {
                         regime << (32 - N)
                     };
                     exp_a = 0;
                     frac_a = 0;
                 }
-                frac_a &= Self::MASK;
+                frac_a &= Self::mask();
 
                 exp_a <<= 28 - reg_a;
                 let mut u_z = Self::pack_to_ui(regime, exp_a as u32, frac_a);
@@ -383,7 +383,7 @@ impl<const N: u32> ops::Mul for PxE2<{ N }> {
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sa {
-                    0x_7FFF_FFFF & Self::MASK
+                    0x_7FFF_FFFF & Self::mask()
                 } else {
                     0x1 << (32 - N)
                 }
@@ -399,7 +399,7 @@ impl<const N: u32> ops::Mul for PxE2<{ N }> {
                     if reg_a <= (N - 4) {
                         bit_n_plus_one = ((0x_8000_0000_0000_0000_u64 >> N) & frac64_z) != 0;
                         bits_more = ((0x_7FFF_FFFF_FFFF_FFFF >> N) & frac64_z) != 0;
-                        frac_a &= Self::MASK;
+                        frac_a &= Self::mask();
                     } else {
                         if reg_a == (N - 2) {
                             bit_n_plus_one = (exp_a & 0x2) != 0;
@@ -418,7 +418,7 @@ impl<const N: u32> ops::Mul for PxE2<{ N }> {
                     }
                 } else {
                     regime = if reg_sa {
-                        regime & Self::MASK
+                        regime & Self::mask()
                     } else {
                         regime << (32 - N)
                     };
@@ -501,7 +501,7 @@ impl<const N: u32> ops::Div for PxE2<{ N }> {
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sa {
-                    0x_7FFF_FFFF & Self::MASK
+                    0x_7FFF_FFFF & Self::mask()
                 } else {
                     0x1 << (32 - N)
                 }
@@ -517,7 +517,7 @@ impl<const N: u32> ops::Div for PxE2<{ N }> {
                     if reg_a <= (N - 4) {
                         bit_n_plus_one = ((0x_8000_0000_u32 >> (N - reg_a - 2)) & frac64_z) != 0;
                         bits_more = ((0x_7FFF_FFFF >> (N - reg_a - 2)) & frac64_z) != 0;
-                        frac_a &= Self::MASK;
+                        frac_a &= Self::mask();
                     } else {
                         if reg_a == (N - 2) {
                             bit_n_plus_one = (exp_a & 0x2) != 0;
@@ -539,7 +539,7 @@ impl<const N: u32> ops::Div for PxE2<{ N }> {
                     }
                 } else {
                     regime = if reg_sa {
-                        regime & Self::MASK
+                        regime & Self::mask()
                     } else {
                         regime << (32 - N)
                     };

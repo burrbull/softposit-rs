@@ -101,7 +101,7 @@ impl<const N: u32> From<f64> for PxE1<{ N }> {
 
                 if reg > (N - 2) {
                     if reg_s {
-                        0x_7FFF_FFFF & Self::MASK
+                        0x_7FFF_FFFF & Self::mask()
                     } else {
                         0x1 << (32 - N)
                     }
@@ -170,7 +170,7 @@ impl<const N: u32> From<f64> for PxE1<{ N }> {
 
             if reg > (N - 2) {
                 if reg_s {
-                    0x_7FFF_FFFF & Self::MASK
+                    0x_7FFF_FFFF & Self::mask()
                 } else {
                     0x1 << (32 - N)
                 }
@@ -386,7 +386,7 @@ fn convert_u64_to_px1bits<const N: u32>(a: u64) -> u32 {
         let mut ui_a: u32;
         if k >= (N - 2) {
             //maxpos
-            ui_a = 0x_7FFF_FFFF & PxE1::<{ N }>::MASK;
+            ui_a = 0x_7FFF_FFFF & PxE1::<{ N }>::mask();
         } else if k == (N - 3) {
             //bitNPlusOne-> exp bit //bitLast is zero
             ui_a = 0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k);
@@ -407,7 +407,7 @@ fn convert_u64_to_px1bits<const N: u32>(a: u64) -> u32 {
         } else {
             ui_a = (0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k))
                 | (exp_a << (28 - k))
-                | (((frac64_a >> (k + 36)) as u32) & PxE1::<{ N }>::MASK);
+                | (((frac64_a >> (k + 36)) as u32) & PxE1::<{ N }>::mask());
             mask = 0x_0008_0000_0000_u64 << (k + 32 - N); //bitNPlusOne position
             if ((mask & frac64_a) != 0)
                 && ((((mask - 1) & frac64_a) | ((mask << 1) & frac64_a)) != 0)

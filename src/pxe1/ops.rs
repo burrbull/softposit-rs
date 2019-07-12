@@ -153,7 +153,7 @@ impl<const N: u32> PxE1<{ N }> {
             if reg_len > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_s {
-                    0x_7FFF_FFFF & Self::MASK
+                    0x_7FFF_FFFF & Self::mask()
                 } else {
                     0x1 << (32 - N)
                 }
@@ -166,7 +166,7 @@ impl<const N: u32> PxE1<{ N }> {
                 let frac = if reg_len < N {
                     if reg_len != (N - 2) {
                         bit_n_plus_one = ((0x_8000_0000_0000_0000_u64 >> N) & frac64) != 0;
-                        ((frac64 >> 32) as u32) & Self::MASK
+                        ((frac64 >> 32) as u32) & Self::mask()
                     } else {
                         bit_n_plus_one = exp != 0;
                         exp = 0;
@@ -174,7 +174,7 @@ impl<const N: u32> PxE1<{ N }> {
                     }
                 } else {
                     if reg_s {
-                        regime &= Self::MASK
+                        regime &= Self::mask()
                     } else {
                         regime <<= 32 - N
                     }
@@ -262,7 +262,7 @@ impl<const N: u32> PxE1<{ N }> {
             if reg_len > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_s {
-                    0x_7FFF_FFFF & Self::MASK
+                    0x_7FFF_FFFF & Self::mask()
                 } else {
                     0x1 << (32 - N)
                 }
@@ -275,7 +275,7 @@ impl<const N: u32> PxE1<{ N }> {
                 let frac = if reg_len < N {
                     if reg_len != (N - 2) {
                         bit_n_plus_one = ((0x_8000_0000_0000_0000_u64 >> N) & frac64) != 0;
-                        ((frac64 >> 32) as u32) & Self::MASK
+                        ((frac64 >> 32) as u32) & Self::mask()
                     } else {
                         bit_n_plus_one = exp != 0;
                         exp = 0;
@@ -283,7 +283,7 @@ impl<const N: u32> PxE1<{ N }> {
                     }
                 } else {
                     if reg_s {
-                        regime &= Self::MASK
+                        regime &= Self::mask()
                     } else {
                         regime <<= 32 - N
                     }
@@ -367,7 +367,7 @@ impl<const N: u32> ops::Mul for PxE1<{ N }> {
             if reg_len > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_s {
-                    0x_7FFF_FFFF & Self::MASK
+                    0x_7FFF_FFFF & Self::mask()
                 } else {
                     0x1 << (32 - N)
                 }
@@ -382,7 +382,7 @@ impl<const N: u32> ops::Mul for PxE1<{ N }> {
                     if reg_len != (N - 2) {
                         bit_n_plus_one = ((0x_8000_0000_0000_0000_u64 >> N) & frac64) != 0;
                         bits_more = ((0x_7FFF_FFFF_FFFF_FFFF >> N) & frac64) != 0;
-                        ((frac64 >> 32) as u32) & Self::MASK
+                        ((frac64 >> 32) as u32) & Self::mask()
                     } else {
                         bit_n_plus_one = exp != 0;
                         bits_more = frac64 != 0;
@@ -391,7 +391,7 @@ impl<const N: u32> ops::Mul for PxE1<{ N }> {
                     }
                 } else {
                     regime = if reg_s {
-                        regime & Self::MASK
+                        regime & Self::mask()
                     } else {
                         regime << (32 - N)
                     };
@@ -472,7 +472,7 @@ impl<const N: u32> ops::Div for PxE1<{ N }> {
             if reg_len > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_s {
-                    0x_7FFF_FFFF & Self::MASK
+                    0x_7FFF_FFFF & Self::mask()
                 } else {
                     0x1 << (32 - N)
                 }
@@ -489,7 +489,7 @@ impl<const N: u32> ops::Div for PxE1<{ N }> {
                         bit_n_plus_one =
                             (((0x_8000_0000_u64 >> (N - reg_len - 1)) as u32) & frac64) != 0;
                         bits_more = ((0x_7FFF_FFFF >> (N - reg_len - 1)) & frac64) != 0;
-                        frac = (frac64 >> (reg_len + 1)) & Self::MASK;
+                        frac = (frac64 >> (reg_len + 1)) & Self::mask();
                     } else {
                         bit_n_plus_one = exp != 0;
                         bits_more = frac64 > 0;
@@ -501,7 +501,7 @@ impl<const N: u32> ops::Div for PxE1<{ N }> {
                     }
                 } else {
                     regime = if reg_s {
-                        regime & Self::MASK
+                        regime & Self::mask()
                     } else {
                         regime << (32 - N)
                     };

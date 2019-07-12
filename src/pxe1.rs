@@ -8,7 +8,6 @@ mod ops;
 pub struct PxE1<const N: u32>(i32);
 
 impl<const N: u32> PxE1<{ N }> {
-    pub const SIZE: usize = N as usize;
     pub const ES: usize = 1;
     pub const USEED: usize = 4;
 
@@ -44,7 +43,9 @@ impl<const N: u32> PxE1<{ N }> {
 }
 
 impl<const N: u32> PxE1<{ N }> {
-    pub(crate) const MASK: u32 = (((-0x_8000_0000_i32) >> (N - 1)) as u32);
+    pub(crate) const fn mask() -> u32 {
+        (((-0x_8000_0000_i32) >> (N - 1)) as u32)
+    }
     pub const SIGN_MASK: u32 = 0x_8000_0000;
     pub const REGIME_SIGN_MASK: u32 = 0x_4000_0000;
 
@@ -68,7 +69,7 @@ impl<const N: u32> PxE1<{ N }> {
         let (k, tmp) = Self::separate_bits_tmp(bits);
         (
             k,
-            (tmp >> (Self::SIZE - 1 - Self::ES)) as i32,
+            (tmp >> ((N as usize) - 1 - Self::ES)) as i32,
             (tmp | 0x4000_0000) & 0x7FFF_FFFF,
         )
     }

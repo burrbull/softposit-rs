@@ -203,7 +203,7 @@ impl<const N: u32> PxE2<{ N }> {
             let u_z = if reg_z > (N - 2) {
                 //max or min pos. exp and frac does not matter.
                 if reg_sz {
-                    0x_7FFF_FFFF & Self::MASK
+                    0x_7FFF_FFFF & Self::mask()
                 } else {
                     0x1 << (32 - N)
                 }
@@ -220,7 +220,7 @@ impl<const N: u32> PxE2<{ N }> {
                             ((0x_8000_0000_0000_0000_u64 >> (N - reg_z - 2)) & frac64_z) != 0;
                         bits_more =
                             ((0x_7FFF_FFFF_FFFF_FFFF_u64 >> (N - reg_z - 2)) & frac64_z) != 0;
-                        frac_z &= Self::MASK;
+                        frac_z &= Self::mask();
                     } else {
                         if reg_z == (N - 2) {
                             bit_n_plus_one = (exp_z & 0x2) != 0;
@@ -237,7 +237,7 @@ impl<const N: u32> PxE2<{ N }> {
                     }
                 } else {
                     regime = if reg_sz {
-                        regime & Self::MASK
+                        regime & Self::mask()
                     } else {
                         regime << (32 - N)
                     };
@@ -356,12 +356,12 @@ impl<const N: u32> PxE2<{ N }> {
                 && ((((0x_8000_0000_u32 >> (N - 1)) & u_a) != 0)
                     || (((0x_7FFF_FFFF_u32 >> N) & u_a) != 0))
             {
-                u_a = (u_a & Self::MASK) + (0x_8000_0000_u32 >> (N - 1));
+                u_a = (u_a & Self::mask()) + (0x_8000_0000_u32 >> (N - 1));
             }
             u_a
         };
 
-        Self::from_bits(u_a & Self::MASK)
+        Self::from_bits(u_a & Self::mask())
     }
 
     pub fn round(p_a: Self) -> Self {
