@@ -60,6 +60,12 @@ fn criterion_p16(c: &mut Criterion) {
     c.bench_function("p16_sqrt", |c| c.iter(|| bb(X).sqrt()));
     c.bench_function("p16_round", |c| c.iter(|| bb(Y).round()));
 
+    c.bench_function("p16_exp", |c| c.iter(|| bb(X).exp()));
+    c.bench_function("p16_exp2", |c| c.iter(|| bb(X).exp2()));
+    c.bench_function("p16_ln", |c| c.iter(|| bb(X).ln()));
+    c.bench_function("p16_log2", |c| c.iter(|| bb(X).log2()));
+    c.bench_function("p16_sin_pi", |c| c.iter(|| bb(X).sin_pi()));
+
     c.bench_function("q16_add_product", |c| {
         c.iter(|| {
             let mut q = Q16::PI;

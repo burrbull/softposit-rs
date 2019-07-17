@@ -1,5 +1,4 @@
 use super::P16E1;
-use crate::Q16E1;
 use crate::{MulAddType, WithSign};
 
 const HALF: P16E1 = P16E1::new(0x_3000);
@@ -97,11 +96,11 @@ impl P16E1 {
     }
     #[inline]
     pub fn exp2(self) -> Self {
-        unimplemented!()
+        exp2(self)
     }
     #[inline]
     pub fn ln(self) -> Self {
-        unimplemented!()
+        ln(self)
     }
     #[inline]
     pub fn log(self, _base: Self) -> Self {
@@ -109,7 +108,7 @@ impl P16E1 {
     }
     #[inline]
     pub fn log2(self) -> Self {
-        unimplemented!()
+        log2(self)
     }
     #[inline]
     pub fn log10(self) -> Self {
@@ -193,6 +192,10 @@ impl P16E1 {
     #[inline]
     pub fn atanh(self) -> Self {
         HALF * ((TWO * self) / (Self::ONE - self)).ln_1p()
+    }
+    #[inline]
+    pub fn sin_pi(self) -> Self {
+        sin_pi(self)
     }
 }
 
@@ -662,96 +665,502 @@ fn floor(p_a: P16E1) -> P16E1 {
 }
 
 fn exp(p_a: P16E1) -> P16E1 {
-    // Use names for commonly-used posits.
-    const LARGE: P16E1 = P16E1::new(0x7FFE);
-    const SMALL: P16E1 = P16E1::new(0x0002);
+    let ui_a = p_a.to_bits();
 
-    // If input is NaR, return NaR.
-    if p_a.is_nar() {
-        P16E1::NAR
-    }
-    // If input is large enough that result is maxpos, return maxpos.
-    else if P16E1::new(0x70AE) <= p_a {
-        P16E1::MAX
-    }
-    // If input is negative enough that result is minpos, return minpos.
-    else if p_a <= P16E1::new(-0x_70ae) {
-        P16E1::MIN_POSITIVE
-    }
-    // This range rounds to maxpos/4, the next-to-largest posit16.
-    else if P16E1::new(0x706F) < p_a {
-        LARGE
-    }
-    // This range rounds to minpos*4, the next-to-smallest posit16.
-    else if p_a < P16E1::new(-0x_7067) {
-        SMALL
-    } else {
-        // Scale input by 1/log(2) to trio precision, using the quire.
-        let mut q = Q16E1::init();
+    let mut f = ui_a as u64;
 
-        q += (
-            p_a,
-            (P16E1::new(0x4715), P16E1::new(0x0087), P16E1::new(0x000A)),
-        );
+    // Calculate the exponential for given posit pA
+    if ui_a < 28846 {
+        // result does not round up to maxpos
+        if ui_a < 192 {
+            // small positive values that round to 1
+            return P16E1::ONE;
+        }
 
-        let mut p_n = q.to_posit().round();
-        q -= p_n; // Reduce the argument range.
-        let (t1, t2, t3) = q.into_three_posits();
-
-        // Evaluate 6th-degree polynomial in t using Horner's rule.
-        let mut q = Q16E1::init();
-        q += (t1, P16E1::new(0x00D1));
-        q += (P16E1::new(0x0A20), P16E1::new(0x0F28));
-        let p1 = q.to_posit(); // c6 * t + c5, solo precision
-
-        q.clear();
-        q += (t1, p1);
-        q += (P16E1::new(0x0A60), P16E1::new(0x28B8));
-        let (p1, p2) = q.into_two_posits(); // (...) * t + c4, duo precision
-
-        let mut q = Q16E1::init();
-        q += (t1, (p1, p2));
-        q += (t2, p1);
-        q += (P16E1::new(0x0B80), P16E1::new(0x4E50));
-        let (p1, p2) = q.into_two_posits(); // (...) * t + c3, duo precision
-
-        let mut q = Q16E1::init();
-        q += (t1, (p1, p2));
-        q += (t2, p1);
-        q += (P16E1::new(0x11F0), P16E1::new(0x58C1));
-        let (p1, p2, p3) = q.into_three_posits(); // (...) * t + c2, trio precision
-
-        let mut q = Q16E1::init();
-        q += (t1, (p1, p2, p3));
-        q += (t2, p1);
-        q += (P16E1::new(0x2D78), P16E1::new(0x4816));
-        q += (P16E1::new(0x0180), P16E1::new(0x0180)); // == 0x_0008 * ONE
-        let (p1, p2, p3) = q.into_three_posits(); // c1 term, trio precision
-
-        let mut q = Q16E1::init();
-        q += (t1, (p1, p2, p3));
-        q += (t2, p1);
-        q += (t3, p1);
-        q += P16E1::ONE; // (...) * t + c0, (where c0 = 1).
-        let (p1, p2, p3) = q.into_three_posits(); // polynomial for exp(x), trio precision
-
-        // Convert `p_n` to an integer and use to compute `2` to the power `n`.
-        let mut n = i32::from(p_n);
-
-        n = if n == 26 {
-            0x7FFE
-        } else if n < 0 {
-            ((n & 0x1) | 0x0002) << (12 - ((-n - 1) >> 1))
+        let mut s: i32;
+        if (f & 0x4000) != 0 {
+            // decode regime
+            s = 8;
+            while (f & 0x2000) != 0 {
+                f <<= 1;
+                s += 2;
+            }
         } else {
-            0x7FFF & (((n & 0x1) | 0x7FFC) << (12 - (n >> 1)))
+            s = 6;
+            while (f & 0x2000) == 0 {
+                f <<= 1;
+                s -= 2;
+            }
+        }
+
+        if (f & 0x1000) != 0 {
+            s += 1; // decode exponent
+        }
+        f = (f & 0x0FFF) | 0x1000; // decode fraction
+        f = ((if s < 0 { f >> -s } else { f << s }) * 48_408_813) >> 20;
+        let mut s = f >> 25; // s now stores floor(x)
+        f = poly::exp(f & 0x_01FF_FFFF); // 37 fraction bits of exp(x)
+        let mut bit = (s & 1) << 37; // exponent bit of exp(x)
+        s >>= 1; // regime length of exp(x)
+        f |= ((0x_0100_0000_0000 << s) - 0x_0080_0000_0000) | bit;
+
+        bit = 1_u64 << (24 + s); // location of bit n-plus-1
+        if ((f & bit) != 0) && (((f & (bit - 1)) != 0) || ((f & (bit << 1)) != 0)) {
+            f += bit;
+        }
+        return P16E1::from_bits((f >> (25 + s)) as u16); // return rounded exp(x) as posit
+    } else if ui_a > 36690 {
+        // result does not round up to minpos
+        if ui_a > 65407 {
+            // small negative values that round to 1
+            return P16E1::ONE;
+        }
+
+        let mut s: i32;
+        if (f & 0x4000) != 0 {
+            // decode regime
+            s = 7;
+            while (f & 0x2000) != 0 {
+                f <<= 1;
+                s -= 2;
+            }
+        } else {
+            s = 9;
+            while (f & 0x2000) == 0 {
+                f <<= 1;
+                s += 2;
+            }
+        }
+
+        if (f & 0x1000) != 0 {
+            s -= 1; // decode exponent
+        }
+        f = (f & 0x0FFF) | 0x_01FF_E000; // decode fraction
+        f = if s < 0 {
+            (f >> -s) | (0x_0200_0000 - (1 << (13 + s)))
+        } else {
+            (f << s) & 0x_01ff_ffff
         };
-        p_n = P16E1::new(n as i16);
+        f = (0x_0004_0000_0000_0000 - ((0x_0200_0000 - f) * 48_408_813)) >> 20;
 
-        // Scale the result by that power.
-        let mut q = Q16E1::init();
-        q += (p_n, (p1, p2, p3)); // trio precision; round it and we're done.
+        let mut s = (f >> 25).wrapping_sub(32); // s now stores floor(x)
+        f = poly::exp(f & 0x_01FF_FFFF); // 37 fraction bits of exp(x)
+        let mut bit = (s & 1) << 37; // exponent bit of exp(x)
+        s = ((-1 - (s as i64)) >> 1) as u64;
+        f |= 0x_0040_0000_0000 | bit; // Install regime end bit
 
-        q.to_posit()
+        bit = 1_u64 << (24 + s); // location of bit n-plus-1
+        if ((f & bit) != 0) && (((f & (bit - 1)) != 0) || ((f & (bit << 1)) != 0)) {
+            f += bit;
+        }
+        return P16E1::from_bits((f >> (25 + s)) as u16); // return rounded exp(x) as posit
+    }
+
+    // Section for exception cases
+    if ui_a < 0x8000 {
+        P16E1::MAX // return maxpos
+    } else if ui_a > 0x8000 {
+        P16E1::MIN_POSITIVE // return minpos
+    } else {
+        P16E1::NAR // return NaR
+    }
+}
+
+fn exp2(p_a: P16E1) -> P16E1 {
+    let ui_a = p_a.to_bits();
+
+    let mut f = ui_a as u64;
+
+    // Calculate the exponential for given posit pA
+    if ui_a < 29377 {
+        // result does not round up to maxpos
+
+        if ui_a < 221 {
+            // cases that round down to 1.
+            return P16E1::ONE;
+        }
+
+        let mut s: i32;
+        if (f & 0x4000) != 0 {
+            // decode regime
+            s = 8;
+            while (f & 0x2000) != 0 {
+                f <<= 1;
+                s += 2;
+            }
+        } else {
+            s = 6;
+            while (f & 0x2000) == 0 {
+                f <<= 1;
+                s -= 2;
+            }
+        }
+
+        if (f & 0x1000) != 0 {
+            s += 1; // decode exponent
+        }
+        f = (f & 0x0FFF) | 0x1000; // decode fraction
+        f = if s < 0 { f >> -s } else { f << s };
+        let mut s = f >> 20; // s now stores floor(x)
+        f = poly::exp2(f & 0x_000F_FFFF); // fraction bits of exp2(x)
+        let mut bit = (s & 1) << 26; // exponent bit of exp2(x)
+        s >>= 1; // regime length of exp2(x)
+        f |= ((0x_2000_0000_u64 << s) - 0x_1000_0000) | bit;
+
+        bit = 1_u64 << (13 + s); // location of bit n-plus-1
+        if ((f & bit) != 0) && (((f & (bit - 1)) != 0) || ((f & (bit << 1)) != 0)) {
+            f += bit;
+        }
+        return P16E1::from_bits((f >> (14 + s)) as u16); // return rounded exp2(x) as posit
+    } else if ui_a > 36159 {
+        if ui_a > 65379 {
+            // cases that round up to 1.
+            return P16E1::ONE;
+        }
+
+        let mut s: i32;
+        if (f & 0x4000) != 0 {
+            // decode regime
+            s = 7;
+            while (f & 0x2000) != 0 {
+                f <<= 1;
+                s -= 2;
+            }
+        } else {
+            s = 9;
+            while (f & 0x2000) == 0 {
+                f <<= 1;
+                s += 2;
+            }
+        }
+
+        if (f & 0x1000) != 0 {
+            s -= 1; // decode exponent
+        }
+        f = (f & 0x0FFF) | 0x_01FF_E000; // decode fraction
+        f = if s < 0 {
+            (f >> -s) | (0x_0200_0000 - (1 << (13 + s)))
+        } else {
+            (f << s) & 0x_01ff_ffff
+        };
+        let mut s = (f >> 20).wrapping_sub(32); // s now stores floor(x)
+        f = poly::exp2(f & 0x_000F_FFFF); // fraction bits of exp2(x)
+        let mut bit = (s & 1) << 26; // exponent bit of exp2(x)
+        s = ((-1 - (s as i64)) >> 1) as u64;
+        f |= 0x_0800_0000 | bit; // Install regime end bit
+
+        bit = 1_u64 << (13 + s); // location of bit n-plus-1
+        if ((f & bit) != 0) && (((f & (bit - 1)) != 0) || ((f & (bit << 1)) != 0)) {
+            f += bit;
+        }
+        return P16E1::from_bits((f >> (14 + s)) as u16); // return rounded exp2(x) as posit
+    }
+
+    // Section for exception cases
+    if ui_a < 0x8000 {
+        P16E1::MAX // return maxpos
+    } else if ui_a > 0x8000 {
+        P16E1::MIN_POSITIVE // return minpos
+    } else {
+        P16E1::NAR // return NaR
+    }
+}
+
+fn ln(p_a: P16E1) -> P16E1 {
+    let ui_a = p_a.to_bits();
+
+    let mut f = ui_a as u64;
+
+    if (f > 0x7FFF) || (f == 0) {
+        // if input is 0, or greater than maxpos, return NaR
+        return P16E1::NAR;
+    }
+
+    let mut s: i32;
+    if (f & 0x4000) != 0 {
+        // decode regime
+        s = 0;
+        while (f & 0x2000) != 0 {
+            f <<= 1;
+            s += 2;
+        }
+    } else {
+        s = -2;
+        while (f & 0x2000) == 0 {
+            f <<= 1;
+            s -= 2;
+        }
+    }
+
+    if (f & 0x1000) != 0 {
+        s += 1; // decode exponent
+    }
+    f &= 0x0FFF; // get 12-bit fraction, without hidden bit
+    if f != 0 {
+        f = poly::ln(f); // turn fraction into mantissa of logarithm
+    }
+    f |= ((if s < 0 { 64 + s } else { s }) as u64) << 30;
+
+    f = if s < 0 {
+        0x_0010_0000_0000 - (((0x_0010_0000_0000 - f) * 186_065_280) >> 28)
+    } else {
+        (f * 186_065_279) >> 28
+    };
+
+    let sign = (f & 0x_0008_0000_0000) != 0;
+    if sign {
+        f = 0x_0010_0000_0000 - f; // take absolute value of fixed-point result
+    }
+    if f < 0x_4000_0000 {
+        // turn fixed-point into posit format
+        if f != 0 {
+            s = 34;
+            while (f & 0x_2000_0000) == 0 {
+                f <<= 1;
+                s += 1;
+            }
+            f = (f ^ 0x_6000_0000) | (((1 ^ (s & 1)) as u64) << 29);
+            s >>= 1;
+            let bit = 1_u64 << (s - 1);
+            if ((f & bit) != 0) && (((f & (bit - 1)) != 0) || ((f & (bit << 1)) != 0)) {
+                f += bit;
+            }
+            f >>= s;
+        }
+    } else {
+        s = 0;
+        while f > 0x_7FFF_FFFF {
+            f = (f & 1) | (f >> 1);
+            s += 1;
+        }
+        f &= 0x_3FFF_FFFF;
+        if (s & 1) != 0 {
+            f |= 0x_4000_0000;
+        }
+        s >>= 1;
+        f |= (0x_0002_0000_0000_u64 << s) - 0x_0001_0000_0000;
+        let bit = 0x_0002_0000_u64 << s;
+        if ((f & bit) != 0) && (((f & (bit - 1)) != 0) || ((f & (bit << 1)) != 0)) {
+            f += bit;
+        }
+        f >>= s + 18;
+    }
+    if sign {
+        f = 0x_0001_0000 - f; // restore sign
+    }
+    P16E1::from_bits(f as u16)
+}
+
+fn log2(p_a: P16E1) -> P16E1 {
+    let ui_a = p_a.to_bits();
+
+    let mut f = ui_a as u64;
+
+    if (f > 0x7FFF) || (f == 0) {
+        // if input is 0, or greater than maxpos, return NaR
+        return P16E1::NAR;
+    }
+
+    let mut s: i32;
+    if (f & 0x4000) != 0 {
+        // decode regime
+        s = 0;
+        while (f & 0x2000) != 0 {
+            f <<= 1;
+            s += 2;
+        }
+    } else {
+        s = -2;
+        while (f & 0x2000) == 0 {
+            f <<= 1;
+            s -= 2;
+        }
+    }
+
+    if (f & 0x1000) != 0 {
+        s += 1; // decode exponent
+    }
+    f &= 0x0FFF; // get 12-bit fraction, without hidden bit
+    if f != 0 {
+        f = poly::log2(f); // turn fraction into mantissa of logarithm
+    }
+    f |= ((if s < 0 { 64 + s } else { s }) as u64) << 28;
+    let sign = (f & 0x_0002_0000_0000) != 0;
+    if sign {
+        f = 0x_0004_0000_0000 - f; // take absolute value of fixed-point result
+    }
+    if f < 0x_1000_0000 {
+        // turn fixed-point into posit format
+        if f != 0 {
+            s = 30;
+            while (f & 0x_0800_0000) == 0 {
+                f <<= 1;
+                s += 1;
+            }
+            f = (f ^ 0x_1800_0000) | (((1 ^ (s & 1)) as u64) << 27);
+            s >>= 1;
+            let bit = 1_u64 << (s - 1);
+            if ((f & bit) != 0) && (((f & (bit - 1)) != 0) || ((f & (bit << 1)) != 0)) {
+                f += bit;
+            }
+            f >>= s;
+        }
+    } else {
+        s = 0;
+        while f > 0x_1FFF_FFFF {
+            f = (f & 1) | (f >> 1);
+            s += 1;
+        }
+        f &= 0x_0FFF_FFFF;
+        if (s & 1) != 0 {
+            f |= 0x_1000_0000;
+        }
+        s >>= 1;
+        f |= (0x_8000_0000_u64 << s) - 0x_4000_0000;
+        let bit = 0x8000_u64 << s;
+        if ((f & bit) != 0) && (((f & (bit - 1)) != 0) || ((f & (bit << 1)) != 0)) {
+            f += bit;
+        }
+        f >>= s + 16;
+    }
+    if sign {
+        f = 0x_0001_0000 - f; // restore sign
+    }
+    P16E1::from_bits(f as u16)
+}
+
+fn sin_pi(p_a: P16E1) -> P16E1 {
+    let ui_a = p_a.to_bits();
+
+    let mut f = ui_a as u64;
+
+    let mut sign = f & 0x8000;
+    if sign != 0 {
+        f = 0x10000 - f; // 2's complement if negative
+    }
+    if f > 31743 {
+        // input value is an integer?
+        if f == 0x8000 {
+            return P16E1::NAR; // sinpi(NaR) is NaR
+        } else {
+            return P16E1::ZERO; // sinpi of an integer is zero
+        }
+    }
+    if f == 0 {
+        // sinpi(0) = 0
+        return P16E1::ZERO;
+    }
+    let mut s: i32;
+    if (f & 0x4000) != 0 {
+        // decode regime
+        s = 16;
+        while (f & 0x2000) != 0 {
+            f <<= 1;
+            s += 2;
+        }
+    } else {
+        s = 14;
+        while (f & 0x2000) == 0 {
+            f <<= 1;
+            s -= 2;
+        }
+    }
+    if (f & 0x1000) != 0 {
+        s += 1; // decode exponent
+    }
+    f = (f & 0x0FFF) | 0x1000; // get 12-bit fraction and restore hidden bit
+    f = if s < 0 { f >> -s } else { f << s };
+    f &= 0x_1FFF_FFFF; // fixed-point with 28-bit fraction
+    let mut s = f >> 27; // the quadrant is the multiple of 1/2
+    f &= 0x_07FF_FFFF; // input value modulo 1/2
+    if (s & 2) != 0 {
+        sign ^= 0x8000; // quadrants 2 and 3 flip the sign
+    }
+    if f == 0 {
+        return P16E1::from_bits(if (s & 1) != 0 {
+            (sign as u16) | 0x4000
+        } else {
+            0
+        });
+    }
+    if (s & 1) != 0 {
+        f = 0x_0800_0000 - f;
+    }
+    f = poly::sin_pi(f);
+    s = 1; // convert 28-bit fixed-point to a posit
+    while (f & 0x_0800_0000) == 0 {
+        f <<= 1;
+        s += 1;
+    }
+    let bit = s & 1;
+    s = (s >> 1) + 14 + bit;
+    if bit == 0 {
+        f &= 0x_07FF_FFFF; // encode exponent bit
+    }
+    f |= 0x_1000_0000; // encode regime termination bit
+    let bit = 1_u64 << (s - 1);
+    if ((f & bit) != 0) && (((f & (bit - 1)) != 0) || ((f & (bit << 1)) != 0)) {
+        // round to nearest, tie to even
+        f += bit;
+    }
+    f >>= s;
+    P16E1::from_bits((if sign != 0 { 0x10000 - f } else { f }) as u16)
+}
+
+mod poly {
+    #[inline]
+    pub fn exp(f: u64) -> u64 {
+        let mut s = (f * 7_529) >> 26;
+        s = (f * (20_487 + s)) >> 20;
+        s = (f * (0x_004F_8300 + s)) >> 24;
+        s = (f * (0x_038C_C980 + s)) >> 20;
+        s = (f * (0x_0001_EBFF_C800 + s)) >> 26;
+        ((f * (0x_0002_C5C8_3600 + s)) >> 22) + 2048
+    }
+
+    #[inline]
+    pub fn exp2(f: u64) -> u64 {
+        let mut s = (f * (0x_9BA0_0000 + (f * 491))) >> 34;
+        s = (f * (0x_0013_F840 + s)) >> 20;
+        s = (f * (0x_0071_8A80 + s)) >> 16;
+        s = (f * (0x_1EC0_4000 + s)) >> 21;
+        ((f * (0x_2C5C_8000 + s)) >> 24)
+    }
+
+    #[inline]
+    pub fn ln(f: u64) -> u64 {
+        let z = ((f << 31) + 2) / (f + 8192); // fixed-point divide; discard remainder
+        let zsq = (z * z) >> 30; // fixed-point squaring
+        let mut s = (zsq * 1_584) >> 28;
+        s = (zsq * (26_661 + s)) >> 29;
+        s = (zsq * (302_676 + s)) >> 27;
+        s = (zsq * (16_136_153 + s)) >> 30;
+        (z * (193_635_259 + s)) >> 27
+    }
+
+    #[inline]
+    pub fn log2(f: u64) -> u64 {
+        let z = (f << 29) / (f + 8_192); // fixed-point divide; discard remainder
+        let zsq = (z * z) >> 30; // fixed-point squaring
+        let mut s = (zsq * 1_661) >> 25;
+        s = (zsq * (13_209 + s)) >> 26;
+        s = (zsq * (75_694 + s)) >> 24;
+        s = (zsq * (2_017_019 + s)) >> 24;
+        (z * (96_817_627 + s)) >> 26
+    }
+
+    #[inline]
+    pub fn sin_pi(f: u64) -> u64 {
+        if f < 0x_000A_5801 {
+            return (f * 102_943) >> 15; // linear approximation suffices
+        }
+        let fs = f >> 11;
+        let fsq = (fs * fs) >> 8;
+        let mut s = (fsq * 650) >> 25;
+        s = (fsq * (9_813 - s)) >> 23;
+        s = (fsq * (334_253 - s)) >> 23;
+        s = (fsq * (5_418_741 - s)) >> 22;
+        (fs * (52_707_180 - s)) >> 13
     }
 }
 
@@ -794,11 +1203,73 @@ fn test_exp() {
         let f_a = f64::from(p_a);
         let p = p_a.exp();
         let f = f_a.exp();
-        let exp = P16E1::from(f);
-        if exp.is_zero() || exp.is_nar() {
+        let expected = P16E1::from(f);
+        if expected.is_zero() || expected.is_nar() {
             continue;
         }
-        assert_eq!(p, exp);
+        assert_eq!(p, expected);
+    }
+}
+
+#[test]
+fn test_exp2() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..crate::NTESTS16 {
+        let p_a: P16E1 = rng.gen();
+        let f_a = f64::from(p_a);
+        let p = p_a.exp2();
+        let f = f_a.exp2();
+        let expected = P16E1::from(f);
+        if expected.is_zero() || expected.is_nar() {
+            continue;
+        }
+        assert_eq!(p, expected);
+    }
+}
+
+#[test]
+fn test_ln() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..crate::NTESTS16 {
+        let p_a: P16E1 = rng.gen();
+        let f_a = f64::from(p_a);
+        let p = p_a.ln();
+        let f = f_a.ln();
+        let expected = P16E1::from(f);
+        assert_eq!(p, expected);
+    }
+}
+
+#[test]
+fn test_log2() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..crate::NTESTS16 {
+        let p_a: P16E1 = rng.gen();
+        let f_a = f64::from(p_a);
+        let p = p_a.log2();
+        let f = f_a.log2();
+        let expected = P16E1::from(f);
+        assert_eq!(p, expected);
+    }
+}
+
+#[test]
+fn test_sin_pi() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..crate::NTESTS16 {
+        let p_a: P16E1 = rng.gen();
+        let f_a = f64::from(p_a);
+        let p = p_a.sin_pi();
+        let f = (f_a * core::f64::consts::PI).sin();
+        let expected = P16E1::from(f);
+        if p.is_zero() {
+            continue;
+        }
+        assert_eq!(p, expected);
     }
 }
 

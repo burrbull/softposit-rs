@@ -222,7 +222,11 @@ pub fn pow(x: P32E2, y: P32E2) -> P32E2 {
     } else if x.is_nar() || y.is_nar() {
         P32E2::NAR
     } else if x == ZERO {
-        if -y < ZERO { ZERO } else { P32E2::NAR }
+        if -y < ZERO {
+            ZERO
+        } else {
+            P32E2::NAR
+        }
     } else {
         let p1_23 = P32E2::from(1u32 << 23);
         let yisint = (y == y.round()) || (y.abs() >= p1_23);
