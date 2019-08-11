@@ -281,7 +281,8 @@ impl crate::Polynom<[Self; 4]> for P32E2 {}
 #[cfg(any(feature = "rand", test))]
 impl rand::distributions::Distribution<P32E2> for rand::distributions::Standard {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> P32E2 {
-        let s = rng.gen_range(-0x_7fff_ffff_i32, 0x_7fff_ffff);
-        P32E2::new(s)
+        let s = rng.gen_range(0x_4000_0000_u32, 0x_4800_0000);
+        let s2 = rng.gen_range(0_u32, 4);
+        P32E2::from_bits((P32E2::from_bits(s) - P32E2::ONE).to_bits() ^ s2)
     }
 }

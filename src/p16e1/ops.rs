@@ -47,7 +47,7 @@ impl ops::RemAssign for P16E1 {
 
 impl P16E1 {
     #[inline]
-    fn form_ui(reg_len: u32, regime: u16, exp: i8, frac32: u32) -> u16 {
+    pub(crate) fn form_ui(reg_len: u32, regime: u16, exp: i8, frac32: u32) -> u16 {
         let (bit_n_plus_one, frac_a) = if reg_len != 14 {
             ((0x8000 & frac32) != 0, (frac32 >> 16) as u16)
         } else {
@@ -68,7 +68,7 @@ impl P16E1 {
 
 impl P16E1 {
     #[inline]
-    pub fn sub_mags(mut ui_a: u16, mut ui_b: u16) -> Self {
+    fn sub_mags(mut ui_a: u16, mut ui_b: u16) -> Self {
         //Both ui_a and ui_b are actually the same signs if ui_b inherits sign of sub
         //Make both positive
         let mut sign = Self::sign_ui(ui_a);
@@ -143,7 +143,7 @@ impl P16E1 {
     }
 
     #[inline]
-    pub fn add_mags(mut ui_a: u16, mut ui_b: u16) -> Self {
+    fn add_mags(mut ui_a: u16, mut ui_b: u16) -> Self {
         let sign = Self::sign_ui(ui_a); //sign is always positive.. actually don't have to do this.
         if sign {
             ui_a = ui_a.wrapping_neg();

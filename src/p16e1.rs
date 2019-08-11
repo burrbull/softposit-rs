@@ -276,7 +276,49 @@ impl crate::Polynom<[Self; 4]> for P16E1 {}
 #[cfg(any(feature = "rand", test))]
 impl rand::distributions::Distribution<P16E1> for rand::distributions::Standard {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> P16E1 {
-        let s = rng.gen_range(-0x_7fff_i16, 0x_7fff);
-        P16E1::new(s)
+        P16E1::sub_one(rng.gen_range(0_u32, 0x_1000_0000))
+        /*let s = rng.gen_range(0_u16, 0x_1000) | 0x4000;
+        let s2 = rng.gen_range(0_u16, 4);
+        let b = (P16E1::from_bits(s) - P16E1::ONE).to_bits();
+        P16E1::from_bits(b & 0xfffc | s2)*/
+    }
+}
+
+impl P16E1 {
+    fn sub_one(mut ui_a: u32) -> Self {
+        if ui_a & 0x_ffff_0000 == 0 {
+            return Self::ZERO;
+        }
+ui_a &= 0x_ffff_e000;
+        let mut frac32 = ui_a << 2;
+
+        let mut reg_len = 0;
+        while (frac32 >> 29) == 0 {
+            reg_len += 1;
+            frac32 <<= 2;
+        }
+
+        let ecarry = (0x4000_0000 & frac32) != 0;
+        let mut exp_a = 0;
+        if !ecarry {
+            reg_len += 1;
+            exp_a = 1;
+            frac32 <<= 1;
+        }
+
+        let regime = 0x4000_u16.checked_shr(reg_len).unwrap_or(0);
+
+        let u_z = if reg_len > 14 {
+            0x1
+        } else {
+            //remove hidden bits
+            Self::form_ui(
+                reg_len,
+                regime,
+                exp_a,
+                (frac32 & 0x3FFF_FFFF) >> (reg_len + 1),
+            )
+        };
+        Self::from_bits(u_z)
     }
 }

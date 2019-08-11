@@ -260,7 +260,7 @@ impl crate::Polynom<[Self; 4]> for P8E0 {}
 #[cfg(any(feature = "rand", test))]
 impl rand::distributions::Distribution<P8E0> for rand::distributions::Standard {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> P8E0 {
-        let s = rng.gen_range(-0x_7f_i8, 0x_7f);
-        P8E0::new(s)
+        let s = rng.gen_range(0_u8, 0x_40);
+        P8E0::new(s as i8)
     }
 }
