@@ -65,6 +65,8 @@ fn criterion_p16(c: &mut Criterion) {
     c.bench_function("p16_ln", |c| c.iter(|| bb(X).ln()));
     c.bench_function("p16_log2", |c| c.iter(|| bb(X).log2()));
     c.bench_function("p16_sin_pi", |c| c.iter(|| bb(X).sin_pi()));
+    c.bench_function("p16_cos_pi", |c| c.iter(|| bb(X).cos_pi()));
+    c.bench_function("p16_tan_pi", |c| c.iter(|| bb(X).tan_pi()));
 
     c.bench_function("q16_add_product", |c| {
         c.iter(|| {
