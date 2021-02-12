@@ -1,7 +1,6 @@
 use super::Q16E1;
 use crate::WithSign;
 use crate::P16E1;
-use core::convert::From;
 
 impl From<P16E1> for Q16E1 {
     #[inline]

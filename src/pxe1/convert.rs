@@ -1,6 +1,5 @@
 use super::PxE1;
 use crate::WithSign;
-use core::convert::From;
 use core::f64;
 
 impl<const N: u32> From<PxE1<{ N }>> for f32 {

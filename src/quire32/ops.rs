@@ -1,5 +1,4 @@
 use super::Q32E2;
-#[cfg(feature = "nightly")]
 use crate::PxE2;
 use crate::P32E2;
 use core::ops;

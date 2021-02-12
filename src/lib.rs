@@ -1,6 +1,4 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(feature = "nightly", feature(const_generics))]
-#![cfg_attr(feature = "nightly", feature(const_fn))]
 #![allow(clippy::cast_lossless)]
 #![allow(clippy::float_cmp)]
 #![allow(clippy::many_single_char_names)]
@@ -28,14 +26,10 @@ pub mod quire32;
 pub use self::quire32::Q32E2;
 pub type Q32 = Q32E2;
 
-#[cfg(feature = "nightly")]
 pub mod pxe1;
-#[cfg(feature = "nightly")]
 pub use pxe1::PxE1;
 
-#[cfg(feature = "nightly")]
 pub mod pxe2;
-#[cfg(feature = "nightly")]
 pub use pxe2::PxE2;
 
 mod convert;

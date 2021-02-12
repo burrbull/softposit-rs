@@ -1,8 +1,6 @@
 use crate::WithSign;
-#[cfg(feature = "nightly")]
 use crate::{PxE1, PxE2};
 use crate::{P16E1, P32E2, P8E0};
-use core::convert::From;
 
 fn check_extra_p32_two_bits(
     mut float: f64,
@@ -397,7 +395,6 @@ impl From<P32E2> for P8E0 {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const N: u32> From<P32E2> for PxE2<{ N }> {
     #[inline]
     fn from(p_a: P32E2) -> Self {
@@ -439,7 +436,6 @@ impl<const N: u32> From<P32E2> for PxE2<{ N }> {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const N: u32> From<P16E1> for PxE2<{ N }> {
     #[inline]
     fn from(p_a: P16E1) -> Self {
@@ -513,7 +509,6 @@ impl<const N: u32> From<P16E1> for PxE2<{ N }> {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const N: u32> From<P32E2> for PxE1<{ N }> {
     #[inline]
     fn from(p_a: P32E2) -> Self {
@@ -589,7 +584,6 @@ impl<const N: u32> From<P32E2> for PxE1<{ N }> {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const N: u32> From<P8E0> for PxE1<{ N }> {
     #[inline]
     fn from(p_a: P8E0) -> Self {
@@ -664,7 +658,6 @@ impl<const N: u32> From<P8E0> for PxE1<{ N }> {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const N: u32> From<P8E0> for PxE2<{ N }> {
     #[inline]
     fn from(p_a: P8E0) -> Self {
@@ -733,7 +726,6 @@ impl<const N: u32> From<P8E0> for PxE2<{ N }> {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const N: u32> From<P16E1> for PxE1<{ N }> {
     fn from(p_a: P16E1) -> Self {
         let mut ui_a = (p_a.to_bits() as u32) << 16;
@@ -776,9 +768,7 @@ impl<const N: u32> From<P16E1> for PxE1<{ N }> {
 }
 
 /*
-#[cfg(feature="nightly")]
 pub trait Gate<const GATE: bool>{}
-#[cfg(feature="nightly")]
 impl<const M: u32, const N: u32> From<PxE2<{ M }>> for PxE2<{ N }>
 where
     Self: Gate<{ M != N }>
@@ -790,7 +780,6 @@ where
     }
 }*/
 
-#[cfg(feature = "nightly")]
 impl<const M: u32, const N: u32> From<PxE2<{ M }>> for PxE1<{ N }> {
     #[inline]
     fn from(p_a: PxE2<{ M }>) -> Self {
@@ -866,7 +855,6 @@ impl<const M: u32, const N: u32> From<PxE2<{ M }>> for PxE1<{ N }> {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const M: u32, const N: u32> From<PxE1<{ M }>> for PxE2<{ N }> {
     #[inline]
     fn from(p_a: PxE1<{ M }>) -> Self {
@@ -936,7 +924,6 @@ impl<const M: u32, const N: u32> From<PxE1<{ M }>> for PxE2<{ N }> {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const N: u32> From<PxE2<{ N }>> for P32E2 {
     #[inline]
     fn from(p_a: PxE2<{ N }>) -> Self {
@@ -944,7 +931,6 @@ impl<const N: u32> From<PxE2<{ N }>> for P32E2 {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const N: u32> From<PxE2<{ N }>> for P16E1 {
     #[inline]
     fn from(p_a: PxE2<{ N }>) -> Self {
@@ -952,7 +938,6 @@ impl<const N: u32> From<PxE2<{ N }>> for P16E1 {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const N: u32> From<PxE2<{ N }>> for P8E0 {
     #[inline]
     fn from(p_a: PxE2<{ N }>) -> Self {
@@ -960,7 +945,6 @@ impl<const N: u32> From<PxE2<{ N }>> for P8E0 {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const N: u32> From<PxE1<{ N }>> for P32E2 {
     #[inline]
     fn from(p_a: PxE1<{ N }>) -> Self {
@@ -1008,7 +992,6 @@ impl<const N: u32> From<PxE1<{ N }>> for P32E2 {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const N: u32> From<PxE1<{ N }>> for P16E1 {
     #[inline]
     fn from(p_a: PxE1<{ N }>) -> Self {
@@ -1042,7 +1025,6 @@ impl<const N: u32> From<PxE1<{ N }>> for P16E1 {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const N: u32> From<PxE1<{ N }>> for P8E0 {
     #[inline]
     fn from(p_a: PxE1<{ N }>) -> Self {

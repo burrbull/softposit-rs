@@ -1,6 +1,5 @@
 use super::P32E2;
 use crate::WithSign;
-use core::convert::From;
 use core::f64;
 
 crate::impl_convert!(P32E2);

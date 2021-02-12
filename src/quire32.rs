@@ -1,4 +1,3 @@
-#[cfg(feature = "nightly")]
 use crate::PxE2;
 use crate::P32E2;
 use core::mem;
@@ -128,7 +127,6 @@ impl crate::Quire<P32E2> for Q32E2 {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const N: u32> crate::Quire<PxE2<{ N }>> for Q32E2 {
     type Bits = [u64; 8];
     fn init() -> Self {

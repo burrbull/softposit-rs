@@ -1,7 +1,6 @@
 use super::Q8E0;
 use crate::WithSign;
 use crate::P8E0;
-use core::convert::From;
 
 impl From<P8E0> for Q8E0 {
     #[inline]

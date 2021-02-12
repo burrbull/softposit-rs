@@ -14,7 +14,7 @@ Such types are supported now:
 * P8E0 or P8: 8-bit posit without exponent bits.
 
 Initial suppot of generic types PxE1{N} and PxE2{N}.
-Requires nightly rustc and `nightly` feature to be enabled.
+Requires rust 1.51.
 
 ## Examples
 

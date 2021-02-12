@@ -40,7 +40,6 @@ criterion = "0.2"
 default = []
 std = []
 linalg = ["nalgebra", "alga", "approx", "alga_derive"]
-nightly = []
 
 [[example]]
 name = "inverse"

@@ -271,7 +271,11 @@ pub fn atan2(y: P32E2, x: P32E2) -> P32E2 {
     r = if x == ZERO {
         P32E2::FRAC_PI_2
     } else if y == ZERO {
-        (if x.signum() == -ONE { P32E2::PI } else { ZERO })
+        if x.signum() == -ONE {
+            P32E2::PI
+        } else {
+            ZERO
+        }
     } else {
         mulsign(r, x)
     };
@@ -591,7 +595,7 @@ pub fn asin(d: P32E2) -> P32E2 {
         ONE,
     ]) * x;
 
-    let r = if o { u } else { (P32E2::FRAC_PI_2 - TWO * u) };
+    let r = if o { u } else { P32E2::FRAC_PI_2 - TWO * u };
     mulsign(r, d)
 }
 

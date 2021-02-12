@@ -1,6 +1,5 @@
 use super::P8E0;
 use crate::WithSign;
-use core::convert::From;
 use core::{f32, f64};
 
 crate::impl_convert!(P8E0);

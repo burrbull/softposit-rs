@@ -121,11 +121,11 @@ impl P16E1 {
             frac32 <<= 1;
         }
 
-        let (regime, reg_sa, reg_len) = Self::calculate_regime(k_a);
+        let (regime, reg_s, reg_len) = Self::calculate_regime(k_a);
 
         let u_z = if reg_len > 14 {
             //max or min pos. exp and frac does not matter.
-            if reg_sa {
+            if reg_s {
                 0x7FFF
             } else {
                 0x1

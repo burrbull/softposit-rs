@@ -276,7 +276,7 @@ impl crate::Polynom<[Self; 4]> for P16E1 {}
 #[cfg(any(feature = "rand", test))]
 impl rand::distributions::Distribution<P16E1> for rand::distributions::Standard {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> P16E1 {
-        P16E1::sub_one(rng.gen_range(0_u32, 0x_1000_0000))
+        P16E1::sub_one(rng.gen_range(0_u32, 0x_4_0000))
         /*let s = rng.gen_range(0_u16, 0x_1000) | 0x4000;
         let s2 = rng.gen_range(0_u16, 4);
         let b = (P16E1::from_bits(s) - P16E1::ONE).to_bits();
@@ -284,13 +284,14 @@ impl rand::distributions::Distribution<P16E1> for rand::distributions::Standard 
     }
 }
 
+#[cfg(any(feature = "rand", test))]
 impl P16E1 {
-    fn sub_one(mut ui_a: u32) -> Self {
-        if ui_a & 0x_ffff_0000 == 0 {
+    fn sub_one(ui_a: u32) -> Self {
+        if ui_a & 0x_f_fff8 == 0 {
             return Self::ZERO;
         }
-ui_a &= 0x_ffff_e000;
-        let mut frac32 = ui_a << 2;
+
+        let mut frac32 = ui_a << 12;
 
         let mut reg_len = 0;
         while (frac32 >> 29) == 0 {

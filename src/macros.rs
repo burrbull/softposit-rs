@@ -1136,7 +1136,6 @@ macro_rules! quire_add_sub {
 #[macro_export]
 macro_rules! quire_add_sub_array_x {
     ($posit:ty, $quire:ty, $($i:literal),*) => {$(
-        #[cfg(feature = "nightly")]
         impl<const N: u32> ops::AddAssign<($posit, [$posit; $i])> for $quire {
             #[inline]
             fn add_assign(&mut self, rhs: ($posit, [$posit; $i])) {
@@ -1146,7 +1145,6 @@ macro_rules! quire_add_sub_array_x {
             }
         }
 
-        #[cfg(feature = "nightly")]
         impl<const N: u32> ops::SubAssign<($posit, [$posit; $i])> for $quire {
             #[inline]
             fn sub_assign(&mut self, rhs: ($posit, [$posit; $i])) {
@@ -1161,7 +1159,6 @@ macro_rules! quire_add_sub_array_x {
 #[macro_export]
 macro_rules! quire_add_sub_x {
     ($posit:ty, $quire:ty) => {
-        #[cfg(feature = "nightly")]
         impl<const N: u32> ops::AddAssign<($posit, $posit)> for $quire {
             #[inline]
             fn add_assign(&mut self, rhs: ($posit, $posit)) {
@@ -1171,7 +1168,6 @@ macro_rules! quire_add_sub_x {
             }
         }
 
-        #[cfg(feature = "nightly")]
         impl<const N: u32> ops::AddAssign<($posit, ($posit, $posit))> for $quire {
             #[inline]
             fn add_assign(&mut self, rhs: ($posit, ($posit, $posit))) {
@@ -1180,7 +1176,6 @@ macro_rules! quire_add_sub_x {
             }
         }
 
-        #[cfg(feature = "nightly")]
         impl<const N: u32> ops::AddAssign<($posit, ($posit, $posit, $posit))> for $quire {
             #[inline]
             fn add_assign(&mut self, rhs: ($posit, ($posit, $posit, $posit))) {
@@ -1190,7 +1185,6 @@ macro_rules! quire_add_sub_x {
             }
         }
 
-        #[cfg(feature = "nightly")]
         impl<const N: u32> ops::AddAssign<$posit> for $quire {
             #[inline]
             fn add_assign(&mut self, rhs: $posit) {
@@ -1199,7 +1193,6 @@ macro_rules! quire_add_sub_x {
             }
         }
 
-        #[cfg(feature = "nightly")]
         impl<const N: u32> ops::AddAssign<(($posit, $posit), ($posit, $posit))> for $quire {
             #[inline]
             fn add_assign(&mut self, rhs: (($posit, $posit), ($posit, $posit))) {
@@ -1210,7 +1203,6 @@ macro_rules! quire_add_sub_x {
             }
         }
 
-        #[cfg(feature = "nightly")]
         impl<const N: u32> ops::SubAssign<($posit, $posit)> for $quire {
             #[inline]
             fn sub_assign(&mut self, rhs: ($posit, $posit)) {
@@ -1220,7 +1212,6 @@ macro_rules! quire_add_sub_x {
             }
         }
 
-        #[cfg(feature = "nightly")]
         impl<const N: u32> ops::SubAssign<$posit> for $quire {
             #[inline]
             fn sub_assign(&mut self, rhs: $posit) {
@@ -1229,7 +1220,6 @@ macro_rules! quire_add_sub_x {
             }
         }
 
-        #[cfg(feature = "nightly")]
         impl<const N: u32> ops::SubAssign<($posit, ($posit, $posit))> for $quire {
             #[inline]
             fn sub_assign(&mut self, rhs: ($posit, ($posit, $posit))) {
@@ -1238,7 +1228,6 @@ macro_rules! quire_add_sub_x {
             }
         }
 
-        #[cfg(feature = "nightly")]
         impl<const N: u32> ops::SubAssign<(($posit, $posit), ($posit, $posit))> for $quire {
             #[inline]
             fn sub_assign(&mut self, rhs: (($posit, $posit), ($posit, $posit))) {
