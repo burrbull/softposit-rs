@@ -1,10 +1,9 @@
-use core::mem;
-
 mod convert;
 mod math;
 mod ops;
 
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
 pub struct PxE2<const N: u32>(i32);
 
 impl<const N: u32> PxE2<{ N }> {
@@ -34,11 +33,11 @@ impl<const N: u32> PxE2<{ N }> {
     }
     #[inline]
     pub fn from_bits(v: u32) -> Self {
-        unsafe { mem::transmute(v) }
+        Self(v as _)
     }
     #[inline]
     pub fn to_bits(self) -> u32 {
-        unsafe { mem::transmute(self) }
+        self.0 as _
     }
 }
 

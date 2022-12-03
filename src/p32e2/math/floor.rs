@@ -27,7 +27,7 @@ impl P32E2 {
             } else {
                 0x_4000_0000
             }
-        } else if ui_a <= 0x_4C00_0000 {
+        } else if ui_a < 0x_4C00_0000 {
             // 0 <= |pA| < 2 floor to zero.(if not negative and whole number)
             if sign && (ui_a != 0x_4800_0000) {
                 0x_4C00_0000

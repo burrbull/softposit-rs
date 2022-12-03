@@ -1,5 +1,4 @@
 use crate::Q16E1;
-use core::mem;
 
 mod convert;
 mod math;
@@ -29,6 +28,7 @@ use alga::general::{Additive, Multiplicative};
 #[cfg_attr(feature = "alga", derive(alga_derive::Alga))]
 #[cfg_attr(feature = "alga", alga_traits(Field(Additive, Multiplicative)))]
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
 pub struct P16E1(i16);
 
 impl P16E1 {
@@ -69,11 +69,11 @@ impl P16E1 {
     }
     #[inline]
     pub fn from_bits(v: u16) -> Self {
-        unsafe { mem::transmute(v) }
+        Self(v as _)
     }
     #[inline]
     pub fn to_bits(self) -> u16 {
-        unsafe { mem::transmute(self) }
+        self.0 as _
     }
     #[inline]
     pub fn abs(self) -> Self {

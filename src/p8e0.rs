@@ -1,5 +1,4 @@
 use crate::Q8E0;
-use core::mem;
 
 mod convert;
 mod math;
@@ -29,6 +28,7 @@ use alga::general::{Additive, Multiplicative};
 #[cfg_attr(feature = "alga", derive(alga_derive::Alga))]
 #[cfg_attr(feature = "alga", alga_traits(Field(Additive, Multiplicative)))]
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
 pub struct P8E0(i8);
 
 impl P8E0 {
@@ -69,11 +69,11 @@ impl P8E0 {
     }
     #[inline]
     pub fn from_bits(v: u8) -> Self {
-        unsafe { mem::transmute(v) }
+        Self(v as _)
     }
     #[inline]
     pub fn to_bits(self) -> u8 {
-        unsafe { mem::transmute(self) }
+        self.0 as _
     }
     #[inline]
     pub fn abs(self) -> Self {

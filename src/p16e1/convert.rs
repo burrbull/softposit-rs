@@ -109,7 +109,7 @@ impl From<P16E1> for i32 {
         let mut ui_a = p_a.to_bits(); // Copy of the input.
 
         if ui_a == 0x8000 {
-            return i32::min_value();
+            return 0;
         }
 
         let sign = ui_a > 0x8000; // sign is True if pA > NaR.
@@ -204,7 +204,7 @@ impl From<P16E1> for i64 {
 
         // NaR
         if ui_a == 0x8000 {
-            return i64::min_value();
+            return 0;
         }
 
         let sign = (ui_a & 0x_8000) != 0;
