@@ -1,0 +1,19 @@
+on:
+  push:
+    branches: [ staging, trying, master ]
+  pull_request:
+
+name: Code formatting check
+
+jobs:
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use the latest stable release
+        run: rustup update stable && rustup default stable
+
+      - name: Clippy
+        run: cargo fmt --all -- --check
+
