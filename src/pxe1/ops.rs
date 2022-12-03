@@ -163,14 +163,23 @@ impl<const N: u32> PxE1<{ N }> {
 
                 //regime length is smaller than length of posit
                 let mut bit_n_plus_one = false;
-                let frac = if reg_len < N {
-                    if reg_len != (N - 2) {
-                        bit_n_plus_one = ((0x_8000_0000_0000_0000_u64 >> N) & frac64) != 0;
-                        ((frac64 >> 32) as u32) & Self::mask()
+                let mut bits_more = false;
+
+                let mut frac = (frac64 >> 32) as u32;
+
+                //regime length is smaller than length of posit
+                if reg_len < N {
+                    if reg_len != N - 2 {
+                        bit_n_plus_one = (0x8000_0000_0000_0000_u64 >> N) & frac64 != 0;
                     } else {
-                        bit_n_plus_one = exp != 0;
-                        exp = 0;
-                        0
+                        if frac64 > 0 {
+                            frac = 0;
+                            bits_more = true;
+                        }
+                        if exp != 0 {
+                            bit_n_plus_one = true;
+                            exp = 0;
+                        }
                     }
                 } else {
                     if reg_s {
@@ -179,15 +188,18 @@ impl<const N: u32> PxE1<{ N }> {
                         regime <<= 32 - N
                     }
                     exp = 0;
-                    0
-                };
+                    frac = 0;
+                }
+                frac &= Self::mask();
 
                 exp <<= 29 - reg_len;
                 let mut u_z = Self::pack_to_ui(regime, exp as u32, frac);
 
                 //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
                 if bit_n_plus_one {
-                    let bits_more = ((0x_FFFF_FFFF_FFFF_FFFF_u64 >> N) & frac64) != 0;
+                    if ((0x_FFFF_FFFF_FFFF_FFFF_u64 >> N) & frac64) != 0 {
+                        bits_more = true;
+                    }
                     u_z += (((u_z >> (32 - N)) & 1) | (bits_more as u32)) << (32 - N);
                 }
                 u_z
@@ -270,16 +282,29 @@ impl<const N: u32> PxE1<{ N }> {
                 //remove hidden bits
                 frac64 = (frac64 & 0x_3FFF_FFFF_FFFF_FFFF) >> (reg_len + 1); // 2 bits exp
 
-                //regime length is smaller than length of posit
+                let mut bits_more = false;
                 let mut bit_n_plus_one = false;
-                let frac = if reg_len < N {
-                    if reg_len != (N - 2) {
-                        bit_n_plus_one = ((0x_8000_0000_0000_0000_u64 >> N) & frac64) != 0;
-                        ((frac64 >> 32) as u32) & Self::mask()
+
+                let mut frac = (frac64 >> 32) as u32;
+
+                //regime length is smaller than length of posit
+                if reg_len < N {
+                    if reg_len <= (N - 4) {
+                        bit_n_plus_one = (0x8000_0000_u64 << (32 - N)) & frac64 != 0;
+                        //exp <<= (28-reg_len);
                     } else {
-                        bit_n_plus_one = exp != 0;
-                        exp = 0;
-                        0
+                        if reg_len != N - 2 {
+                            bit_n_plus_one = (0x8000_0000_0000_0000_u64 >> N) & frac64 != 0;
+                        } else {
+                            if frac64 > 0 {
+                                frac = 0;
+                                bits_more = true;
+                            }
+                            if exp != 0 {
+                                bit_n_plus_one = true;
+                                exp = 0;
+                            }
+                        }
                     }
                 } else {
                     if reg_s {
@@ -288,15 +313,18 @@ impl<const N: u32> PxE1<{ N }> {
                         regime <<= 32 - N
                     }
                     exp = 0;
-                    0
-                };
+                    frac = 0;
+                }
+                frac &= Self::mask();
 
                 exp <<= 29 - reg_len;
                 let mut u_z = Self::pack_to_ui(regime, exp as u32, frac);
 
                 //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
                 if bit_n_plus_one {
-                    let bits_more = ((0x_FFFF_FFFF_FFFF_FFFF_u64 >> N) & frac64) != 0;
+                    if ((0x_FFFF_FFFF_FFFF_FFFF_u64 >> N) & frac64) != 0 {
+                        bits_more = true;
+                    }
                     u_z += (((u_z >> (32 - N)) & 1) | (bits_more as u32)) << (32 - N);
                 }
                 u_z

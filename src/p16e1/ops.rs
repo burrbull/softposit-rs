@@ -48,18 +48,26 @@ impl ops::RemAssign for P16E1 {
 impl P16E1 {
     #[inline]
     pub(crate) fn form_ui(reg_len: u32, regime: u16, exp: i8, frac32: u32) -> u16 {
-        let (bit_n_plus_one, frac_a) = if reg_len != 14 {
-            ((0x8000 & frac32) != 0, (frac32 >> 16) as u16)
+        let mut frac = (frac32 >> 16) as u16;
+
+        let mut bits_more = false;
+        let bit_n_plus_one = if reg_len != 14 {
+            (0x8000 & frac32) != 0
         } else {
-            (exp != 0, 0)
+            if frac32 > 0 {
+                frac = 0;
+                bits_more = true;
+            }
+            exp != 0
         };
 
         //sign is always zero
-        let mut u_z = Self::pack_to_ui(regime, reg_len, exp as u16, frac_a);
+        let mut u_z = Self::pack_to_ui(regime, reg_len, exp as u16, frac);
         //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
         if bit_n_plus_one {
-            let bits_more = (frac32 & 0x7FFF) != 0;
-            //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+            if (0x7FFF & frac32) != 0 {
+                bits_more = true;
+            }
             u_z += (u_z & 1) | (bits_more as u16);
         }
         u_z

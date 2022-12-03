@@ -202,26 +202,32 @@ impl P32E2 {
     #[inline]
     fn form_ui(reg_len: u32, regime: u32, mut exp: i32, frac64: u64) -> u32 {
         let mut bit_n_plus_one = false;
-
-        let frac = if reg_len <= 28 {
-            bit_n_plus_one = (0x8000_0000 & frac64) != 0;
+        let mut bits_more = false;
+        let mut frac = (frac64 >> 32) as u32;
+        if reg_len <= 28 {
+            bit_n_plus_one = (0x80000000 & frac64) != 0;
             exp <<= 28 - reg_len;
-            (frac64 >> 32) as u32
         } else {
             if reg_len == 30 {
-                bit_n_plus_one = (exp & 0x2) != 0;
+                bit_n_plus_one = exp & 0x2 != 0;
+                bits_more = exp & 0x1 != 0;
                 exp = 0;
             } else if reg_len == 29 {
-                bit_n_plus_one = (exp & 0x1) != 0;
+                bit_n_plus_one = exp & 0x1 != 0;
                 exp >>= 1; //taken care of by the pack algo
             }
-            0
-        };
+            if frac > 0 {
+                frac = 0;
+                bits_more = true;
+            }
+        }
         //sign is always zero
         let mut u_z = Self::pack_to_ui(regime, exp as u32, frac);
         //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
         if bit_n_plus_one {
-            let bits_more = (0x7FFF_FFFF & frac64) != 0;
+            if 0x7FFF_FFFF & frac64 != 0 {
+                bits_more = true;
+            }
             u_z += (u_z & 1) | (bits_more as u32);
         }
         u_z

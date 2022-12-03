@@ -95,7 +95,7 @@ impl From<&Q16E1> for P16E1 {
                 if (frac64_a << (65 - shift)) != 0 {
                     bits_more = true;
                 }
-            } else if frac_a > 0 {
+            } else if frac64_a > 0 {
                 frac_a = 0;
                 bits_more = true;
             }
