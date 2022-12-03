@@ -16,9 +16,9 @@ impl P32E2 {
         let u_a = if ui_a < 0x_4000_0000 {
             // 0 <= |pA| < 1 floor to zero.(if not negative and whole number)
             if sign && (ui_a != 0x0) {
-                0x0
-            } else {
                 0x_4000_0000
+            } else {
+                0x0
             }
         } else if ui_a < 0x_4800_0000 {
             // 0 <= |pA| < 1 floor to 1.(if not negative and whole number)
