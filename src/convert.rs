@@ -134,7 +134,7 @@ impl From<P16E1> for P8E0 {
 
         let mut exp_frac16_a = 0_u16;
         let mut reg_a = 0_i8;
-        let mut u_z: u8 = if (k_a < -3) || (k_a >= 3) {
+        let mut u_z: u8 = if !(-3..3).contains(&k_a) {
             if k_a < 0 {
                 0x1
             } else {
@@ -1044,7 +1044,7 @@ impl<const N: u32> From<PxE1<{ N }>> for P8E0 {
 
         let mut exp_frac32_a = 0_u32;
         let mut reg_a = 0_i8;
-        let mut u_z: u8 = if (k_a < -3) || (k_a >= 3) {
+        let mut u_z: u8 = if !(-3..3).contains(&k_a) {
             if k_a < 0 {
                 0x1
             } else {

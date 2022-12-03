@@ -42,7 +42,7 @@ impl P32E2 {
     pub const MIN: Self = Self::new(-0x_7FFF_FFFF);
 
     /// Smallest positive normal value (7.523163845_e-37).
-    pub const MIN_POSITIVE: Self = Self::new(0x_1);
+    pub const MIN_POSITIVE: Self = Self::new(0x_0001);
 
     /// Largest finite value (1.329227996_e36).
     pub const MAX: Self = Self::new(0x_7FFF_FFFF);

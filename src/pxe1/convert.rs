@@ -54,7 +54,7 @@ impl<const N: u32> From<f64> for PxE1<{ N }> {
             0x4000_0000
         } else if float == -1. {
             0xC000_0000
-        } else if (float > 1.) || (float < -1.) {
+        } else if !(-1. ..=1.).contains(&float) {
             if sign {
                 //Make negative numbers positive for easier computation
                 float = -float;
@@ -448,11 +448,7 @@ impl<const N: u32> From<i32> for PxE1<{ N }> {
         let mask = 0x80000000_u32;
 
         let sign = a >> 31 != 0;
-        let a = if sign {
-            (-a as u32) & 0xFFFFFFFF
-        } else {
-            a as u32
-        };
+        let a = if sign { -a as u32 } else { a as u32 };
 
         //NaR
         if a == 0x80000000 {
@@ -488,10 +484,8 @@ impl<const N: u32> From<i32> for PxE1<{ N }> {
                 }
             } else if k == (N - 4) {
                 ui_a = (0x7FFFFFFF ^ (0x3FFFFFFF >> k)) | ((exp_a & 0x2) << (27 - k));
-                if exp_a & 0x1 != 0 {
-                    if (((0x80000000_u32 >> (N - 1)) & ui_a) | frac_a) != 0 {
-                        ui_a += 0x80000000_u32 >> (N - 1);
-                    }
+                if exp_a & 0x1 != 0 && (((0x80000000_u32 >> (N - 1)) & ui_a) | frac_a) != 0 {
+                    ui_a += 0x80000000_u32 >> (N - 1);
                 }
             } else if k == (N - 5) {
                 ui_a = (0x7FFFFFFF ^ (0x3FFFFFFF >> k)) | (exp_a << (27 - k));
@@ -507,17 +501,11 @@ impl<const N: u32> From<i32> for PxE1<{ N }> {
                     ((0x7FFFFFFFu32 ^ (0x3FFFFFFF >> k)) | (exp_a << (27 - k)) | frac_a >> (k + 4))
                         & Self::mask();
                 let mask = 0x8 << (k - N); //bitNPlusOne
-                if (mask & frac_a) != 0 {
-                    if (((mask - 1) & frac_a) | ((mask << 1) & frac_a)) != 0 {
-                        ui_a += 0x80000000_u32 >> (N - 1);
-                    }
+                if (mask & frac_a) != 0 && (((mask - 1) & frac_a) | ((mask << 1) & frac_a)) != 0 {
+                    ui_a += 0x80000000_u32 >> (N - 1);
                 }
             }
         }
-        Self::from_bits(if sign {
-            ui_a.wrapping_neg() & 0xFFFFFFFF
-        } else {
-            ui_a
-        })
+        Self::from_bits(if sign { ui_a.wrapping_neg() } else { ui_a })
     }
 }

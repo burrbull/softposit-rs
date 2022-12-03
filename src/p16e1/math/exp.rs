@@ -1,3 +1,5 @@
+use core::cmp::Ordering;
+
 use super::P16E1;
 
 impl P16E1 {
@@ -94,12 +96,10 @@ impl P16E1 {
         }
 
         // Section for exception cases
-        if ui_a < 0x8000 {
-            Self::MAX // return maxpos
-        } else if ui_a > 0x8000 {
-            Self::MIN_POSITIVE // return minpos
-        } else {
-            Self::NAR // return NaR
+        match ui_a.cmp(&0x8000) {
+            Ordering::Less => Self::MAX,             // return maxpos
+            Ordering::Greater => Self::MIN_POSITIVE, // return minpos
+            Ordering::Equal => Self::NAR,            // return NaR
         }
     }
 }

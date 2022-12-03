@@ -104,10 +104,10 @@ impl crate::Quire<P8E0> for Q8E0 {
         Self::from_bits(v)
     }
     fn to_bits(&self) -> Self::Bits {
-        Self::to_bits(&self)
+        Self::to_bits(self)
     }
     fn is_zero(&self) -> bool {
-        Self::is_zero(&self)
+        Self::is_zero(self)
     }
     fn is_nar(&self) -> bool {
         Self::is_nar(self)

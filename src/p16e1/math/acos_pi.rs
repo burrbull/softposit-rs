@@ -10,7 +10,7 @@ impl P16E1 {
             // return NaR unless -1 <= input <= 1
             return Self::NAR;
         }
-        if (f < 165) || (f > 65_307) {
+        if !(165..=65_307).contains(&f) {
             // return 1/2 for inputs near 0
             return Self::from_bits(0x3000);
         }

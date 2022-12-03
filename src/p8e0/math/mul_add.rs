@@ -1,3 +1,5 @@
+use core::cmp::Ordering;
+
 use super::P8E0;
 use crate::{MulAddType, WithSign};
 
@@ -61,58 +63,62 @@ fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8E0 {
         let mut frac16_c = (frac_c as u16) << 7;
         let mut shift_right = k_a - k_c;
 
-        if shift_right < 0 {
-            // |ui_c| > |Prod|
-            if shift_right <= -15 {
-                bits_more = true;
-                frac16_z = 0;
-                shift_right = 0;
-            } else if (frac16_z << (16 + shift_right)/*&0xFFFF*/) != 0 {
-                bits_more = true;
-            }
-            if sign_z == sign_c {
-                frac16_z = frac16_c + (frac16_z >> -shift_right);
-            } else {
-                //different signs
-                frac16_z = frac16_c - (frac16_z >> -shift_right);
-                sign_z = sign_c;
-                if bits_more {
-                    frac16_z -= 1;
+        match shift_right.cmp(&0) {
+            Ordering::Less => {
+                // |ui_c| > |Prod|
+                if shift_right <= -15 {
+                    bits_more = true;
+                    frac16_z = 0;
+                    shift_right = 0;
+                } else if (frac16_z << (16 + shift_right)/*&0xFFFF*/) != 0 {
+                    bits_more = true;
                 }
+                if sign_z == sign_c {
+                    frac16_z = frac16_c + (frac16_z >> -shift_right);
+                } else {
+                    //different signs
+                    frac16_z = frac16_c - (frac16_z >> -shift_right);
+                    sign_z = sign_c;
+                    if bits_more {
+                        frac16_z -= 1;
+                    }
+                }
+                k_z = k_c;
             }
-            k_z = k_c;
-        } else if shift_right > 0 {
-            // |ui_c| < |Prod|
+            Ordering::Greater => {
+                // |ui_c| < |Prod|
 
-            if shift_right >= 15 {
-                bits_more = true;
-                frac16_c = 0;
-                shift_right = 0;
-            } else if (frac16_c << (16 - shift_right)/*&0xFFFF*/) != 0 {
-                bits_more = true;
-            }
-            if sign_z == sign_c {
-                frac16_z += frac16_c >> shift_right;
-            } else {
-                frac16_z -= frac16_c >> shift_right;
-                if bits_more {
-                    frac16_z -= 1;
+                if shift_right >= 15 {
+                    bits_more = true;
+                    frac16_c = 0;
+                    shift_right = 0;
+                } else if (frac16_c << (16 - shift_right)/*&0xFFFF*/) != 0 {
+                    bits_more = true;
                 }
+                if sign_z == sign_c {
+                    frac16_z += frac16_c >> shift_right;
+                } else {
+                    frac16_z -= frac16_c >> shift_right;
+                    if bits_more {
+                        frac16_z -= 1;
+                    }
+                }
+                k_z = k_a;
             }
-            k_z = k_a;
-        } else {
-            if (frac16_c == frac16_z) && (sign_z != sign_c) {
-                //check if same number
-                return P8E0::ZERO;
-            } else if sign_z == sign_c {
-                frac16_z += frac16_c;
-            } else if frac16_z < frac16_c {
-                frac16_z = frac16_c - frac16_z;
-                sign_z = sign_c;
-            } else {
-                frac16_z -= frac16_c;
+            Ordering::Equal => {
+                if (frac16_c == frac16_z) && (sign_z != sign_c) {
+                    //check if same number
+                    return P8E0::ZERO;
+                } else if sign_z == sign_c {
+                    frac16_z += frac16_c;
+                } else if frac16_z < frac16_c {
+                    frac16_z = frac16_c - frac16_z;
+                    sign_z = sign_c;
+                } else {
+                    frac16_z -= frac16_c;
+                }
+                k_z = k_a; // actually can be k_c too, no diff
             }
-            k_z = k_a; // actually can be k_c too, no diff
         }
 
         let rcarry = (0x8000 & frac16_z) != 0; //first left bit
