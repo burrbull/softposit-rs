@@ -111,7 +111,7 @@ impl From<f64> for P8E0 {
         } else if (float >= -0.015_625) && sign {
             //-minpos
             0xFF
-        } else if (float > 1.) || (float < -1.) {
+        } else if !(-1. ..=1.).contains(&float) {
             if sign {
                 //Make negative numbers positive for easier computation
                 float = -float;

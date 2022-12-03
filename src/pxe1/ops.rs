@@ -292,18 +292,16 @@ impl<const N: u32> PxE1<{ N }> {
                     if reg_len <= (N - 4) {
                         bit_n_plus_one = (0x8000_0000_u64 << (32 - N)) & frac64 != 0;
                         //exp <<= (28-reg_len);
+                    } else if reg_len != N - 2 {
+                        bit_n_plus_one = (0x8000_0000_0000_0000_u64 >> N) & frac64 != 0;
                     } else {
-                        if reg_len != N - 2 {
-                            bit_n_plus_one = (0x8000_0000_0000_0000_u64 >> N) & frac64 != 0;
-                        } else {
-                            if frac64 > 0 {
-                                frac = 0;
-                                bits_more = true;
-                            }
-                            if exp != 0 {
-                                bit_n_plus_one = true;
-                                exp = 0;
-                            }
+                        if frac64 > 0 {
+                            frac = 0;
+                            bits_more = true;
+                        }
+                        if exp != 0 {
+                            bit_n_plus_one = true;
+                            exp = 0;
                         }
                     }
                 } else {

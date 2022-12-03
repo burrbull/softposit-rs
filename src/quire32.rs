@@ -105,10 +105,10 @@ impl crate::Quire<P32E2> for Q32E2 {
         Self::from_bits(v)
     }
     fn to_bits(&self) -> Self::Bits {
-        Self::to_bits(&self)
+        Self::to_bits(self)
     }
     fn is_zero(&self) -> bool {
-        Self::is_zero(&self)
+        Self::is_zero(self)
     }
     fn is_nar(&self) -> bool {
         Self::is_nar(self)
@@ -142,10 +142,10 @@ impl<const N: u32> crate::Quire<PxE2<{ N }>> for Q32E2 {
         Self::from_bits(v)
     }
     fn to_bits(&self) -> Self::Bits {
-        Self::to_bits(&self)
+        Self::to_bits(self)
     }
     fn is_zero(&self) -> bool {
-        Self::is_zero(&self)
+        Self::is_zero(self)
     }
     fn is_nar(&self) -> bool {
         Self::is_nar(self)

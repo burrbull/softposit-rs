@@ -37,13 +37,13 @@ impl P16E1 {
     pub const USEED: usize = 4;
 
     /// Machine epsilon (2.44140625e-4).
-    pub const EPSILON: Self = Self::new(0x_100);
+    pub const EPSILON: Self = Self::new(0x_0100);
 
     /// Smallest finite value (-268435456).
     pub const MIN: Self = Self::new(-0x_7FFF);
 
     /// Smallest positive normal value (3.725290298_e-9).
-    pub const MIN_POSITIVE: Self = Self::new(0x_1);
+    pub const MIN_POSITIVE: Self = Self::new(0x_0001);
 
     /// Largest finite value (268435456).
     pub const MAX: Self = Self::new(0x_7FFF);

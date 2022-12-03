@@ -54,7 +54,7 @@ impl<const N: u32> From<f64> for PxE2<{ N }> {
             0x4000_0000
         } else if float == -1. {
             0xC000_0000
-        } else if (float > 1.) || (float < -1.) {
+        } else if !(-1. ..=1.).contains(&float) {
             if sign {
                 //Make negative numbers positive for easier computation
                 float = -float;

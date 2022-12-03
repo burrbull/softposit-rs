@@ -37,13 +37,13 @@ impl P8E0 {
     pub const USEED: usize = 2;
 
     /// Machine epsilon (3.125e-2).
-    pub const EPSILON: Self = Self::new(0x_2);
+    pub const EPSILON: Self = Self::new(0x_0002);
 
     /// Smallest finite value (-64).
     pub const MIN: Self = Self::new(-0x_7F);
 
     /// Smallest positive normal value (0.015625).
-    pub const MIN_POSITIVE: Self = Self::new(0x_1);
+    pub const MIN_POSITIVE: Self = Self::new(0x_0001);
 
     /// Largest finite value (64).
     pub const MAX: Self = Self::new(0x_7F);

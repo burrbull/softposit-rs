@@ -1,5 +1,6 @@
 use super::P32E2;
 use crate::WithSign;
+use core::cmp::Ordering;
 use core::f64;
 
 crate::impl_convert!(P32E2);
@@ -43,7 +44,7 @@ impl From<f64> for P32E2 {
         } else if (float >= -7.523_163_845_262_64_e-37) && sign {
             //-minpos
             0xFFFF_FFFF
-        } else if (float > 1.) || (float < -1.) {
+        } else if !(-1. ..=1.).contains(&float) {
             if sign {
                 //Make negative numbers positive for easier computation
                 float = -float;
@@ -319,13 +320,10 @@ impl From<P32E2> for u64 {
         let ui_a = p_a.to_bits();
 
         //NaR
-        if ui_a == 0x8000_0000 {
-            0x8000_0000_0000_0000
-        //negative
-        } else if ui_a > 0x8000_0000 {
-            0
-        } else {
-            convert_p32bits_to_u64(ui_a)
+        match ui_a.cmp(&0x8000_0000) {
+            Ordering::Equal => 0x8000_0000_0000_0000,
+            Ordering::Greater => 0,
+            Ordering::Less => convert_p32bits_to_u64(ui_a),
         }
     }
 }
@@ -344,28 +342,28 @@ fn convert_p32bits_to_u64(ui_a: u32) -> u64 {
 
         let mut i_z: u64 = (((bits as u64) | 0x1000_0000) & 0x1FFF_FFFF) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
 
-        if scale < 62 {
-            let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
+        match scale.cmp(&62) {
+            Ordering::Less => {
+                let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
 
-            let bit_last = i_z & mask; // Extract the bit, without shifting it.
-            mask >>= 1;
-            let mut tmp = i_z & mask;
-            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-            i_z ^= tmp; // Erase the bit, if it was set.
-            tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
-            i_z ^= tmp; // Erase those bits, if any were set.
+                let bit_last = i_z & mask; // Extract the bit, without shifting it.
+                mask >>= 1;
+                let mut tmp = i_z & mask;
+                let bit_n_plus_one = tmp != 0; // "True" if nonzero.
+                i_z ^= tmp; // Erase the bit, if it was set.
+                tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
+                i_z ^= tmp; // Erase those bits, if any were set.
 
-            if bit_n_plus_one {
-                // logic for round to nearest, tie to even
-                if (bit_last | tmp) != 0 {
-                    i_z += mask << 1;
+                if bit_n_plus_one {
+                    // logic for round to nearest, tie to even
+                    if (bit_last | tmp) != 0 {
+                        i_z += mask << 1;
+                    }
                 }
+                i_z >> (62 - scale) // Right-justify the integer.
             }
-            i_z >> (62 - scale) // Right-justify the integer.
-        } else if scale > 62 {
-            i_z << (scale - 62)
-        } else {
-            i_z
+            Ordering::Greater => i_z << (scale - 62),
+            Ordering::Equal => i_z,
         }
     }
 }

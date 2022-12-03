@@ -333,7 +333,7 @@ impl From<f64> for P16E1 {
         } else if (float >= -3.725_290_298_461_914_e-9) && sign {
             //-minpos
             0xFFFF
-        } else if (float > 1.) || (float < -1.) {
+        } else if !(-1. ..=1.).contains(&float) {
             if sign {
                 //Make negative numbers positive for easier computation
                 float = -float;

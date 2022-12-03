@@ -278,7 +278,7 @@ macro_rules! impl_num_traits {
             }
         }
 
-        use crate::MathConsts;
+        use $crate::MathConsts;
         impl num_traits::FloatConst for $posit {
             fn E() -> Self {
                 MathConsts::E
