@@ -1083,8 +1083,8 @@ impl<const N: u32> From<PxE1<{ N }>> for P8E0 {
     }
 }
 
-#[cfg(feature = "alga")]
-crate::impl_subset_into!(
+#[cfg(feature = "simba")]
+crate::macros::simba::impl_subset_into!(
     u8 as P8E0, P16E1, P32E2;
     u16 as P8E0, P16E1, P32E2;
     u32 as P8E0, P16E1, P32E2;

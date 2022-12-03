@@ -2,8 +2,8 @@ use super::Q8E0;
 use crate::P8E0;
 use core::ops;
 
-crate::quire_add_sub!(P8E0, Q8E0);
-crate::quire_add_sub_array!(P8E0, Q8E0, 1, 2, 3, 4);
+crate::macros::quire_add_sub!(P8E0, Q8E0);
+crate::macros::quire_add_sub_array!(P8E0, Q8E0, 1, 2, 3, 4);
 
 pub(super) fn fdp(q: &mut Q8E0, mut ui_a: u8, mut ui_b: u8, plus: bool) {
     let uq_z1 = q.to_bits();

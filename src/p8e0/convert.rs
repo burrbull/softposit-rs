@@ -2,7 +2,7 @@ use super::P8E0;
 use crate::WithSign;
 use core::{f32, f64};
 
-crate::impl_convert!(P8E0);
+crate::macros::impl_convert!(P8E0);
 
 fn check_extra_two_bits_p8(
     mut float: f64,

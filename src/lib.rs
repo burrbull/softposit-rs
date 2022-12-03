@@ -35,7 +35,7 @@ pub use pxe2::PxE2;
 mod convert;
 use convert::convert_fraction_p32;
 
-mod macros;
+pub(crate) mod macros;
 
 pub mod polynom;
 pub use polynom::Polynom;

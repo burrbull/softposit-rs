@@ -1,4 +1,3 @@
-#[macro_export]
 macro_rules! impl_num_traits {
     ($posit:ty) => {
         impl num_traits::Zero for $posit {
@@ -340,563 +339,8 @@ macro_rules! impl_num_traits {
         }
     };
 }
+pub(crate) use impl_num_traits;
 
-#[cfg(feature = "alga")]
-#[macro_export]
-macro_rules! impl_lattice(
-    ($($T:ident),*) => {$(
-        impl alga::general::MeetSemilattice for $T {
-            #[inline]
-            fn meet(&self, other: &Self) -> Self {
-                if *self <= *other {
-                    *self
-                }
-                else {
-                    *other
-                }
-            }
-        }
-
-        impl alga::general::JoinSemilattice for $T {
-            #[inline]
-            fn join(&self, other: &Self) -> Self {
-                if *self >= *other {
-                    *self
-                }
-                else {
-                    *other
-                }
-            }
-        }
-
-        impl alga::general::Lattice for $T {
-            #[inline]
-            fn meet_join(&self, other: &Self) -> (Self, Self) {
-                if *self >= *other {
-                    (*other, *self)
-                }
-                else {
-                    (*self, *other)
-                }
-            }
-        }
-    )*}
-);
-
-#[cfg(feature = "approx")]
-#[macro_export]
-macro_rules! impl_ulps_eq {
-    ($T:ident, $U:ident) => {
-        impl approx::UlpsEq for $T {
-            #[inline]
-            fn default_max_ulps() -> u32 {
-                4
-            }
-
-            #[inline]
-            fn ulps_eq(&self, other: &$T, epsilon: $T, max_ulps: u32) -> bool {
-                // For when the numbers are really close together
-                if $T::abs_diff_eq(self, other, epsilon) {
-                    return true;
-                }
-
-                // Trivial negative sign check
-                if self.signum() != other.signum() {
-                    return false;
-                }
-
-                // ULPS difference comparison
-                let int_self: $U = unsafe { core::mem::transmute(*self) };
-                let int_other: $U = unsafe { core::mem::transmute(*other) };
-
-                $U::abs(int_self - int_other) <= max_ulps as $U
-            }
-        }
-    };
-}
-
-#[cfg(feature = "approx")]
-#[macro_export]
-macro_rules! impl_signed_abs_diff_eq {
-    ($T:ident, $default_epsilon:expr) => {
-        impl approx::AbsDiffEq for $T {
-            type Epsilon = $T;
-
-            #[inline]
-            fn default_epsilon() -> $T {
-                $default_epsilon
-            }
-
-            #[inline]
-            fn abs_diff_eq(&self, other: &$T, epsilon: $T) -> bool {
-                $T::abs(*self - *other) <= epsilon
-            }
-        }
-    };
-}
-
-#[cfg(feature = "approx")]
-#[macro_export]
-macro_rules! impl_relative_eq {
-    ($T:ident, $U:ident) => {
-        impl approx::RelativeEq for $T {
-            #[inline]
-            fn default_max_relative() -> $T {
-                $T::EPSILON
-            }
-
-            #[inline]
-            fn relative_eq(&self, other: &$T, epsilon: $T, max_relative: $T) -> bool {
-                // Handle same infinities
-                if self == other {
-                    return true;
-                }
-
-                // Handle remaining infinities
-                if $T::is_infinite(*self) || $T::is_infinite(*other) {
-                    return false;
-                }
-
-                let abs_diff = $T::abs(*self - *other);
-
-                // For when the numbers are really close together
-                if abs_diff <= epsilon {
-                    return true;
-                }
-
-                let abs_self = $T::abs(*self);
-                let abs_other = $T::abs(*other);
-
-                let largest = if abs_other > abs_self {
-                    abs_other
-                } else {
-                    abs_self
-                };
-
-                // Use a relative difference comparison
-                abs_diff <= largest * max_relative
-            }
-        }
-    };
-}
-
-#[cfg(feature = "alga")]
-#[macro_export]
-macro_rules! impl_real {
-    ($T:ty) => {
-        impl alga::general::RealField for $T {
-            #[inline]
-            fn is_sign_positive(self) -> bool {
-                Self::is_sign_positive(self)
-            }
-
-            #[inline]
-            fn is_sign_negative(self) -> bool {
-                Self::is_sign_negative(self)
-            }
-
-            #[inline]
-            fn max(self, other: Self) -> Self {
-                core::cmp::Ord::max(self, other)
-            }
-
-            #[inline]
-            fn min(self, other: Self) -> Self {
-                core::cmp::Ord::min(self, other)
-            }
-
-            #[inline]
-            fn atan2(self, other: Self) -> Self {
-                Self::atan2(self, other)
-            }
-
-            /// Archimedes' constant.
-            #[inline]
-            fn pi() -> Self {
-                MathConsts::PI
-            }
-
-            /// 2.0 * pi.
-            #[inline]
-            fn two_pi() -> Self {
-                <Self as MathConsts>::PI + <Self as MathConsts>::PI
-            }
-
-            /// pi / 2.0.
-            #[inline]
-            fn frac_pi_2() -> Self {
-                MathConsts::FRAC_PI_2
-            }
-
-            /// pi / 3.0.
-            #[inline]
-            fn frac_pi_3() -> Self {
-                MathConsts::FRAC_PI_3
-            }
-
-            /// pi / 4.0.
-            #[inline]
-            fn frac_pi_4() -> Self {
-                MathConsts::FRAC_PI_4
-            }
-
-            /// pi / 6.0.
-            #[inline]
-            fn frac_pi_6() -> Self {
-                MathConsts::FRAC_PI_6
-            }
-
-            /// pi / 8.0.
-            #[inline]
-            fn frac_pi_8() -> Self {
-                MathConsts::FRAC_PI_8
-            }
-
-            /// 1.0 / pi.
-            #[inline]
-            fn frac_1_pi() -> Self {
-                MathConsts::FRAC_1_PI
-            }
-
-            /// 2.0 / pi.
-            #[inline]
-            fn frac_2_pi() -> Self {
-                MathConsts::FRAC_2_PI
-            }
-
-            /// 2.0 / sqrt(pi).
-            #[inline]
-            fn frac_2_sqrt_pi() -> Self {
-                MathConsts::FRAC_2_SQRT_PI
-            }
-
-            /// Euler's number.
-            #[inline]
-            fn e() -> Self {
-                MathConsts::E
-            }
-
-            /// log2(e).
-            #[inline]
-            fn log2_e() -> Self {
-                MathConsts::LOG2_E
-            }
-
-            /// log10(e).
-            #[inline]
-            fn log10_e() -> Self {
-                MathConsts::LOG10_E
-            }
-
-            /// ln(2.0).
-            #[inline]
-            fn ln_2() -> Self {
-                MathConsts::LN_2
-            }
-
-            /// ln(10.0).
-            #[inline]
-            fn ln_10() -> Self {
-                MathConsts::LN_10
-            }
-        }
-    };
-}
-
-#[cfg(feature = "alga")]
-#[macro_export]
-macro_rules! impl_complex {
-    ($T:ty) => {
-        impl alga::general::ComplexField for $T {
-            type RealField = $T;
-
-            #[inline]
-            fn from_real(re: Self::RealField) -> Self {
-                re
-            }
-
-            #[inline]
-            fn real(self) -> Self::RealField {
-                self
-            }
-
-            #[inline]
-            fn imaginary(self) -> Self::RealField {
-                Self::ZERO
-            }
-
-            #[inline]
-            fn norm1(self) -> Self::RealField {
-                Self::abs(self)
-            }
-
-            #[inline]
-            fn modulus(self) -> Self::RealField {
-                Self::abs(self)
-            }
-
-            #[inline]
-            fn modulus_squared(self) -> Self::RealField {
-                self * self
-            }
-
-            #[inline]
-            fn argument(self) -> Self::RealField {
-                if self >= Self::ZERO {
-                    Self::ZERO
-                } else {
-                    MathConsts::PI
-                }
-            }
-
-            #[inline]
-            fn to_exp(self) -> (Self, Self) {
-                if self >= Self::ZERO {
-                    (self, Self::ONE)
-                } else {
-                    (-self, -Self::ONE)
-                }
-            }
-
-            #[inline]
-            fn recip(self) -> Self {
-                Self::recip(self)
-            }
-
-            #[inline]
-            fn conjugate(self) -> Self {
-                self
-            }
-
-            #[inline]
-            fn scale(self, factor: Self::RealField) -> Self {
-                self * factor
-            }
-
-            #[inline]
-            fn unscale(self, factor: Self::RealField) -> Self {
-                self / factor
-            }
-
-            #[inline]
-            fn floor(self) -> Self {
-                Self::floor(self)
-            }
-
-            #[inline]
-            fn ceil(self) -> Self {
-                Self::ceil(self)
-            }
-
-            #[inline]
-            fn round(self) -> Self {
-                Self::round(self)
-            }
-
-            #[inline]
-            fn trunc(self) -> Self {
-                Self::trunc(self)
-            }
-
-            #[inline]
-            fn fract(self) -> Self {
-                Self::fract(self)
-            }
-
-            #[inline]
-            fn abs(self) -> Self {
-                Self::abs(self)
-            }
-
-            #[inline]
-            fn signum(self) -> Self {
-                Self::signum(self)
-            }
-
-            #[inline]
-            fn mul_add(self, a: Self, b: Self) -> Self {
-                Self::mul_add(self, a, b)
-            }
-
-            #[inline]
-            fn powi(self, n: i32) -> Self {
-                Self::powi(self, n)
-            }
-
-            #[inline]
-            fn powf(self, n: Self) -> Self {
-                Self::powf(self, n)
-            }
-
-            #[inline]
-            fn powc(self, n: Self) -> Self {
-                // Same as powf.
-                Self::powf(self, n)
-            }
-
-            #[inline]
-            fn sqrt(self) -> Self {
-                Self::sqrt(self)
-            }
-
-            #[inline]
-            fn try_sqrt(self) -> Option<Self> {
-                if self >= Self::ZERO {
-                    Some(Self::sqrt(self))
-                } else {
-                    None
-                }
-            }
-
-            #[inline]
-            fn exp(self) -> Self {
-                Self::exp(self)
-            }
-
-            #[inline]
-            fn exp2(self) -> Self {
-                Self::exp2(self)
-            }
-
-            #[inline]
-            fn exp_m1(self) -> Self {
-                Self::exp_m1(self)
-            }
-
-            #[inline]
-            fn ln_1p(self) -> Self {
-                Self::ln_1p(self)
-            }
-
-            #[inline]
-            fn ln(self) -> Self {
-                Self::ln(self)
-            }
-
-            #[inline]
-            fn log(self, base: Self) -> Self {
-                Self::log(self, base)
-            }
-
-            #[inline]
-            fn log2(self) -> Self {
-                Self::log2(self)
-            }
-
-            #[inline]
-            fn log10(self) -> Self {
-                Self::log10(self)
-            }
-
-            #[inline]
-            fn cbrt(self) -> Self {
-                Self::cbrt(self)
-            }
-
-            #[inline]
-            fn hypot(self, other: Self) -> Self::RealField {
-                Self::hypot(self, other)
-            }
-
-            #[inline]
-            fn sin(self) -> Self {
-                Self::sin(self)
-            }
-
-            #[inline]
-            fn cos(self) -> Self {
-                Self::cos(self)
-            }
-
-            #[inline]
-            fn tan(self) -> Self {
-                Self::tan(self)
-            }
-
-            #[inline]
-            fn asin(self) -> Self {
-                Self::asin(self)
-            }
-
-            #[inline]
-            fn acos(self) -> Self {
-                Self::acos(self)
-            }
-
-            #[inline]
-            fn atan(self) -> Self {
-                Self::atan(self)
-            }
-
-            #[inline]
-            fn sin_cos(self) -> (Self, Self) {
-                Self::sin_cos(self)
-            }
-
-            #[inline]
-            fn sinh(self) -> Self {
-                Self::sinh(self)
-            }
-
-            #[inline]
-            fn cosh(self) -> Self {
-                Self::cosh(self)
-            }
-
-            #[inline]
-            fn tanh(self) -> Self {
-                Self::tanh(self)
-            }
-
-            #[inline]
-            fn asinh(self) -> Self {
-                Self::asinh(self)
-            }
-
-            #[inline]
-            fn acosh(self) -> Self {
-                Self::acosh(self)
-            }
-
-            #[inline]
-            fn atanh(self) -> Self {
-                Self::atanh(self)
-            }
-
-            #[inline]
-            fn is_finite(&self) -> bool {
-                Self::is_finite(*self)
-            }
-        }
-    };
-}
-
-#[cfg(feature = "alga")]
-#[macro_export]
-macro_rules! impl_subset_into(
-    ($($subset: ty as $( $superset: ty),+ );* $(;)*) => {
-        $($(
-        impl alga::general::SubsetOf<$superset> for $subset {
-            #[inline]
-            fn to_superset(&self) -> $superset {
-                (*self).into()
-            }
-
-            #[inline]
-            unsafe fn from_superset_unchecked(element: &$superset) -> $subset {
-                (*element).into()
-            }
-
-            #[inline]
-            fn is_in_subset(_: &$superset) -> bool {
-                true
-            }
-        }
-        )+)*
-    }
-);
-
-#[macro_export]
 macro_rules! impl_convert {
     ($posit:ty) => {
         impl From<i8> for $posit {
@@ -984,49 +428,8 @@ macro_rules! impl_convert {
         }
     };
 }
+pub(crate) use impl_convert;
 
-#[cfg(feature = "alga")]
-#[macro_export]
-macro_rules! impl_alga {
-    ($posit:ty) => {
-        impl alga::general::AbstractMagma<alga::general::Additive> for $posit {
-            fn operate(&self, rhs: &Self) -> Self {
-                (*self) + (*rhs)
-            }
-        }
-        impl alga::general::AbstractMagma<alga::general::Multiplicative> for $posit {
-            fn operate(&self, rhs: &Self) -> Self {
-                (*self) * (*rhs)
-            }
-        }
-
-        impl alga::general::TwoSidedInverse<alga::general::Additive> for $posit {
-            fn two_sided_inverse(&self) -> Self {
-                -(*self)
-            }
-        }
-
-        impl alga::general::TwoSidedInverse<alga::general::Multiplicative> for $posit {
-            fn two_sided_inverse(&self) -> Self {
-                (*self).recip()
-            }
-        }
-
-        impl alga::general::Identity<alga::general::Additive> for $posit {
-            fn identity() -> Self {
-                Self::ZERO
-            }
-        }
-
-        impl alga::general::Identity<alga::general::Multiplicative> for $posit {
-            fn identity() -> Self {
-                Self::ONE
-            }
-        }
-    };
-}
-
-#[macro_export]
 macro_rules! quire_add_sub_array {
     ($posit:ty, $quire:ty, $($i:literal),*) => {$(
         impl ops::AddAssign<($posit, [$posit; $i])> for $quire {
@@ -1048,8 +451,8 @@ macro_rules! quire_add_sub_array {
         }
     )*}
 }
+pub(crate) use quire_add_sub_array;
 
-#[macro_export]
 macro_rules! quire_add_sub {
     ($posit:ty, $quire:ty) => {
         impl ops::AddAssign<($posit, $posit)> for $quire {
@@ -1132,8 +535,8 @@ macro_rules! quire_add_sub {
         }
     };
 }
+pub(crate) use quire_add_sub;
 
-#[macro_export]
 macro_rules! quire_add_sub_array_x {
     ($posit:ty, $quire:ty, $($i:literal),*) => {$(
         impl<const N: u32> ops::AddAssign<($posit, [$posit; $i])> for $quire {
@@ -1155,8 +558,8 @@ macro_rules! quire_add_sub_array_x {
         }
     )*}
 }
+pub(crate) use quire_add_sub_array_x;
 
-#[macro_export]
 macro_rules! quire_add_sub_x {
     ($posit:ty, $quire:ty) => {
         impl<const N: u32> ops::AddAssign<($posit, $posit)> for $quire {
@@ -1238,4 +641,587 @@ macro_rules! quire_add_sub_x {
             }
         }
     };
+}
+pub(crate) use quire_add_sub_x;
+
+#[cfg(feature = "simba")]
+pub mod simba {
+    macro_rules! impl_real {
+        ($T:ty) => {
+            impl simba::scalar::RealField for $T {
+                #[inline]
+                fn is_sign_positive(&self) -> bool {
+                    Self::is_sign_positive(*self)
+                }
+
+                #[inline]
+                fn is_sign_negative(&self) -> bool {
+                    Self::is_sign_negative(*self)
+                }
+
+                #[inline]
+                fn copysign(self, sign: Self) -> Self {
+                    Self::copysign(self, sign)
+                }
+
+                #[inline]
+                fn max(self, other: Self) -> Self {
+                    core::cmp::Ord::max(self, other)
+                }
+
+                #[inline]
+                fn min(self, other: Self) -> Self {
+                    core::cmp::Ord::min(self, other)
+                }
+
+                #[inline]
+                fn clamp(self, min: Self, max: Self) -> Self {
+                    Self::clamp(self, min, max)
+                }
+
+                #[inline]
+                fn atan2(self, other: Self) -> Self {
+                    Self::atan2(self, other)
+                }
+
+                #[inline]
+                fn min_value() -> Option<Self> {
+                    Some(Self::MIN)
+                }
+
+                #[inline]
+                fn max_value() -> Option<Self> {
+                    Some(Self::MAX)
+                }
+
+                /// Archimedes' constant.
+                #[inline]
+                fn pi() -> Self {
+                    MathConsts::PI
+                }
+
+                /// 2.0 * pi.
+                #[inline]
+                fn two_pi() -> Self {
+                    <Self as MathConsts>::PI + <Self as MathConsts>::PI
+                }
+
+                /// pi / 2.0.
+                #[inline]
+                fn frac_pi_2() -> Self {
+                    MathConsts::FRAC_PI_2
+                }
+
+                /// pi / 3.0.
+                #[inline]
+                fn frac_pi_3() -> Self {
+                    MathConsts::FRAC_PI_3
+                }
+
+                /// pi / 4.0.
+                #[inline]
+                fn frac_pi_4() -> Self {
+                    MathConsts::FRAC_PI_4
+                }
+
+                /// pi / 6.0.
+                #[inline]
+                fn frac_pi_6() -> Self {
+                    MathConsts::FRAC_PI_6
+                }
+
+                /// pi / 8.0.
+                #[inline]
+                fn frac_pi_8() -> Self {
+                    MathConsts::FRAC_PI_8
+                }
+
+                /// 1.0 / pi.
+                #[inline]
+                fn frac_1_pi() -> Self {
+                    MathConsts::FRAC_1_PI
+                }
+
+                /// 2.0 / pi.
+                #[inline]
+                fn frac_2_pi() -> Self {
+                    MathConsts::FRAC_2_PI
+                }
+
+                /// 2.0 / sqrt(pi).
+                #[inline]
+                fn frac_2_sqrt_pi() -> Self {
+                    MathConsts::FRAC_2_SQRT_PI
+                }
+
+                /// Euler's number.
+                #[inline]
+                fn e() -> Self {
+                    MathConsts::E
+                }
+
+                /// log2(e).
+                #[inline]
+                fn log2_e() -> Self {
+                    MathConsts::LOG2_E
+                }
+
+                /// log10(e).
+                #[inline]
+                fn log10_e() -> Self {
+                    MathConsts::LOG10_E
+                }
+
+                /// ln(2.0).
+                #[inline]
+                fn ln_2() -> Self {
+                    MathConsts::LN_2
+                }
+
+                /// ln(10.0).
+                #[inline]
+                fn ln_10() -> Self {
+                    MathConsts::LN_10
+                }
+            }
+        };
+    }
+    pub(crate) use impl_real;
+
+    macro_rules! impl_complex {
+        ($T:ty) => {
+            impl simba::scalar::ComplexField for $T {
+                type RealField = $T;
+
+                #[inline]
+                fn from_real(re: Self::RealField) -> Self {
+                    re
+                }
+
+                #[inline]
+                fn real(self) -> Self::RealField {
+                    self
+                }
+
+                #[inline]
+                fn imaginary(self) -> Self::RealField {
+                    Self::ZERO
+                }
+
+                #[inline]
+                fn norm1(self) -> Self::RealField {
+                    Self::abs(self)
+                }
+
+                #[inline]
+                fn modulus(self) -> Self::RealField {
+                    Self::abs(self)
+                }
+
+                #[inline]
+                fn modulus_squared(self) -> Self::RealField {
+                    self * self
+                }
+
+                #[inline]
+                fn argument(self) -> Self::RealField {
+                    if self >= Self::ZERO {
+                        Self::ZERO
+                    } else {
+                        MathConsts::PI
+                    }
+                }
+
+                #[inline]
+                fn to_exp(self) -> (Self, Self) {
+                    if self >= Self::ZERO {
+                        (self, Self::ONE)
+                    } else {
+                        (-self, -Self::ONE)
+                    }
+                }
+
+                #[inline]
+                fn recip(self) -> Self {
+                    Self::recip(self)
+                }
+
+                #[inline]
+                fn conjugate(self) -> Self {
+                    self
+                }
+
+                #[inline]
+                fn scale(self, factor: Self::RealField) -> Self {
+                    self * factor
+                }
+
+                #[inline]
+                fn unscale(self, factor: Self::RealField) -> Self {
+                    self / factor
+                }
+
+                #[inline]
+                fn floor(self) -> Self {
+                    Self::floor(self)
+                }
+
+                #[inline]
+                fn ceil(self) -> Self {
+                    Self::ceil(self)
+                }
+
+                #[inline]
+                fn round(self) -> Self {
+                    Self::round(self)
+                }
+
+                #[inline]
+                fn trunc(self) -> Self {
+                    Self::trunc(self)
+                }
+
+                #[inline]
+                fn fract(self) -> Self {
+                    Self::fract(self)
+                }
+
+                #[inline]
+                fn abs(self) -> Self {
+                    Self::abs(self)
+                }
+
+                #[inline]
+                fn signum(self) -> Self {
+                    Self::signum(self)
+                }
+
+                #[inline]
+                fn mul_add(self, a: Self, b: Self) -> Self {
+                    Self::mul_add(self, a, b)
+                }
+
+                #[inline]
+                fn powi(self, n: i32) -> Self {
+                    Self::powi(self, n)
+                }
+
+                #[inline]
+                fn powf(self, n: Self) -> Self {
+                    Self::powf(self, n)
+                }
+
+                #[inline]
+                fn powc(self, n: Self) -> Self {
+                    // Same as powf.
+                    Self::powf(self, n)
+                }
+
+                #[inline]
+                fn sqrt(self) -> Self {
+                    Self::sqrt(self)
+                }
+
+                #[inline]
+                fn try_sqrt(self) -> Option<Self> {
+                    if self >= Self::ZERO {
+                        Some(Self::sqrt(self))
+                    } else {
+                        None
+                    }
+                }
+
+                #[inline]
+                fn exp(self) -> Self {
+                    Self::exp(self)
+                }
+
+                #[inline]
+                fn exp2(self) -> Self {
+                    Self::exp2(self)
+                }
+
+                #[inline]
+                fn exp_m1(self) -> Self {
+                    Self::exp_m1(self)
+                }
+
+                #[inline]
+                fn ln_1p(self) -> Self {
+                    Self::ln_1p(self)
+                }
+
+                #[inline]
+                fn ln(self) -> Self {
+                    Self::ln(self)
+                }
+
+                #[inline]
+                fn log(self, base: Self) -> Self {
+                    Self::log(self, base)
+                }
+
+                #[inline]
+                fn log2(self) -> Self {
+                    Self::log2(self)
+                }
+
+                #[inline]
+                fn log10(self) -> Self {
+                    Self::log10(self)
+                }
+
+                #[inline]
+                fn cbrt(self) -> Self {
+                    Self::cbrt(self)
+                }
+
+                #[inline]
+                fn hypot(self, other: Self) -> Self::RealField {
+                    Self::hypot(self, other)
+                }
+
+                #[inline]
+                fn sin(self) -> Self {
+                    Self::sin(self)
+                }
+
+                #[inline]
+                fn cos(self) -> Self {
+                    Self::cos(self)
+                }
+
+                #[inline]
+                fn tan(self) -> Self {
+                    Self::tan(self)
+                }
+
+                #[inline]
+                fn asin(self) -> Self {
+                    Self::asin(self)
+                }
+
+                #[inline]
+                fn acos(self) -> Self {
+                    Self::acos(self)
+                }
+
+                #[inline]
+                fn atan(self) -> Self {
+                    Self::atan(self)
+                }
+
+                #[inline]
+                fn sin_cos(self) -> (Self, Self) {
+                    Self::sin_cos(self)
+                }
+
+                #[inline]
+                fn sinh(self) -> Self {
+                    Self::sinh(self)
+                }
+
+                #[inline]
+                fn cosh(self) -> Self {
+                    Self::cosh(self)
+                }
+
+                #[inline]
+                fn tanh(self) -> Self {
+                    Self::tanh(self)
+                }
+
+                #[inline]
+                fn asinh(self) -> Self {
+                    Self::asinh(self)
+                }
+
+                #[inline]
+                fn acosh(self) -> Self {
+                    Self::acosh(self)
+                }
+
+                #[inline]
+                fn atanh(self) -> Self {
+                    Self::atanh(self)
+                }
+
+                #[inline]
+                fn is_finite(&self) -> bool {
+                    Self::is_finite(*self)
+                }
+            }
+        };
+    }
+    pub(crate) use impl_complex;
+
+    macro_rules! impl_primitive_simd_value_for_scalar(
+        ($($t: ty),*) => {$(
+            impl simba::simd::PrimitiveSimdValue for $t {}
+            impl simba::simd::SimdValue for $t {
+                type Element = $t;
+                type SimdBool = bool;
+
+                #[inline(always)]
+                fn lanes() -> usize {
+                    1
+                }
+
+                #[inline(always)]
+                fn splat(val: Self::Element) -> Self {
+                    val
+                }
+
+                #[inline(always)]
+                fn extract(&self, _: usize) -> Self::Element {
+                    *self
+                }
+
+                #[inline(always)]
+                unsafe fn extract_unchecked(&self, _: usize) -> Self::Element {
+                    *self
+                }
+
+                #[inline(always)]
+                fn replace(&mut self, _: usize, val: Self::Element) {
+                    *self = val
+                }
+
+                #[inline(always)]
+                unsafe fn replace_unchecked(&mut self, _: usize, val: Self::Element) {
+                    *self = val
+                }
+
+                #[inline(always)]
+                fn select(self, cond: Self::SimdBool, other: Self) -> Self {
+                    if cond {
+                        self
+                    } else {
+                        other
+                    }
+                }
+            }
+        )*}
+    );
+    pub(crate) use impl_primitive_simd_value_for_scalar;
+
+    macro_rules! impl_subset_into(
+    ($($subset: ty as $( $superset: ty),+ );* $(;)*) => {
+        $($(
+            impl simba::scalar::SubsetOf<$superset> for $subset {
+                #[inline]
+                fn to_superset(&self) -> $superset {
+                    (*self).into()
+                }
+
+                #[inline]
+                fn from_superset_unchecked(element: &$superset) -> $subset {
+                    (*element).into()
+                }
+
+                #[inline]
+                fn is_in_subset(_: &$superset) -> bool {
+                    true
+                }
+            }
+        )+)*
+    });
+    pub(crate) use impl_subset_into;
+}
+
+#[cfg(feature = "approx")]
+pub mod approx {
+    macro_rules! impl_ulps_eq {
+        ($T:ident, $U:ident) => {
+            impl approx::UlpsEq for $T {
+                #[inline]
+                fn default_max_ulps() -> u32 {
+                    4
+                }
+
+                #[inline]
+                fn ulps_eq(&self, other: &$T, epsilon: $T, max_ulps: u32) -> bool {
+                    // For when the numbers are really close together
+                    if $T::abs_diff_eq(self, other, epsilon) {
+                        return true;
+                    }
+
+                    // Trivial negative sign check
+                    if self.signum() != other.signum() {
+                        return false;
+                    }
+
+                    // ULPS difference comparison
+                    let int_self: $U = unsafe { core::mem::transmute(*self) };
+                    let int_other: $U = unsafe { core::mem::transmute(*other) };
+
+                    $U::abs(int_self - int_other) <= max_ulps as $U
+                }
+            }
+        };
+    }
+    pub(crate) use impl_ulps_eq;
+
+    macro_rules! impl_signed_abs_diff_eq {
+        ($T:ident, $default_epsilon:expr) => {
+            impl approx::AbsDiffEq for $T {
+                type Epsilon = $T;
+
+                #[inline]
+                fn default_epsilon() -> $T {
+                    $default_epsilon
+                }
+
+                #[inline]
+                fn abs_diff_eq(&self, other: &$T, epsilon: $T) -> bool {
+                    $T::abs(*self - *other) <= epsilon
+                }
+            }
+        };
+    }
+    pub(crate) use impl_signed_abs_diff_eq;
+
+    macro_rules! impl_relative_eq {
+        ($T:ident, $U:ident) => {
+            impl approx::RelativeEq for $T {
+                #[inline]
+                fn default_max_relative() -> $T {
+                    $T::EPSILON
+                }
+
+                #[inline]
+                fn relative_eq(&self, other: &$T, epsilon: $T, max_relative: $T) -> bool {
+                    // Handle same infinities
+                    if self == other {
+                        return true;
+                    }
+
+                    // Handle remaining infinities
+                    if $T::is_infinite(*self) || $T::is_infinite(*other) {
+                        return false;
+                    }
+
+                    let abs_diff = $T::abs(*self - *other);
+
+                    // For when the numbers are really close together
+                    if abs_diff <= epsilon {
+                        return true;
+                    }
+
+                    let abs_self = $T::abs(*self);
+                    let abs_other = $T::abs(*other);
+
+                    let largest = if abs_other > abs_self {
+                        abs_other
+                    } else {
+                        abs_self
+                    };
+
+                    // Use a relative difference comparison
+                    abs_diff <= largest * max_relative
+                }
+            }
+        };
+    }
+    pub(crate) use impl_relative_eq;
 }

@@ -3,7 +3,7 @@ use crate::WithSign;
 use core::cmp::Ordering;
 use core::f64;
 
-crate::impl_convert!(P32E2);
+crate::macros::impl_convert!(P32E2);
 
 impl From<f32> for P32E2 {
     fn from(float: f32) -> Self {
