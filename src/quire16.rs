@@ -1,11 +1,11 @@
 use crate::P16E1;
-use core::mem;
 
 mod convert;
 mod math;
 mod ops;
 
 #[derive(Clone, Debug)]
+#[repr(transparent)]
 pub struct Q16E1(i128);
 
 impl Q16E1 {
@@ -25,12 +25,12 @@ impl Q16E1 {
 
     #[inline]
     pub fn from_bits(v: u128) -> Self {
-        unsafe { mem::transmute(v) }
+        Self(v as _)
     }
 
     #[inline]
     pub fn to_bits(&self) -> u128 {
-        unsafe { mem::transmute(self.clone()) }
+        self.0 as _
     }
 
     #[inline]

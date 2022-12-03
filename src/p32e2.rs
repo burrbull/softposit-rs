@@ -1,5 +1,3 @@
-use core::mem;
-
 mod convert;
 mod math;
 mod ops;
@@ -28,6 +26,7 @@ use alga::general::{Additive, Multiplicative};
 #[cfg_attr(feature = "alga", derive(alga_derive::Alga))]
 #[cfg_attr(feature = "alga", alga_traits(Field(Additive, Multiplicative)))]
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
 pub struct P32E2(i32);
 
 impl P32E2 {
@@ -68,11 +67,11 @@ impl P32E2 {
     }
     #[inline]
     pub fn from_bits(v: u32) -> Self {
-        unsafe { mem::transmute(v) }
+        Self(v as _)
     }
     #[inline]
     pub fn to_bits(self) -> u32 {
-        unsafe { mem::transmute(self) }
+        self.0 as _
     }
     #[inline]
     pub fn abs(self) -> Self {

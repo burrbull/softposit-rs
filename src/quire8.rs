@@ -1,11 +1,11 @@
 use crate::P8E0;
-use core::mem;
 
 mod convert;
 mod math;
 mod ops;
 
 #[derive(Clone, Debug)]
+#[repr(transparent)]
 pub struct Q8E0(i32);
 
 impl Q8E0 {
@@ -25,12 +25,12 @@ impl Q8E0 {
 
     #[inline]
     pub fn from_bits(v: u32) -> Self {
-        unsafe { mem::transmute(v) }
+        Self(v as _)
     }
 
     #[inline]
     pub fn to_bits(&self) -> u32 {
-        unsafe { mem::transmute(self.clone()) }
+        self.0 as _
     }
 
     #[inline]
