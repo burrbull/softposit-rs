@@ -917,7 +917,7 @@ fn test_p_p(fun_p: fn(P32E2) -> P32E2, fun_f: fn(f64) -> f64, mn: i32, mx: i32, 
     let mut inc_answer = P32E2::ZERO;
     let mut inc_correct = P32E2::ZERO;
     for i in 0..NTESTS {
-        let n_a = rng.gen_range(mn, mx);
+        let n_a = rng.gen_range(mn..mx);
         let p_a = P32E2::new(n_a);
         let f_a = f64::from(p_a);
         let answer = fun_p(p_a);
@@ -967,8 +967,8 @@ fn test_pp_p(
     let mut inc_answer = P32E2::ZERO;
     let mut inc_correct = P32E2::ZERO;
     for i in 0..NTESTS {
-        let n_a = rng.gen_range(mn, mx);
-        let n_b = rng.gen_range(mn, mx);
+        let n_a = rng.gen_range(mn..mx);
+        let n_b = rng.gen_range(mn..mx);
         let p_a = P32E2::new(n_a);
         let p_b = P32E2::new(n_b);
         let f_a = f64::from(p_a);

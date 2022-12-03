@@ -13,14 +13,14 @@ Such types are supported now:
 * P16E1 or P16: 16-bit posit with ES=1;
 * P8E0 or P8: 8-bit posit without exponent bits.
 
-Initial suppot of generic types PxE1{N} and PxE2{N}.
+Initial support of generic types PxE1{N} and PxE2{N}.
 Requires rust 1.51.
 
 ## Examples
 
 ### Convert from f64, Add
 
-```
+```rust
 use softposit::P32;
 
 fn main() {
@@ -37,7 +37,7 @@ Each Posit type has correspondent Quire type (Q32, Q16, Q8).
 These types support `AddAssign` and `SubAssign` operations.
 For example:
 
-```
+```rust
 use softposit::{P32, Q32};
 
 // c == 12.3*0.4 - 6.3*8.4 == -48;
@@ -60,7 +60,7 @@ For complex computations use `num::Complex` type.
 You can also use matrix operations, defined in [nalgebra](https://crates.io/crates/nalgebra) crate
 by using `linalg` feature:
 
-```
+```rust
 use softposit::P32;
 
 use nalgebra::{Dynamic, Matrix, VecStorage};
@@ -81,13 +81,13 @@ fn main() {
 }
 ```
 
-```
+```sh
 cargo build --features="linalg,rand"
 ```
 
 ## Benchmarking
 
-```
+```sh
 cargo bench
 ```
 

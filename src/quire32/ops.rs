@@ -3,11 +3,11 @@ use crate::PxE2;
 use crate::P32E2;
 use core::ops;
 
-crate::quire_add_sub!(P32E2, Q32E2);
-crate::quire_add_sub_array!(P32E2, Q32E2, 1, 2, 3, 4);
+crate::macros::quire_add_sub!(P32E2, Q32E2);
+crate::macros::quire_add_sub_array!(P32E2, Q32E2, 1, 2, 3, 4);
 
-crate::quire_add_sub_x!(PxE2<{ N }>, Q32E2);
-crate::quire_add_sub_array_x!(PxE2<{ N }>, Q32E2, 1, 2, 3, 4);
+crate::macros::quire_add_sub_x!(PxE2<{ N }>, Q32E2);
+crate::macros::quire_add_sub_array_x!(PxE2<{ N }>, Q32E2, 1, 2, 3, 4);
 
 pub(super) fn fdp(q: &mut Q32E2, mut ui_a: u32, mut ui_b: u32, plus: bool) {
     let u_z1 = q.to_bits();

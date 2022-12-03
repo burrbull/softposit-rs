@@ -3,30 +3,26 @@ use crate::Q8E0;
 mod convert;
 mod math;
 mod ops;
-crate::impl_num_traits!(P8E0);
+crate::macros::impl_num_traits!(P8E0);
 #[cfg(feature = "approx")]
-crate::impl_ulps_eq!(P8E0, i8);
-#[cfg(feature = "approx")]
-use approx::AbsDiffEq;
-#[cfg(feature = "approx")]
-crate::impl_signed_abs_diff_eq!(P8E0, P8E0::ZERO);
-//crate::impl_signed_abs_diff_eq!(P8E0, P8E0::EPSILON);
-#[cfg(feature = "approx")]
-crate::impl_relative_eq!(P8E0, i8);
+mod impl_approx {
+    use super::*;
+    use approx::AbsDiffEq;
+    crate::macros::approx::impl_ulps_eq!(P8E0, i8);
+    crate::macros::approx::impl_signed_abs_diff_eq!(P8E0, P8E0::ZERO);
+    //crate::impl_signed_abs_diff_eq!(P8E0, P8E0::EPSILON);
+    crate::macros::approx::impl_relative_eq!(P8E0, i8);
+}
 
-#[cfg(feature = "alga")]
-crate::impl_lattice!(P8E0);
-#[cfg(feature = "alga")]
-crate::impl_real!(P8E0);
-#[cfg(feature = "alga")]
-crate::impl_complex!(P8E0);
-#[cfg(feature = "alga")]
-crate::impl_alga!(P8E0);
-#[cfg(feature = "alga")]
-use alga::general::{Additive, Multiplicative};
+#[cfg(feature = "simba")]
+mod impl_simba {
+    pub use super::*;
+    crate::macros::simba::impl_real!(P8E0);
+    crate::macros::simba::impl_complex!(P8E0);
+    crate::macros::simba::impl_primitive_simd_value_for_scalar!(P8E0);
+    impl simba::scalar::Field for P8E0 {}
+}
 
-#[cfg_attr(feature = "alga", derive(alga_derive::Alga))]
-#[cfg_attr(feature = "alga", alga_traits(Field(Additive, Multiplicative)))]
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct P8E0(i8);
@@ -106,6 +102,17 @@ impl P8E0 {
     #[inline]
     pub fn is_normal(self) -> bool {
         !self.is_nar()
+    }
+    #[inline]
+    pub fn clamp(mut self, min: Self, max: Self) -> Self {
+        assert!(min <= max);
+        if self < min {
+            self = min;
+        }
+        if self > max {
+            self = max;
+        }
+        self
     }
     #[inline]
     pub fn classify(self) -> core::num::FpCategory {
@@ -260,7 +267,7 @@ impl crate::Polynom<[Self; 4]> for P8E0 {}
 #[cfg(any(feature = "rand", test))]
 impl rand::distributions::Distribution<P8E0> for rand::distributions::Standard {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> P8E0 {
-        let s = rng.gen_range(0_u8, 0x_40);
+        let s = rng.gen_range(0_u8..0x_40);
         P8E0::new(s as i8)
     }
 }

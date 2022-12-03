@@ -1,30 +1,26 @@
 mod convert;
 mod math;
 mod ops;
-crate::impl_num_traits!(P32E2);
+crate::macros::impl_num_traits!(P32E2);
 #[cfg(feature = "approx")]
-crate::impl_ulps_eq!(P32E2, i32);
-#[cfg(feature = "approx")]
-use approx::AbsDiffEq;
-#[cfg(feature = "approx")]
-crate::impl_signed_abs_diff_eq!(P32E2, P32E2::ZERO);
-//crate::impl_signed_abs_diff_eq!(P32E2, P32E2::EPSILON);
-#[cfg(feature = "approx")]
-crate::impl_relative_eq!(P32E2, i32);
+mod impl_approx {
+    use super::*;
+    use approx::AbsDiffEq;
+    crate::macros::approx::impl_ulps_eq!(P32E2, i32);
+    crate::macros::approx::impl_signed_abs_diff_eq!(P32E2, P32E2::ZERO);
+    //crate::impl_signed_abs_diff_eq!(P32E2, P32E2::EPSILON);
+    crate::macros::approx::impl_relative_eq!(P32E2, i32);
+}
 
-#[cfg(feature = "alga")]
-crate::impl_lattice!(P32E2);
-#[cfg(feature = "alga")]
-crate::impl_real!(P32E2);
-#[cfg(feature = "alga")]
-crate::impl_complex!(P32E2);
-#[cfg(feature = "alga")]
-crate::impl_alga!(P32E2);
-#[cfg(feature = "alga")]
-use alga::general::{Additive, Multiplicative};
+#[cfg(feature = "simba")]
+mod impl_simba {
+    pub use super::*;
+    crate::macros::simba::impl_real!(P32E2);
+    crate::macros::simba::impl_complex!(P32E2);
+    crate::macros::simba::impl_primitive_simd_value_for_scalar!(P32E2);
+    impl simba::scalar::Field for P32E2 {}
+}
 
-#[cfg_attr(feature = "alga", derive(alga_derive::Alga))]
-#[cfg_attr(feature = "alga", alga_traits(Field(Additive, Multiplicative)))]
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct P32E2(i32);
@@ -104,6 +100,17 @@ impl P32E2 {
     #[inline]
     pub fn is_normal(self) -> bool {
         !self.is_nar()
+    }
+    #[inline]
+    pub fn clamp(mut self, min: Self, max: Self) -> Self {
+        assert!(min <= max);
+        if self < min {
+            self = min;
+        }
+        if self > max {
+            self = max;
+        }
+        self
     }
     #[inline]
     pub fn classify(self) -> core::num::FpCategory {
@@ -280,8 +287,8 @@ impl crate::Polynom<[Self; 4]> for P32E2 {}
 #[cfg(any(feature = "rand", test))]
 impl rand::distributions::Distribution<P32E2> for rand::distributions::Standard {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> P32E2 {
-        let s = rng.gen_range(0x_4000_0000_u32, 0x_4800_0000);
-        let s2 = rng.gen_range(0_u32, 4);
+        let s = rng.gen_range(0x_4000_0000_u32..0x_4800_0000);
+        let s2 = rng.gen_range(0_u32..4);
         P32E2::from_bits((P32E2::from_bits(s) - P32E2::ONE).to_bits() ^ s2)
     }
 }

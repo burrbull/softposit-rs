@@ -3,30 +3,26 @@ use crate::Q16E1;
 mod convert;
 mod math;
 mod ops;
-crate::impl_num_traits!(P16E1);
+crate::macros::impl_num_traits!(P16E1);
 #[cfg(feature = "approx")]
-crate::impl_ulps_eq!(P16E1, i16);
-#[cfg(feature = "approx")]
-use approx::AbsDiffEq;
-#[cfg(feature = "approx")]
-crate::impl_signed_abs_diff_eq!(P16E1, P16E1::ZERO);
-//crate::impl_signed_abs_diff_eq!(P16E1, P16E1::EPSILON);
-#[cfg(feature = "approx")]
-crate::impl_relative_eq!(P16E1, i16);
+mod impl_approx {
+    pub use super::*;
+    use approx::AbsDiffEq;
+    crate::macros::approx::impl_ulps_eq!(P16E1, i16);
+    crate::macros::approx::impl_signed_abs_diff_eq!(P16E1, P16E1::ZERO);
+    //crate::impl_signed_abs_diff_eq!(P16E1, P16E1::EPSILON);
+    crate::macros::approx::impl_relative_eq!(P16E1, i16);
+}
 
-#[cfg(feature = "alga")]
-crate::impl_lattice!(P16E1);
-#[cfg(feature = "alga")]
-crate::impl_real!(P16E1);
-#[cfg(feature = "alga")]
-crate::impl_complex!(P16E1);
-#[cfg(feature = "alga")]
-crate::impl_alga!(P16E1);
-#[cfg(feature = "alga")]
-use alga::general::{Additive, Multiplicative};
+#[cfg(feature = "simba")]
+mod impl_simba {
+    pub use super::*;
+    crate::macros::simba::impl_real!(P16E1);
+    crate::macros::simba::impl_complex!(P16E1);
+    crate::macros::simba::impl_primitive_simd_value_for_scalar!(P16E1);
+    impl simba::scalar::Field for P16E1 {}
+}
 
-#[cfg_attr(feature = "alga", derive(alga_derive::Alga))]
-#[cfg_attr(feature = "alga", alga_traits(Field(Additive, Multiplicative)))]
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct P16E1(i16);
@@ -106,6 +102,17 @@ impl P16E1 {
     #[inline]
     pub fn is_normal(self) -> bool {
         !self.is_nar()
+    }
+    #[inline]
+    pub fn clamp(mut self, min: Self, max: Self) -> Self {
+        assert!(min <= max);
+        if self < min {
+            self = min;
+        }
+        if self > max {
+            self = max;
+        }
+        self
     }
     #[inline]
     pub fn classify(self) -> core::num::FpCategory {
@@ -276,7 +283,7 @@ impl crate::Polynom<[Self; 4]> for P16E1 {}
 #[cfg(any(feature = "rand", test))]
 impl rand::distributions::Distribution<P16E1> for rand::distributions::Standard {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> P16E1 {
-        P16E1::sub_one(rng.gen_range(0_u32, 0x_4_0000))
+        P16E1::sub_one(rng.gen_range(0_u32..0x_4_0000))
         /*let s = rng.gen_range(0_u16, 0x_1000) | 0x4000;
         let s2 = rng.gen_range(0_u16, 4);
         let b = (P16E1::from_bits(s) - P16E1::ONE).to_bits();
