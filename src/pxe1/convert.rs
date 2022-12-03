@@ -381,6 +381,7 @@ fn convert_u64_to_px1bits<const N: u32>(a: u64) -> u32 {
 
         let exp_a = (log2 & 0x1) as u32;
         frac64_a ^= mask;
+        frac64_a <<= 1;
 
         let mut ui_a: u32;
         if k >= (N - 2) {
@@ -423,8 +424,12 @@ impl<const N: u32> From<u64> for PxE1<{ N }> {
     fn from(a: u64) -> Self {
         let ui_a = if a == 0x_8000_0000_0000_0000 {
             0x_8000_0000
-        } else if (N == 2) && (a > 0) {
-            0x_4000_0000
+        } else if N == 2 {
+            if a > 0 {
+                0x_4000_0000
+            } else {
+                0
+            }
         } else if a > 0x_8000_0000_0000_0000 {
             //576460752303423488 -> wrong number need to change
             0x_7FFF_FFFF & ((0x_8000_0000_u64 >> (N - 1)) as u32) // 1152921504606847000
@@ -432,5 +437,87 @@ impl<const N: u32> From<u64> for PxE1<{ N }> {
             convert_u64_to_px1bits::<{ N }>(a)
         };
         Self::from_bits(ui_a)
+    }
+}
+
+impl<const N: u32> From<i32> for PxE1<{ N }> {
+    fn from(a: i32) -> Self {
+        let mut log2 = 31_i8; //length of bit (e.g. 2147418111) in int (32 but because we have only 32 bits, so one bit off to accommodate that fact)
+
+        let mut ui_a = 0u32;
+        let mask = 0x80000000_u32;
+
+        let sign = a >> 31 != 0;
+        let a = if sign {
+            (-a as u32) & 0xFFFFFFFF
+        } else {
+            a as u32
+        };
+
+        //NaR
+        if a == 0x80000000 {
+            ui_a = 0x80000000;
+        } else if N == 2 {
+            if a > 0 {
+                ui_a = 0x40000000;
+            }
+        } else if a > 2147418111 {
+            ui_a = 0x7FFF9FFF; // 2147483648
+                               //if (x<12)  ui_a&=((int32_t)0x80000000>>(x-1));
+        } else if a < 0x2 {
+            ui_a = (a << 30) as u32;
+        } else {
+            let mut frac_a = a;
+            while (frac_a & mask) == 0 {
+                log2 -= 1;
+                frac_a <<= 1;
+            }
+            let k = (log2 >> 1) as u32;
+            let exp_a = ((log2 & 0x1) as u32) << (28 - k);
+            frac_a ^= mask;
+
+            if k >= (N - 2) {
+                //maxpos
+                ui_a = 0x7FFFFFFF & Self::mask();
+            } else if k == (N - 3) {
+                //bitNPlusOne-> first exp bit //bitLast is zero
+                ui_a = 0x7FFFFFFF ^ (0x3FFFFFFF >> k);
+                if (exp_a & 0x2) != 0 && ((exp_a & 0x1) | frac_a) != 0 {
+                    //bitNPlusOne //bitsMore
+                    ui_a |= 0x80000000_u32 >> (N - 1);
+                }
+            } else if k == (N - 4) {
+                ui_a = (0x7FFFFFFF ^ (0x3FFFFFFF >> k)) | ((exp_a & 0x2) << (27 - k));
+                if exp_a & 0x1 != 0 {
+                    if (((0x80000000_u32 >> (N - 1)) & ui_a) | frac_a) != 0 {
+                        ui_a += 0x80000000_u32 >> (N - 1);
+                    }
+                }
+            } else if k == (N - 5) {
+                ui_a = (0x7FFFFFFF ^ (0x3FFFFFFF >> k)) | (exp_a << (27 - k));
+                let mask = 0x8 << (k - N);
+                if (mask & frac_a) != 0 {
+                    //bitNPlusOne
+                    if (((mask - 1) & frac_a) | (exp_a & 0x1)) != 0 {
+                        ui_a += 0x80000000_u32 >> (N - 1);
+                    }
+                }
+            } else {
+                ui_a =
+                    ((0x7FFFFFFFu32 ^ (0x3FFFFFFF >> k)) | (exp_a << (27 - k)) | frac_a >> (k + 4))
+                        & Self::mask();
+                let mask = 0x8 << (k - N); //bitNPlusOne
+                if (mask & frac_a) != 0 {
+                    if (((mask - 1) & frac_a) | ((mask << 1) & frac_a)) != 0 {
+                        ui_a += 0x80000000_u32 >> (N - 1);
+                    }
+                }
+            }
+        }
+        Self::from_bits(if sign {
+            ui_a.wrapping_neg() & 0xFFFFFFFF
+        } else {
+            ui_a
+        })
     }
 }

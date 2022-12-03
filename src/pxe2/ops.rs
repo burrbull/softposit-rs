@@ -154,6 +154,7 @@ impl<const N: u32> PxE2<{ N }> {
                 frac_a = (frac64_a >> 32) as u32;
 
                 //regime length is smaller than length of posit
+                let mut bits_more = false;
                 let mut bit_n_plus_one = false;
                 if reg_a < N {
                     if reg_a <= (N - 4) {
@@ -170,6 +171,7 @@ impl<const N: u32> PxE2<{ N }> {
                         }
                         if frac_a > 0 {
                             frac_a = 0;
+                            bits_more = true;
                         }
                     }
                 } else {
@@ -188,7 +190,9 @@ impl<const N: u32> PxE2<{ N }> {
 
                 //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
                 if bit_n_plus_one {
-                    let bits_more = ((0x_FFFF_FFFF_FFFF_FFFF_u64 >> (N + 1)) & frac64_a) != 0;
+                    if ((0x_FFFF_FFFF_FFFF_FFFF_u64 >> (N + 1)) & frac64_a) != 0 {
+                        bits_more = true;
+                    }
                     u_z += (((u_z >> (32 - N)) & 1) | (bits_more as u32)) << (32 - N);
                 }
                 u_z
@@ -277,6 +281,7 @@ impl<const N: u32> PxE2<{ N }> {
                 frac_a = (frac64_a >> 32) as u32;
 
                 //regime length is smaller than length of posit
+                let mut bits_more = false;
                 let mut bit_n_plus_one = false;
                 if reg_a < N {
                     if reg_a <= (N - 4) {
@@ -293,6 +298,7 @@ impl<const N: u32> PxE2<{ N }> {
                         }
                         if frac_a > 0 {
                             frac_a = 0;
+                            bits_more = true;
                         }
                     }
                 } else {
@@ -311,7 +317,9 @@ impl<const N: u32> PxE2<{ N }> {
 
                 //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
                 if bit_n_plus_one {
-                    let bits_more = ((0x_FFFF_FFFF_FFFF_FFFF_u64 >> (N + 1)) & frac64_a) != 0;
+                    if ((0x_FFFF_FFFF_FFFF_FFFF_u64 >> (N + 1)) & frac64_a) != 0 {
+                        bits_more = true;
+                    }
                     u_z += (((u_z >> (32 - N)) & 1) | (bits_more as u32)) << (32 - N);
                 }
                 u_z
