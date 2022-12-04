@@ -1,4 +1,4 @@
-use crate::WithSign;
+use crate::{u16_with_sign, u32_with_sign, u8_with_sign};
 use crate::{PxE1, PxE2};
 use crate::{P16E1, P32E2, P8E0};
 
@@ -111,7 +111,7 @@ impl From<P8E0> for P16E1 {
 
         let u_z = regime + exp_frac16_a;
 
-        P16E1::from_bits(u_z.with_sign(sign))
+        P16E1::from_bits(u16_with_sign(u_z, sign))
     }
 }
 
@@ -171,7 +171,7 @@ impl From<P16E1> for P8E0 {
             u_z += (u_z & 1) | (bits_more as u8);
         }
 
-        P8E0::from_bits(u_z.with_sign(sign))
+        P8E0::from_bits(u8_with_sign(u_z, sign))
     }
 }
 
@@ -215,7 +215,7 @@ impl From<P16E1> for P32E2 {
 
         let u_z = regime + exp_frac32_a;
 
-        P32E2::from_bits(u_z.with_sign(sign))
+        P32E2::from_bits(u32_with_sign(u_z, sign))
     }
 }
 
@@ -280,7 +280,7 @@ impl From<P32E2> for P16E1 {
             u_z
         };
 
-        P16E1::from_bits(u_z.with_sign(sign))
+        P16E1::from_bits(u16_with_sign(u_z, sign))
     }
 }
 
@@ -328,7 +328,7 @@ impl From<P8E0> for P32E2 {
 
         let u_z = regime + exp_frac32_a;
 
-        P32E2::from_bits(u_z.with_sign(sign))
+        P32E2::from_bits(u32_with_sign(u_z, sign))
     }
 }
 
@@ -391,7 +391,7 @@ impl From<P32E2> for P8E0 {
             u_z
         };
 
-        P8E0::from_bits(u_z.with_sign(sign))
+        P8E0::from_bits(u8_with_sign(u_z, sign))
     }
 }
 
@@ -432,7 +432,7 @@ impl<const N: u32> From<P32E2> for PxE2<{ N }> {
             }
             u_z
         };
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_z, sign))
     }
 }
 
@@ -505,7 +505,7 @@ impl<const N: u32> From<P16E1> for PxE2<{ N }> {
                 u_z
             }
         };
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_z, sign))
     }
 }
 
@@ -580,7 +580,7 @@ impl<const N: u32> From<P32E2> for PxE1<{ N }> {
                 u_z
             }
         };
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_z, sign))
     }
 }
 
@@ -654,7 +654,7 @@ impl<const N: u32> From<P8E0> for PxE1<{ N }> {
             u_z
         };
 
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_z, sign))
     }
 }
 
@@ -722,7 +722,7 @@ impl<const N: u32> From<P8E0> for PxE2<{ N }> {
             }
             u_z
         };
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_z, sign))
     }
 }
 
@@ -763,7 +763,7 @@ impl<const N: u32> From<P16E1> for PxE1<{ N }> {
             u_z
         };
 
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_z, sign))
     }
 }
 
@@ -851,7 +851,7 @@ impl<const M: u32, const N: u32> From<PxE2<{ M }>> for PxE1<{ N }> {
             }
         };
 
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_z, sign))
     }
 }
 
@@ -920,7 +920,7 @@ impl<const M: u32, const N: u32> From<PxE1<{ M }>> for PxE2<{ N }> {
             }
         };
 
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_z, sign))
     }
 }
 
@@ -988,7 +988,7 @@ impl<const N: u32> From<PxE1<{ N }>> for P32E2 {
             u_z += (u_z & 1) | (bits_more as u32);
         }
 
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_z, sign))
     }
 }
 
@@ -1021,7 +1021,7 @@ impl<const N: u32> From<PxE1<{ N }>> for P16E1 {
             }
             u_z
         };
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u16_with_sign(u_z, sign))
     }
 }
 
@@ -1079,7 +1079,7 @@ impl<const N: u32> From<PxE1<{ N }>> for P8E0 {
             u_z += (u_z & 1) | (bits_more as u8);
         }
 
-        P8E0::from_bits(u_z.with_sign(sign))
+        P8E0::from_bits(u8_with_sign(u_z, sign))
     }
 }
 

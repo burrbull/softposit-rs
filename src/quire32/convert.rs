@@ -1,6 +1,6 @@
 use super::Q32E2;
+use crate::u32_with_sign;
 use crate::PxE2;
-use crate::WithSign;
 use crate::P32E2;
 
 impl From<P32E2> for Q32E2 {
@@ -140,7 +140,7 @@ impl From<&Q32E2> for P32E2 {
             }
             u_a
         };
-        Self::from_bits(u_a.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_a, sign))
     }
 }
 
@@ -274,6 +274,6 @@ impl<const N: u32> From<&Q32E2> for PxE2<{ N }> {
             }
             u_a
         };
-        Self::from_bits(u_a.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_a, sign))
     }
 }

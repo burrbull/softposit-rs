@@ -95,17 +95,112 @@ macro_rules! impl_const_fns {
                 }
             }
             #[inline]
-            pub const fn lt(&self, other: Self) -> bool { self.0 < other.0 }
+            pub const fn lt(&self, other: Self) -> bool {
+                self.0 < other.0
+            }
             #[inline]
-            pub const fn le(&self, other: Self) -> bool { self.0 <= other.0 }
+            pub const fn le(&self, other: Self) -> bool {
+                self.0 <= other.0
+            }
             #[inline]
-            pub const fn ge(&self, other: Self) -> bool { self.0 >= other.0 }
+            pub const fn ge(&self, other: Self) -> bool {
+                self.0 >= other.0
+            }
             #[inline]
-            pub const fn gt(&self, other: Self) -> bool { self.0 > other.0 }
+            pub const fn gt(&self, other: Self) -> bool {
+                self.0 > other.0
+            }
         }
     };
 }
 pub(crate) use impl_const_fns;
+
+macro_rules! impl_ops {
+    ($T:ty) => {
+        impl ops::Neg for $T {
+            type Output = Self;
+            #[inline]
+            fn neg(self) -> Self {
+                self.neg()
+            }
+        }
+
+        impl ops::Add for $T {
+            type Output = Self;
+            #[inline]
+            fn add(self, other: Self) -> Self {
+                self.add(other)
+            }
+        }
+
+        impl ops::Sub for $T {
+            type Output = Self;
+            #[inline]
+            fn sub(self, other: Self) -> Self {
+                self.sub(other)
+            }
+        }
+
+        impl ops::Div for $T {
+            type Output = Self;
+            #[inline]
+            fn div(self, other: Self) -> Self {
+                self.div(other)
+            }
+        }
+
+        impl ops::Mul for $T {
+            type Output = Self;
+            #[inline]
+            fn mul(self, other: Self) -> Self {
+                self.mul(other)
+            }
+        }
+
+        impl ops::Rem for $T {
+            type Output = Self;
+            fn rem(self, other: Self) -> Self {
+                self.rem(other)
+            }
+        }
+
+        impl ops::AddAssign for $T {
+            #[inline]
+            fn add_assign(&mut self, other: Self) {
+                *self = *self + other
+            }
+        }
+
+        impl ops::SubAssign for $T {
+            #[inline]
+            fn sub_assign(&mut self, other: Self) {
+                *self = *self - other
+            }
+        }
+
+        impl ops::MulAssign for $T {
+            #[inline]
+            fn mul_assign(&mut self, other: Self) {
+                *self = *self * other
+            }
+        }
+
+        impl ops::DivAssign for $T {
+            #[inline]
+            fn div_assign(&mut self, other: Self) {
+                *self = *self / other
+            }
+        }
+
+        impl ops::RemAssign for $T {
+            #[inline]
+            fn rem_assign(&mut self, other: Self) {
+                *self = *self % other
+            }
+        }
+    };
+}
+pub(crate) use impl_ops;
 
 macro_rules! impl_num_traits {
     ($posit:ty) => {

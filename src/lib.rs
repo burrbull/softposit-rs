@@ -40,30 +40,28 @@ pub(crate) mod macros;
 pub mod polynom;
 pub use polynom::Polynom;
 
-trait WithSign {
-    fn with_sign(self, sign: bool) -> Self;
-}
-
 macro_rules! with_sign {
-    ($($uint:ty),*) => {
+    ($($uint:ty: $ws:ident),*) => {
         $(
-            impl WithSign for $uint {
-                #[inline]
-                fn with_sign(self, sign: bool) -> Self {
-                    if sign {
-                        self.wrapping_neg()
-                    } else {
-                        self
-                    }
+            const fn $ws(val: $uint, sign: bool) -> $uint {
+                if sign {
+                    val.wrapping_neg()
+                } else {
+                    val
                 }
             }
         )*
     }
 }
 
-with_sign!(u8, u16, u32, u64);
+with_sign!(
+    u8: u8_with_sign,
+    u16: u16_with_sign,
+    u32: u32_with_sign,
+    u64: u64_with_sign
+);
 
-fn lldiv(numer: i64, denom: i64) -> (i64, i64) {
+const fn lldiv(numer: i64, denom: i64) -> (i64, i64) {
     let mut quot = numer / denom;
     let mut rem = numer % denom;
     if (numer >= 0) && (rem < 0) {
@@ -74,7 +72,7 @@ fn lldiv(numer: i64, denom: i64) -> (i64, i64) {
     (quot, rem)
 }
 
-fn div(numer: i32, denom: i32) -> (i32, i32) {
+const fn div(numer: i32, denom: i32) -> (i32, i32) {
     let mut quot = numer / denom;
     let mut rem = numer % denom;
     if (numer >= 0) && (rem < 0) {

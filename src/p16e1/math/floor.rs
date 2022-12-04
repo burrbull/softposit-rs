@@ -1,7 +1,7 @@
-use crate::WithSign;
+use crate::u16_with_sign;
 
 impl super::P16E1 {
-    pub fn floor(self) -> Self {
+    pub const fn floor(self) -> Self {
         let mut mask = 0x2000_u16;
         let mut scale = 0_u16;
 
@@ -62,6 +62,6 @@ impl super::P16E1 {
             }
             ui_a
         };
-        Self::from_bits(u_a.with_sign(sign))
+        Self::from_bits(u16_with_sign(u_a, sign))
     }
 }

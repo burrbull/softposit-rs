@@ -73,8 +73,8 @@ impl P8E0 {
     }
     #[inline]
     // TODO: optimize
-    pub fn recip(self) -> Self {
-        Self::ONE / self
+    pub const fn recip(self) -> Self {
+        Self::ONE.div(self)
     }
 }
 
@@ -176,7 +176,7 @@ impl core::str::FromStr for P8E0 {
     }
 }
 
-use core::{fmt, cmp::Ordering};
+use core::{cmp::Ordering, fmt};
 impl fmt::Display for P8E0 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", f64::from(*self))

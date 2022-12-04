@@ -1,5 +1,5 @@
 use super::P32E2;
-use crate::WithSign;
+use crate::{u32_with_sign, u64_with_sign};
 use core::cmp::Ordering;
 use core::f64;
 
@@ -92,20 +92,22 @@ impl From<f64> for P32E2 {
                     );
                 }
 
-                if reg > 30 {
-                    0x7FFF_FFFF
-                } else {
-                    //rounding off fraction bits
+                u32_with_sign(
+                    if reg > 30 {
+                        0x7FFF_FFFF
+                    } else {
+                        //rounding off fraction bits
 
-                    let regime = ((1 << reg) - 1) << 1;
-                    if reg <= 28 {
-                        exp <<= 28 - reg;
-                    }
-                    let u_z = ((regime as u32) << (30 - reg)) + (exp as u32) + (frac as u32);
-                    u_z + (((bit_n_plus_one as u32) & (u_z & 1))
-                        | ((bit_n_plus_one & bits_more) as u32))
-                }
-                .with_sign(sign)
+                        let regime = ((1 << reg) - 1) << 1;
+                        if reg <= 28 {
+                            exp <<= 28 - reg;
+                        }
+                        let u_z = ((regime as u32) << (30 - reg)) + (exp as u32) + (frac as u32);
+                        u_z + (((bit_n_plus_one as u32) & (u_z & 1))
+                            | ((bit_n_plus_one & bits_more) as u32))
+                    },
+                    sign,
+                )
             }
         } else if (float < 1.) || (float > -1.) {
             if sign {
@@ -153,20 +155,22 @@ impl From<f64> for P32E2 {
                 );
             }
 
-            if reg > 30 {
-                0x1
-            } else {
-                //rounding off fraction bits
+            u32_with_sign(
+                if reg > 30 {
+                    0x1
+                } else {
+                    //rounding off fraction bits
 
-                let regime = 1_u32;
-                if reg <= 28 {
-                    exp <<= 28 - reg;
-                }
-                let u_z = ((regime as u32) << (30 - reg)) + (exp as u32) + (frac as u32);
-                u_z + (((bit_n_plus_one as u32) & (u_z & 1))
-                    | ((bit_n_plus_one & bits_more) as u32))
-            }
-            .with_sign(sign)
+                    let regime = 1_u32;
+                    if reg <= 28 {
+                        exp <<= 28 - reg;
+                    }
+                    let u_z = ((regime as u32) << (30 - reg)) + (exp as u32) + (frac as u32);
+                    u_z + (((bit_n_plus_one as u32) & (u_z & 1))
+                        | ((bit_n_plus_one & bits_more) as u32))
+                },
+                sign,
+            )
         } else {
             //NaR - for NaN, INF and all other combinations
             0x8000_0000
@@ -230,7 +234,7 @@ impl From<P32E2> for i32 {
 
         let i_z = convert_p32bits_to_u32(ui_a);
 
-        i_z.with_sign(sign) as i32
+        u32_with_sign(i_z, sign) as i32
     }
 }
 
@@ -310,7 +314,7 @@ impl From<P32E2> for i64 {
 
         let i_z = convert_p32bits_to_u64(ui_a);
 
-        i_z.with_sign(sign) as i64
+        u64_with_sign(i_z, sign) as i64
     }
 }
 
@@ -384,7 +388,7 @@ impl From<i32> for P32E2 {
         if sign {
             i_a = -i_a;
         }
-        Self::from_bits(convert_u32_to_p32bits(i_a as u32).with_sign(sign))
+        Self::from_bits(u32_with_sign(convert_u32_to_p32bits(i_a as u32), sign))
     }
 }
 
@@ -410,7 +414,7 @@ impl From<i64> for P32E2 {
         if sign {
             i_a = -i_a;
         }
-        Self::from_bits(convert_u64_to_p32bits(i_a as u64).with_sign(sign))
+        Self::from_bits(u32_with_sign(convert_u64_to_p32bits(i_a as u64), sign))
     }
 }
 

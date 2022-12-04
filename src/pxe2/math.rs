@@ -1,7 +1,7 @@
 use core::cmp::Ordering;
 
 use super::PxE2;
-use crate::{MulAddType, WithSign};
+use crate::{u32_with_sign, MulAddType};
 
 impl<const N: u32> PxE2<{ N }> {
     #[inline]
@@ -260,7 +260,7 @@ impl<const N: u32> PxE2<{ N }> {
                 }
                 u_z
             };
-            Self::from_bits(u_z.with_sign(sign_z))
+            Self::from_bits(u32_with_sign(u_z, sign_z))
         }
     }
 
@@ -438,6 +438,6 @@ impl<const N: u32> PxE2<{ N }> {
             }
             u_a = ui_a;
         }
-        Self::from_bits(u_a.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_a, sign))
     }
 }

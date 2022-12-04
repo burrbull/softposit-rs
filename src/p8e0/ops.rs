@@ -1,61 +1,16 @@
 use super::P8E0;
-use crate::WithSign;
-use core::{mem, ops};
+use crate::u8_with_sign;
+use core::ops;
+
+crate::macros::impl_ops!(P8E0);
 
 impl P8E0 {
     #[inline]
     pub const fn neg(self) -> Self {
         Self::new(self.0.wrapping_neg())
     }
-}
 
-impl ops::Neg for P8E0 {
-    type Output = Self;
-    #[inline]
-    fn neg(self) -> Self {
-        self.neg()
-    }
-}
-
-impl ops::AddAssign for P8E0 {
-    #[inline]
-    fn add_assign(&mut self, other: Self) {
-        *self = *self + other
-    }
-}
-
-impl ops::SubAssign for P8E0 {
-    #[inline]
-    fn sub_assign(&mut self, other: Self) {
-        *self = *self - other
-    }
-}
-
-impl ops::MulAssign for P8E0 {
-    #[inline]
-    fn mul_assign(&mut self, other: Self) {
-        *self = *self * other
-    }
-}
-
-impl ops::DivAssign for P8E0 {
-    #[inline]
-    fn div_assign(&mut self, other: Self) {
-        *self = *self / other
-    }
-}
-
-impl ops::RemAssign for P8E0 {
-    #[inline]
-    fn rem_assign(&mut self, other: Self) {
-        *self = *self % other
-    }
-}
-
-impl ops::Add for P8E0 {
-    type Output = Self;
-    #[inline]
-    fn add(self, other: Self) -> Self {
+    pub const fn add(self, other: Self) -> Self {
         let ui_a = self.to_bits();
         let ui_b = other.to_bits();
 
@@ -74,12 +29,8 @@ impl ops::Add for P8E0 {
             }
         }
     }
-}
 
-impl ops::Sub for P8E0 {
-    type Output = Self;
-    #[inline]
-    fn sub(self, other: Self) -> Self {
+    pub const fn sub(self, other: Self) -> Self {
         let ui_a = self.to_bits();
         let ui_b = other.to_bits();
 
@@ -98,12 +49,8 @@ impl ops::Sub for P8E0 {
             }
         }
     }
-}
 
-impl ops::Div for P8E0 {
-    type Output = Self;
-    #[inline]
-    fn div(self, other: Self) -> Self {
+    pub const fn div(self, other: Self) -> Self {
         let mut ui_a = self.to_bits();
         let mut ui_b = other.to_bits();
 
@@ -170,11 +117,9 @@ impl ops::Div for P8E0 {
             u_z
         };
 
-        Self::from_bits(u_z.with_sign(sign_z))
+        Self::from_bits(u8_with_sign(u_z, sign_z))
     }
-}
 
-impl P8E0 {
     #[inline]
     const fn calc_ui(k: i8, mut frac16: u16) -> u8 {
         let (regime, reg_s, reg_len) = Self::calculate_regime(k);
@@ -200,12 +145,9 @@ impl P8E0 {
             u_z
         }
     }
-}
 
-impl ops::Mul for P8E0 {
-    type Output = Self;
     #[inline]
-    fn mul(self, other: Self) -> Self {
+    pub const fn mul(self, other: Self) -> Self {
         let mut ui_a = self.to_bits();
         let mut ui_b = other.to_bits();
 
@@ -240,13 +182,11 @@ impl ops::Mul for P8E0 {
         }
 
         let u_z = Self::calc_ui(k_a, frac16);
-        Self::from_bits(u_z.with_sign(sign_z))
+        Self::from_bits(u8_with_sign(u_z, sign_z))
     }
-}
 
-impl P8E0 {
-    #[inline]
-    fn add_mags(mut ui_a: u8, mut ui_b: u8) -> Self {
+    #[allow(clippy::manual_swap)]
+    const fn add_mags(mut ui_a: u8, mut ui_b: u8) -> Self {
         let sign = Self::sign_ui(ui_a);
         if sign {
             ui_a = ui_a.wrapping_neg();
@@ -254,7 +194,9 @@ impl P8E0 {
         }
 
         if (ui_a as i8) < (ui_b as i8) {
-            mem::swap(&mut ui_a, &mut ui_b);
+            let temp = ui_a;
+            ui_a = ui_b;
+            ui_b = temp;
         }
 
         let (mut k_a, frac_a) = Self::separate_bits(ui_a);
@@ -263,8 +205,11 @@ impl P8E0 {
         let (k_b, frac_b) = Self::separate_bits(ui_b);
         let shift_right = (k_a as i16) - (k_b as i16);
 
-        frac16_a += if let Some(val) = (frac_b as u16)
-            .checked_shl((7 - shift_right) as u32) { val } else { 0 };
+        frac16_a += if let Some(val) = (frac_b as u16).checked_shl((7 - shift_right) as u32) {
+            val
+        } else {
+            0
+        };
 
         let rcarry = (0x8000 & frac16_a) != 0; //first left bit
         if rcarry {
@@ -273,11 +218,11 @@ impl P8E0 {
         }
 
         let u_z = Self::calc_ui(k_a, frac16_a);
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u8_with_sign(u_z, sign))
     }
 
-    #[inline]
-    fn sub_mags(mut ui_a: u8, mut ui_b: u8) -> Self {
+    #[allow(clippy::manual_swap)]
+    const fn sub_mags(mut ui_a: u8, mut ui_b: u8) -> Self {
         //Both ui_a and ui_b are actually the same signs if ui_b inherits sign of sub
         //Make both positive
         let mut sign = Self::sign_ui(ui_a);
@@ -291,7 +236,9 @@ impl P8E0 {
             return Self::ZERO;
         }
         if ui_a < ui_b {
-            mem::swap(&mut ui_a, &mut ui_b);
+            let temp = ui_a;
+            ui_a = ui_b;
+            ui_b = temp;
             sign = !sign; //A becomes B
         }
 
@@ -304,7 +251,7 @@ impl P8E0 {
         let mut frac16_b = (frac_b as u16) << 7;
 
         if shift_right >= 14 {
-            return Self::from_bits(ui_a.with_sign(sign));
+            return Self::from_bits(u8_with_sign(ui_a, sign));
         } else {
             frac16_b >>= shift_right;
         }
@@ -321,14 +268,12 @@ impl P8E0 {
         }
 
         let u_z = Self::calc_ui(k_a, frac16_a);
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u8_with_sign(u_z, sign))
     }
-}
 
-impl ops::Rem for P8E0 {
-    type Output = Self;
-    fn rem(self, other: Self) -> Self {
-        self - (self / other).trunc() * other
+    #[inline]
+    pub const fn rem(self, other: Self) -> Self {
+        self.sub((self.div(other)).trunc().mul(other))
     }
 }
 

@@ -1,5 +1,5 @@
 use super::PxE2;
-use crate::WithSign;
+use crate::u32_with_sign;
 use core::{mem, ops};
 
 impl<const N: u32> ops::Neg for PxE2<{ N }> {
@@ -199,7 +199,7 @@ impl<const N: u32> PxE2<{ N }> {
             }
         };
 
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_z, sign))
     }
 
     #[inline]
@@ -326,7 +326,7 @@ impl<const N: u32> PxE2<{ N }> {
             }
         };
 
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_z, sign))
     }
 }
 
@@ -444,7 +444,7 @@ impl<const N: u32> ops::Mul for PxE2<{ N }> {
                 u_z
             }
         };
-        Self::from_bits(u_z.with_sign(sign_z))
+        Self::from_bits(u32_with_sign(u_z, sign_z))
     }
 }
 
@@ -565,6 +565,6 @@ impl<const N: u32> ops::Div for PxE2<{ N }> {
                 u_z
             }
         };
-        Self::from_bits(u_z.with_sign(sign_z))
+        Self::from_bits(u32_with_sign(u_z, sign_z))
     }
 }

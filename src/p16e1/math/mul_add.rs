@@ -1,7 +1,7 @@
 use core::cmp::Ordering;
 
 use super::P16E1;
-use crate::{MulAddType, WithSign};
+use crate::{u16_with_sign, MulAddType};
 
 impl P16E1 {
     #[inline]
@@ -206,7 +206,7 @@ fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1
         u_z
     };
 
-    P16E1::from_bits(u_z.with_sign(sign_z))
+    P16E1::from_bits(u16_with_sign(u_z, sign_z))
 }
 
 #[test]

@@ -1,5 +1,6 @@
 use super::P16E1;
-use crate::WithSign;
+use crate::u64_with_sign;
+use crate::{u16_with_sign, u32_with_sign};
 use core::{f32, f64};
 
 crate::macros::impl_convert!(P16E1);
@@ -15,7 +16,7 @@ impl From<i32> for P16E1 {
         if sign {
             i_a = -i_a;
         }
-        Self::from_bits(convert_u32_to_p16bits(i_a as u32).with_sign(sign))
+        Self::from_bits(u16_with_sign(convert_u32_to_p16bits(i_a as u32), sign))
     }
 }
 
@@ -65,7 +66,7 @@ impl From<i64> for P16E1 {
         if sign {
             i_a = -i_a;
         }
-        Self::from_bits(convert_u64_to_p16bits(i_a as u64).with_sign(sign))
+        Self::from_bits(u16_with_sign(convert_u64_to_p16bits(i_a as u64), sign))
     }
 }
 
@@ -118,7 +119,7 @@ impl From<P16E1> for i32 {
         }
         let i_z = convert_p16bits_to_u32(ui_a);
 
-        i_z.with_sign(sign) as i32
+        u32_with_sign(i_z, sign) as i32
     }
 }
 
@@ -214,7 +215,7 @@ impl From<P16E1> for i64 {
 
         let i_z = convert_p16bits_to_u64(ui_a);
 
-        i_z.with_sign(sign) as i64
+        u64_with_sign(i_z, sign) as i64
     }
 }
 
@@ -373,25 +374,27 @@ impl From<f64> for P16E1 {
                     bits_more = true;
                     frac = 0;
                 }
-                if reg > 14 {
-                    0x7FFF
-                } else {
-                    let regime = ((1_u16 << reg) - 1) << 1;
-                    let ex = if reg == 14 {
-                        0
+                u16_with_sign(
+                    if reg > 14 {
+                        0x7FFF
                     } else {
-                        (exp as u16) << (13 - reg)
-                    };
-                    let mut u_z = ((regime as u16) << (14 - reg)) + ex + frac;
-                    //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-                    if (reg == 14) && (exp != 0) {
-                        bit_n_plus_one = true;
-                    }
-                    u_z += ((bit_n_plus_one as u16) & (u_z & 1))
-                        | ((bit_n_plus_one & bits_more) as u16);
-                    u_z
-                }
-                .with_sign(sign)
+                        let regime = ((1_u16 << reg) - 1) << 1;
+                        let ex = if reg == 14 {
+                            0
+                        } else {
+                            (exp as u16) << (13 - reg)
+                        };
+                        let mut u_z = ((regime as u16) << (14 - reg)) + ex + frac;
+                        //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+                        if (reg == 14) && (exp != 0) {
+                            bit_n_plus_one = true;
+                        }
+                        u_z += ((bit_n_plus_one as u16) & (u_z & 1))
+                            | ((bit_n_plus_one & bits_more) as u16);
+                        u_z
+                    },
+                    sign,
+                )
             }
         } else if (float < 1.) || (float > -1.) {
             if sign {
@@ -430,25 +433,27 @@ impl From<f64> for P16E1 {
                 bits_more = true;
                 frac = 0;
             }
-            if reg > 14 {
-                0x1
-            } else {
-                let regime = 1_u16;
-                let ex = if reg == 14 {
-                    0
+            u16_with_sign(
+                if reg > 14 {
+                    0x1
                 } else {
-                    (exp as u16) << (13 - reg)
-                };
-                let mut u_z = ((regime as u16) << (14 - reg)) + ex + frac;
-                //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-                if (reg == 14) && (exp != 0) {
-                    bit_n_plus_one = true;
-                }
-                u_z +=
-                    ((bit_n_plus_one as u16) & (u_z & 1)) | ((bit_n_plus_one & bits_more) as u16);
-                u_z
-            }
-            .with_sign(sign)
+                    let regime = 1_u16;
+                    let ex = if reg == 14 {
+                        0
+                    } else {
+                        (exp as u16) << (13 - reg)
+                    };
+                    let mut u_z = ((regime as u16) << (14 - reg)) + ex + frac;
+                    //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+                    if (reg == 14) && (exp != 0) {
+                        bit_n_plus_one = true;
+                    }
+                    u_z += ((bit_n_plus_one as u16) & (u_z & 1))
+                        | ((bit_n_plus_one & bits_more) as u16);
+                    u_z
+                },
+                sign,
+            )
         } else {
             //NaR - for NaN, INF and all other combinations
             0x8000

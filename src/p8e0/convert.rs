@@ -1,5 +1,5 @@
 use super::P8E0;
-use crate::WithSign;
+use crate::{u32_with_sign, u64_with_sign, u8_with_sign};
 use core::{f32, f64};
 
 crate::macros::impl_convert!(P8E0);
@@ -128,24 +128,26 @@ impl From<f64> for P8E0 {
                 }
 
                 //rounding off regime bits
-                if reg > 6 {
-                    0x7F
-                } else {
-                    let frac_length = 6 - reg;
-                    let frac = convert_fraction_p8(
-                        float,
-                        frac_length,
-                        &mut bit_n_plus_one,
-                        &mut bits_more,
-                    );
-                    let regime = 0x7F - (0x7F >> reg);
-                    let mut u_z = P8E0::pack_to_ui(regime, frac);
-                    if bit_n_plus_one {
-                        u_z += (u_z & 1) | (bits_more as u8);
-                    }
-                    u_z
-                }
-                .with_sign(sign)
+                u8_with_sign(
+                    if reg > 6 {
+                        0x7F
+                    } else {
+                        let frac_length = 6 - reg;
+                        let frac = convert_fraction_p8(
+                            float,
+                            frac_length,
+                            &mut bit_n_plus_one,
+                            &mut bits_more,
+                        );
+                        let regime = 0x7F - (0x7F >> reg);
+                        let mut u_z = P8E0::pack_to_ui(regime, frac);
+                        if bit_n_plus_one {
+                            u_z += (u_z & 1) | (bits_more as u8);
+                        }
+                        u_z
+                    },
+                    sign,
+                )
             }
         } else if (float < 1.) || (float > -1.) {
             if sign {
@@ -161,20 +163,26 @@ impl From<f64> for P8E0 {
                 reg += 1;
             }
             //rounding off regime bits
-            if reg > 6 {
-                0x1
-            } else {
-                let frac_length = 6 - reg;
-                let frac =
-                    convert_fraction_p8(float, frac_length, &mut bit_n_plus_one, &mut bits_more);
-                let regime = 0x40 >> reg;
-                let mut u_z = P8E0::pack_to_ui(regime, frac);
-                if bit_n_plus_one {
-                    u_z += (u_z & 1) | (bits_more as u8);
-                }
-                u_z
-            }
-            .with_sign(sign)
+            u8_with_sign(
+                if reg > 6 {
+                    0x1
+                } else {
+                    let frac_length = 6 - reg;
+                    let frac = convert_fraction_p8(
+                        float,
+                        frac_length,
+                        &mut bit_n_plus_one,
+                        &mut bits_more,
+                    );
+                    let regime = 0x40 >> reg;
+                    let mut u_z = P8E0::pack_to_ui(regime, frac);
+                    if bit_n_plus_one {
+                        u_z += (u_z & 1) | (bits_more as u8);
+                    }
+                    u_z
+                },
+                sign,
+            )
         } else {
             //NaR - for NaN, INF and all other combinations
             0x80
@@ -246,7 +254,7 @@ impl From<P8E0> for i32 {
         }
         let i_z = convert_p8bits_to_u32(ui_a);
 
-        i_z.with_sign(sign) as i32
+        u32_with_sign(i_z, sign) as i32
     }
 }
 
@@ -311,7 +319,7 @@ impl From<P8E0> for i64 {
 
         let i_z = convert_p8bits_to_u64(ui_a);
 
-        i_z.with_sign(sign) as i64
+        u64_with_sign(i_z, sign) as i64
     }
 }
 
@@ -378,7 +386,7 @@ impl From<i32> for P8E0 {
         if sign {
             i_a = -i_a;
         }
-        Self::from_bits(convert_u32_to_p8bits(i_a as u32).with_sign(sign))
+        Self::from_bits(u8_with_sign(convert_u32_to_p8bits(i_a as u32), sign))
     }
 }
 
@@ -401,7 +409,7 @@ impl From<i64> for P8E0 {
         if sign {
             i_a = -i_a;
         }
-        Self::from_bits(convert_u64_to_p8bits(i_a as u64).with_sign(sign))
+        Self::from_bits(u8_with_sign(convert_u64_to_p8bits(i_a as u64), sign))
     }
 }
 

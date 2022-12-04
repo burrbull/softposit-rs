@@ -26,34 +26,34 @@ impl crate::MathConsts for P16E1 {
 
 impl P16E1 {
     #[inline]
-    pub fn trunc(self) -> Self {
-        if self > Self::ZERO {
+    pub const fn trunc(self) -> Self {
+        if self.gt(Self::ZERO) {
             self.floor()
         } else {
             self.ceil()
         }
     }
     #[inline]
-    pub fn fract(self) -> Self {
-        self - self.trunc()
+    pub const fn fract(self) -> Self {
+        self.sub(self.trunc())
     }
     #[inline]
-    pub fn div_euclid(self, rhs: Self) -> Self {
-        let q = (self / rhs).trunc();
-        if self % rhs < Self::ZERO {
-            return if rhs > Self::ZERO {
-                q - Self::ONE
+    pub const fn div_euclid(self, rhs: Self) -> Self {
+        let q = self.div(rhs).trunc();
+        if self.rem(rhs).lt(Self::ZERO) {
+            return if rhs.gt(Self::ZERO) {
+                q.sub(Self::ONE)
             } else {
-                q + Self::ONE
+                q.add(Self::ONE)
             };
         }
         q
     }
     #[inline]
-    pub fn rem_euclid(self, rhs: Self) -> Self {
-        let r = self % rhs;
-        if r < Self::ZERO {
-            r + rhs.abs()
+    pub const fn rem_euclid(self, rhs: Self) -> Self {
+        let r = self.rem(rhs);
+        if r.lt(Self::ZERO) {
+            r.add(rhs.abs())
         } else {
             r
         }
@@ -119,7 +119,7 @@ impl P16E1 {
         unimplemented!()
     }
     #[inline]
-    pub fn ln_1p(self) -> Self {
+    pub const fn ln_1p(self) -> Self {
         unimplemented!()
     }
     #[inline]
@@ -135,23 +135,23 @@ impl P16E1 {
         unimplemented!()
     }
     #[inline]
-    pub fn asinh(self) -> Self {
+    pub const fn asinh(self) -> Self {
         if self.is_nar() {
             self
         } else {
-            (self + ((self * self) + Self::ONE).sqrt()).ln()
+            self.add(self.mul(self).add(Self::ONE).sqrt()).ln()
         }
     }
     #[inline]
-    pub fn acosh(self) -> Self {
+    pub const fn acosh(self) -> Self {
         match self {
-            x if x < Self::ONE => Self::NAR,
-            x => (x + ((x * x) - Self::ONE).sqrt()).ln(),
+            x if x.lt(Self::ONE) => Self::NAR,
+            x => x.add(x.mul(x).sub(Self::ONE).sqrt()).ln(),
         }
     }
     #[inline]
-    pub fn atanh(self) -> Self {
-        HALF * ((TWO * self) / (Self::ONE - self)).ln_1p()
+    pub const fn atanh(self) -> Self {
+        HALF.mul(TWO.mul(self).div(Self::ONE.sub(self)).ln_1p())
     }
 }
 

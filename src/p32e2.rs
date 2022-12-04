@@ -193,7 +193,7 @@ impl core::str::FromStr for P32E2 {
     }
 }
 
-use core::{fmt, cmp::Ordering};
+use core::{cmp::Ordering, fmt};
 impl fmt::Display for P32E2 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", f64::from(*self))

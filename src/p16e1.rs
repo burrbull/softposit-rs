@@ -73,18 +73,18 @@ impl P16E1 {
     }
     // TODO: optimize
     #[inline]
-    pub fn recip(self) -> Self {
-        Self::ONE / self
+    pub const fn recip(self) -> Self {
+        Self::ONE.div(self)
     }
     #[inline]
-    pub fn to_degrees(self) -> Self {
+    pub const fn to_degrees(self) -> Self {
         const PIS_IN_180: P16E1 = P16E1::new(0x_7729);
-        self * PIS_IN_180
+        self.mul(PIS_IN_180)
     }
     #[inline]
-    pub fn to_radians(self) -> Self {
+    pub const fn to_radians(self) -> Self {
         const PIS_O_180: P16E1 = P16E1::new(0x_0878);
-        self * PIS_O_180
+        self.mul(PIS_O_180)
     }
 }
 
@@ -193,7 +193,7 @@ impl core::str::FromStr for P16E1 {
     }
 }
 
-use core::{fmt, cmp::Ordering};
+use core::{cmp::Ordering, fmt};
 impl fmt::Display for P16E1 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", f64::from(*self))

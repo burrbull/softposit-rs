@@ -1,61 +1,16 @@
 use super::P32E2;
-use crate::WithSign;
-use core::{mem, ops};
+use crate::u32_with_sign;
+use core::ops;
+
+crate::macros::impl_ops!(P32E2);
 
 impl P32E2 {
     #[inline]
     pub const fn neg(self) -> Self {
         Self::new(self.0.wrapping_neg())
     }
-}
 
-impl ops::Neg for P32E2 {
-    type Output = Self;
-    #[inline]
-    fn neg(self) -> Self {
-        self.neg()
-    }
-}
-
-impl ops::AddAssign for P32E2 {
-    #[inline]
-    fn add_assign(&mut self, other: Self) {
-        *self = *self + other
-    }
-}
-
-impl ops::SubAssign for P32E2 {
-    #[inline]
-    fn sub_assign(&mut self, other: Self) {
-        *self = *self - other
-    }
-}
-
-impl ops::MulAssign for P32E2 {
-    #[inline]
-    fn mul_assign(&mut self, other: Self) {
-        *self = *self * other
-    }
-}
-
-impl ops::DivAssign for P32E2 {
-    #[inline]
-    fn div_assign(&mut self, other: Self) {
-        *self = *self / other
-    }
-}
-
-impl ops::RemAssign for P32E2 {
-    #[inline]
-    fn rem_assign(&mut self, other: Self) {
-        *self = *self % other
-    }
-}
-
-impl ops::Add for P32E2 {
-    type Output = Self;
-    #[inline]
-    fn add(self, other: Self) -> Self {
+    pub const fn add(self, other: Self) -> Self {
         let ui_a = self.to_bits();
         let ui_b = other.to_bits();
 
@@ -74,12 +29,8 @@ impl ops::Add for P32E2 {
             }
         }
     }
-}
 
-impl ops::Sub for P32E2 {
-    type Output = Self;
-    #[inline]
-    fn sub(self, other: Self) -> Self {
+    pub const fn sub(self, other: Self) -> Self {
         let ui_a = self.to_bits();
         let ui_b = other.to_bits();
 
@@ -98,12 +49,8 @@ impl ops::Sub for P32E2 {
             }
         }
     }
-}
 
-impl ops::Div for P32E2 {
-    type Output = Self;
-    #[inline]
-    fn div(self, other: Self) -> Self {
+    pub const fn div(self, other: Self) -> Self {
         let mut ui_a = self.to_bits();
         let mut ui_b = other.to_bits();
 
@@ -201,13 +148,10 @@ impl ops::Div for P32E2 {
             u_z
         };
 
-        Self::from_bits(u_z.with_sign(sign_z))
+        Self::from_bits(u32_with_sign(u_z, sign_z))
     }
-}
 
-impl P32E2 {
-    #[inline]
-    fn form_ui(reg_len: u32, regime: u32, mut exp: i32, frac64: u64) -> u32 {
+    const fn form_ui(reg_len: u32, regime: u32, mut exp: i32, frac64: u64) -> u32 {
         let mut bit_n_plus_one = false;
         let mut bits_more = false;
         let mut frac = (frac64 >> 32) as u32;
@@ -239,12 +183,8 @@ impl P32E2 {
         }
         u_z
     }
-}
 
-impl ops::Mul for P32E2 {
-    type Output = Self;
-    #[inline]
-    fn mul(self, other: Self) -> Self {
+    pub const fn mul(self, other: Self) -> Self {
         let mut ui_a = self.to_bits();
         let mut ui_b = other.to_bits();
 
@@ -306,13 +246,11 @@ impl ops::Mul for P32E2 {
             )
         };
 
-        Self::from_bits(u_z.with_sign(sign_z))
+        Self::from_bits(u32_with_sign(u_z, sign_z))
     }
-}
 
-impl P32E2 {
-    #[inline]
-    fn add_mags(mut ui_a: u32, mut ui_b: u32) -> Self {
+    #[allow(clippy::manual_swap)]
+    const fn add_mags(mut ui_a: u32, mut ui_b: u32) -> Self {
         let sign = Self::sign_ui(ui_a);
         if sign {
             ui_a = ui_a.wrapping_neg();
@@ -320,7 +258,9 @@ impl P32E2 {
         }
 
         if (ui_a as i32) < (ui_b as i32) {
-            mem::swap(&mut ui_a, &mut ui_b);
+            let temp = ui_a;
+            ui_a = ui_b;
+            ui_b = temp;
         }
 
         let (mut k_a, mut exp_a, frac_a) = Self::separate_bits(ui_a);
@@ -334,9 +274,11 @@ impl P32E2 {
         //This is 4kZ + expZ; (where kZ=k_a-kB and expZ=exp_a-expB)
         shift_right = (shift_right << 2) + (exp_a as i16) - (exp_b as i16);
 
-        frac64 += ((frac_b as u64) << 32)
-            .checked_shr(shift_right as u32)
-            .unwrap_or(0);
+        frac64 += if let Some(val) = ((frac_b as u64) << 32).checked_shr(shift_right as u32) {
+            val
+        } else {
+            0
+        };
 
         let rcarry = (0x8000_0000_0000_0000 & frac64) != 0; //first left bit
         if rcarry {
@@ -366,11 +308,11 @@ impl P32E2 {
             )
         };
 
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_z, sign))
     }
 
-    #[inline]
-    fn sub_mags(mut ui_a: u32, mut ui_b: u32) -> Self {
+    #[allow(clippy::manual_swap)]
+    const fn sub_mags(mut ui_a: u32, mut ui_b: u32) -> Self {
         let mut sign = Self::sign_ui(ui_a);
         if sign {
             ui_a = ui_a.wrapping_neg();
@@ -383,7 +325,9 @@ impl P32E2 {
             return Self::ZERO;
         }
         if (ui_a as i32) < (ui_b as i32) {
-            mem::swap(&mut ui_a, &mut ui_b);
+            let temp = ui_a;
+            ui_a = ui_b;
+            ui_b = temp;
             sign = !sign; //A becomes B
         }
 
@@ -399,7 +343,7 @@ impl P32E2 {
         shift_right = (shift_right << 2) + (exp_a as i16) - (exp_b as i16);
 
         if shift_right > 63 {
-            return Self::from_bits(ui_a.with_sign(sign));
+            return Self::from_bits(u32_with_sign(ui_a, sign));
         } else {
             frac64_b >>= shift_right;
         }
@@ -441,14 +385,12 @@ impl P32E2 {
             )
         };
 
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u32_with_sign(u_z, sign))
     }
-}
 
-impl ops::Rem for P32E2 {
-    type Output = Self;
-    fn rem(self, other: Self) -> Self {
-        self - (self / other).trunc() * other
+    #[inline]
+    pub const fn rem(self, other: Self) -> Self {
+        self.sub((self.div(other)).trunc().mul(other))
     }
 }
 
