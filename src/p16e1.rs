@@ -272,3 +272,13 @@ impl P16E1 {
         Self::from_bits(u_z)
     }
 }
+
+impl crate::RawPosit for P16E1 {
+    type UInt = u16;
+    type Int = i16;
+
+    const BITSIZE: usize = 16;
+
+    const EXPONENT_BITS: usize = 1;
+    const EXPONENT_MASK: Self::UInt = 0x1;
+}

@@ -218,84 +218,9 @@ const fn convert_p16bits_to_u64(ui_a: u16) -> u64 {
     }
 }
 
-fn check_extra_two_bits_p16(
-    mut float: f64,
-    mut temp: f64,
-    bits_n_plus_one: &mut bool,
-    bits_more: &mut bool,
-) {
-    temp /= 2.;
-    if temp <= float {
-        *bits_n_plus_one = true;
-        float -= temp;
-    }
-    if float > 0. {
-        *bits_more = true;
-    }
-}
-fn convert_fraction_p16(
-    mut float: f64,
-    mut frac_length: u8,
-    bits_n_plus_one: &mut bool,
-    bits_more: &mut bool,
-) -> u16 {
-    let mut frac = 0_u16;
-
-    if float == 0. {
-        return 0;
-    } else if float == f64::INFINITY {
-        return 0x8000;
-    }
-
-    float -= 1.; //remove hidden bit
-    if frac_length == 0 {
-        check_extra_two_bits_p16(float, 1., bits_n_plus_one, bits_more);
-    } else {
-        let mut temp = 1_f64;
-        loop {
-            temp /= 2.;
-            if temp <= float {
-                float -= temp;
-                frac_length -= 1;
-                frac = (frac << 1) + 1; //shift in one
-                if float == 0. {
-                    //put in the rest of the bits
-                    frac <<= frac_length as u8;
-                    break;
-                }
-
-                if frac_length == 0 {
-                    check_extra_two_bits_p16(float, temp, bits_n_plus_one, bits_more);
-                    break;
-                }
-            } else {
-                frac <<= 1; //shift in a zero
-                frac_length -= 1;
-                if frac_length == 0 {
-                    check_extra_two_bits_p16(float, temp, bits_n_plus_one, bits_more);
-                    break;
-                }
-            }
-        }
-    }
-
-    frac
-}
-
 impl P16E1 {
     #[inline]
     pub fn from_f32(float: f32) -> Self {
-        Self::from_f64(float as f64)
-    }
-
-    #[allow(clippy::cognitive_complexity)]
-    pub fn from_f64(mut float: f64) -> Self {
-        let mut reg: u16;
-        let mut bit_n_plus_one = false;
-        let mut bits_more = false;
-        let mut frac = 0_u16;
-        let mut exp = 0_i8;
-
         if float == 0. {
             return Self::ZERO;
         } else if !float.is_finite() {
@@ -320,135 +245,67 @@ impl P16E1 {
         } else if (float >= -3.725_290_298_461_914_e-9) && sign {
             //-minpos
             0xFFFF
-        } else if !(-1. ..=1.).contains(&float) {
-            if sign {
-                //Make negative numbers positive for easier computation
-                float = -float;
-            }
-
-            reg = 1; //because k = m-1; so need to add back 1
-                     // minpos
-            if float <= 3.725_290_298_461_914_e-9 {
-                1
-            } else {
-                //regime
-                while float >= 4. {
-                    float *= 0.25;
-                    reg += 1;
-                }
-                if float >= 2. {
-                    float *= 0.5;
-                    exp += 1;
-                }
-
-                let frac_length = 13 - (reg as i8);
-
-                if frac_length < 0 {
-                    //reg == 14, means rounding bits is exp and just the rest.
-                    if float > 1. {
-                        bits_more = true;
-                    }
-                } else {
-                    frac = convert_fraction_p16(
-                        float,
-                        frac_length as u8,
-                        &mut bit_n_plus_one,
-                        &mut bits_more,
-                    );
-                }
-                if (reg == 14) && (frac > 0) {
-                    bits_more = true;
-                    frac = 0;
-                }
-                u16_with_sign(
-                    if reg > 14 {
-                        0x7FFF
-                    } else {
-                        let regime = ((1_u16 << reg) - 1) << 1;
-                        let ex = if reg == 14 {
-                            0
-                        } else {
-                            (exp as u16) << (13 - reg)
-                        };
-                        let mut u_z = ((regime as u16) << (14 - reg)) + ex + frac;
-                        //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-                        if (reg == 14) && (exp != 0) {
-                            bit_n_plus_one = true;
-                        }
-                        u_z += ((bit_n_plus_one as u16) & (u_z & 1))
-                            | ((bit_n_plus_one & bits_more) as u16);
-                        u_z
-                    },
-                    sign,
-                )
-            }
-        } else if (float < 1.) || (float > -1.) {
-            if sign {
-                //Make negative numbers positive for easier computation
-                float = -float;
-            }
-            reg = 0;
-
-            //regime
-            while float < 1. {
-                float *= 4.;
-                reg += 1;
-            }
-            if float >= 2. {
-                float /= 2.;
-                exp += 1;
-            }
-            if reg == 14 {
-                bit_n_plus_one = exp != 0;
-                if frac > 1 {
-                    bits_more = true;
-                }
-            } else {
-                //only possible combination for reg=15 to reach here is 7FFF (maxpos) and FFFF (-minpos)
-                //but since it should be caught on top, so no need to handle
-                let frac_length = 13 - reg;
-                frac = convert_fraction_p16(
-                    float,
-                    frac_length as u8,
-                    &mut bit_n_plus_one,
-                    &mut bits_more,
-                );
-            }
-
-            if (reg == 14) && (frac > 0) {
-                bits_more = true;
-                frac = 0;
-            }
-            u16_with_sign(
-                if reg > 14 {
-                    0x1
-                } else {
-                    let regime = 1_u16;
-                    let ex = if reg == 14 {
-                        0
-                    } else {
-                        (exp as u16) << (13 - reg)
-                    };
-                    let mut u_z = ((regime as u16) << (14 - reg)) + ex + frac;
-                    //n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-                    if (reg == 14) && (exp != 0) {
-                        bit_n_plus_one = true;
-                    }
-                    u_z += ((bit_n_plus_one as u16) & (u_z & 1))
-                        | ((bit_n_plus_one & bits_more) as u16);
-                    u_z
-                },
-                sign,
-            )
         } else {
-            //NaR - for NaN, INF and all other combinations
-            0x8000
+            crate::convert::convert_float!(P16E1, f32, float.to_bits())
         };
         Self::from_bits(u_z)
     }
-}
 
-impl P16E1 {
+    pub fn from_f64(float: f64) -> Self {
+        if float == 0. {
+            return Self::ZERO;
+        } else if !float.is_finite() {
+            return Self::NAR;
+        } else if float >= 268_435_456. {
+            //maxpos
+            return Self::MAX;
+        } else if float <= -268_435_456. {
+            // -maxpos
+            return Self::MIN;
+        }
+
+        let sign = float < 0.;
+
+        let u_z: u16 = if float == 1. {
+            0x4000
+        } else if float == -1. {
+            0xC000
+        } else if (float <= 3.725_290_298_461_914_e-9) && !sign {
+            //minpos
+            1
+        } else if (float >= -3.725_290_298_461_914_e-9) && sign {
+            //-minpos
+            0xFFFF
+        } else {
+            crate::convert::convert_float!(P16E1, f64, float.to_bits())
+        };
+        Self::from_bits(u_z)
+    }
+
+    pub const fn const_from_f32(float: f32) -> Self {
+        use crate::RawFloat;
+        let ui: u32 = unsafe { transmute(float) };
+
+        // check zero
+        if ui & !f32::SIGN_MASK == 0 {
+            return Self::ZERO;
+        }
+
+        Self::from_bits(crate::convert::convert_float!(P16E1, f32, ui))
+    }
+
+    pub const fn const_from_f64(float: f64) -> Self {
+        use crate::RawFloat;
+        let ui: u64 = unsafe { transmute(float) };
+
+        // check zero
+        if ui & !f64::SIGN_MASK == 0 {
+            return Self::ZERO;
+        }
+
+        Self::from_bits(crate::convert::convert_float!(P16E1, f64, ui))
+    }
+
     #[inline]
     pub const fn to_f32(self) -> f32 {
         let mut ui_a = self.to_bits();
@@ -511,6 +368,26 @@ fn convert_p16_f32() {
         let p = P16E1::new(n);
         let f = f32::from(p);
         assert_eq!(p, P16E1::from(f));
+    }
+}
+
+#[test]
+fn convert_f64_p8_rand() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..crate::NTESTS16 {
+        let f: f64 = rng.gen();
+        let _p = P16E1::from(f);
+    }
+}
+
+#[test]
+fn convert_f32_p16_rand() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..crate::NTESTS16 {
+        let f: f32 = rng.gen();
+        let _p = P16E1::from(f);
     }
 }
 

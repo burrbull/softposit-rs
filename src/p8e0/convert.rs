@@ -4,99 +4,22 @@ use core::{f32, f64, mem::transmute};
 
 crate::macros::impl_convert!(P8E0);
 
-fn check_extra_two_bits_p8(
-    mut float: f64,
-    mut temp: f64,
-    bits_n_plus_one: &mut bool,
-    bits_more: &mut bool,
-) {
-    temp /= 2.;
-    if temp <= float {
-        *bits_n_plus_one = true;
-        float -= temp;
-    }
-    if float > 0. {
-        *bits_more = true;
-    }
-}
-
-fn convert_fraction_p8(
-    mut float: f64,
-    mut frac_length: u8,
-    bits_n_plus_one: &mut bool,
-    bits_more: &mut bool,
-) -> u8 {
-    let mut frac = 0_u8;
-
-    if float == 0. {
-        return 0;
-    } else if float == f64::INFINITY {
-        return 0x80;
-    }
-
-    float -= 1.; //remove hidden bit
-    if frac_length == 0 {
-        check_extra_two_bits_p8(float, 1., bits_n_plus_one, bits_more);
-    } else {
-        let mut temp = 1_f64;
-        loop {
-            temp /= 2.;
-            if temp <= float {
-                float -= temp;
-                frac_length -= 1;
-                frac = (frac << 1) + 1; //shift in one
-                if float == 0. {
-                    //put in the rest of the bits
-                    frac <<= frac_length as u8;
-                    break;
-                }
-
-                if frac_length == 0 {
-                    check_extra_two_bits_p8(float, temp, bits_n_plus_one, bits_more);
-
-                    break;
-                }
-            } else {
-                frac <<= 1; //shift in a zero
-                frac_length -= 1;
-                if frac_length == 0 {
-                    check_extra_two_bits_p8(float, temp, bits_n_plus_one, bits_more);
-                    break;
-                }
-            }
-        }
-    }
-    frac
-}
-
 impl P8E0 {
     #[inline]
     pub fn from_f32(float: f32) -> Self {
-        Self::from_f64(float as f64)
-    }
-
-    pub fn from_f64(mut float: f64) -> Self {
-        let mut reg: u8;
-        let mut bit_n_plus_one = false;
-        let mut bits_more = false;
-
         if float == 0. {
-            return Self::ZERO;
+            return P8E0::ZERO;
         } else if !float.is_finite() {
-            return Self::INFINITY;
+            return P8E0::INFINITY;
         } else if float >= 64. {
             //maxpos
-            return Self::MAX;
+            return P8E0::MAX;
         } else if float <= -64. {
             // -maxpos
-            return Self::MIN;
+            return P8E0::MIN;
         }
 
         let sign = float < 0.;
-        // sign: 1 bit, frac: 8 bits, mantisa: 23 bits
-        //sign = a.parts.sign;
-        //frac = a.parts.fraction;
-        //exp = a.parts.exponent;
 
         let u_z: u8 = if float == 0. {
             0
@@ -110,83 +33,67 @@ impl P8E0 {
         } else if (float >= -0.015_625) && sign {
             //-minpos
             0xFF
-        } else if !(-1. ..=1.).contains(&float) {
-            if sign {
-                //Make negative numbers positive for easier computation
-                float = -float;
-            }
-            reg = 1; //because k = m-1; so need to add back 1
-                     // minpos
-            if float <= 0.015_625 {
-                1
-            } else {
-                //regime
-                while float >= 2. {
-                    float *= 0.5;
-                    reg += 1;
-                }
-
-                //rounding off regime bits
-                u8_with_sign(
-                    if reg > 6 {
-                        0x7F
-                    } else {
-                        let frac_length = 6 - reg;
-                        let frac = convert_fraction_p8(
-                            float,
-                            frac_length,
-                            &mut bit_n_plus_one,
-                            &mut bits_more,
-                        );
-                        let regime = 0x7F - (0x7F >> reg);
-                        let mut u_z = P8E0::pack_to_ui(regime, frac);
-                        if bit_n_plus_one {
-                            u_z += (u_z & 1) | (bits_more as u8);
-                        }
-                        u_z
-                    },
-                    sign,
-                )
-            }
-        } else if (float < 1.) || (float > -1.) {
-            if sign {
-                //Make negative numbers positive for easier computation
-                float = -float;
-            }
-            reg = 0;
-
-            //regime
-            //printf("here we go\n");
-            while float < 1. {
-                float *= 2.;
-                reg += 1;
-            }
-            //rounding off regime bits
-            u8_with_sign(
-                if reg > 6 {
-                    0x1
-                } else {
-                    let frac_length = 6 - reg;
-                    let frac = convert_fraction_p8(
-                        float,
-                        frac_length,
-                        &mut bit_n_plus_one,
-                        &mut bits_more,
-                    );
-                    let regime = 0x40 >> reg;
-                    let mut u_z = P8E0::pack_to_ui(regime, frac);
-                    if bit_n_plus_one {
-                        u_z += (u_z & 1) | (bits_more as u8);
-                    }
-                    u_z
-                },
-                sign,
-            )
         } else {
-            //NaR - for NaN, INF and all other combinations
-            0x80
+            crate::convert::convert_float!(P8E0, f32, float.to_bits())
         };
         Self::from_bits(u_z)
+    }
+
+    pub fn from_f64(float: f64) -> Self {
+        if float == 0. {
+            return P8E0::ZERO;
+        } else if !float.is_finite() {
+            return P8E0::INFINITY;
+        } else if float >= 64. {
+            //maxpos
+            return P8E0::MAX;
+        } else if float <= -64. {
+            // -maxpos
+            return P8E0::MIN;
+        }
+
+        let sign = float < 0.;
+
+        let u_z: u8 = if float == 0. {
+            0
+        } else if float == 1. {
+            0x40
+        } else if float == -1. {
+            0xC0
+        } else if (float <= 0.015_625) && !sign {
+            //minpos
+            0x1
+        } else if (float >= -0.015_625) && sign {
+            //-minpos
+            0xFF
+        } else {
+            crate::convert::convert_float!(P8E0, f64, float.to_bits())
+        };
+        Self::from_bits(u_z)
+    }
+
+    pub const fn const_from_f32(float: f32) -> Self {
+        use crate::RawFloat;
+        let ui: u32 = unsafe { transmute(float) };
+
+        // check zero
+        if ui & !f32::SIGN_MASK == 0 {
+            return Self::ZERO;
+        }
+
+        Self::from_bits(crate::convert::convert_float!(P8E0, f32, ui))
+    }
+
+    pub const fn const_from_f64(float: f64) -> Self {
+        use crate::RawFloat;
+        let ui: u64 = unsafe { transmute(float) };
+
+        // check zero
+        if ui & !f64::SIGN_MASK == 0 {
+            return Self::ZERO;
+        }
+
+        Self::from_bits(crate::convert::convert_float!(P8E0, f64, ui))
     }
 
     pub const fn to_f32(self) -> f32 {
@@ -460,5 +367,25 @@ fn convert_p8_f32() {
         let p = P8E0::new(n);
         let f = f32::from(p);
         assert_eq!(p, P8E0::from(f));
+    }
+}
+
+#[test]
+fn convert_f64_p8_rand() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..crate::NTESTS8 {
+        let f: f64 = rng.gen();
+        let _p = P8E0::from(f);
+    }
+}
+
+#[test]
+fn convert_f32_p8_rand() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..crate::NTESTS8 {
+        let f: f32 = rng.gen();
+        let _p = P8E0::from(f);
     }
 }
