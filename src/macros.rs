@@ -630,6 +630,90 @@ macro_rules! impl_convert {
                 u64::from(a) as usize
             }
         }
+
+        impl From<f32> for $posit {
+            #[inline]
+            fn from(float: f32) -> Self {
+                Self::from_f32(float)
+            }
+        }
+
+        impl From<f64> for $posit {
+            #[inline]
+            fn from(float: f64) -> Self {
+                Self::from_f64(float)
+            }
+        }
+
+        impl From<$posit> for f32 {
+            #[inline]
+            fn from(p_a: $posit) -> Self {
+                p_a.to_f32()
+            }
+        }
+
+        impl From<$posit> for f64 {
+            #[inline]
+            fn from(p_a: $posit) -> Self {
+                p_a.to_f64()
+            }
+        }
+
+        impl From<$posit> for i32 {
+            #[inline]
+            fn from(p_a: $posit) -> Self {
+                p_a.to_i32()
+            }
+        }
+
+        impl From<$posit> for i64 {
+            #[inline]
+            fn from(p_a: $posit) -> Self {
+                p_a.to_i64()
+            }
+        }
+
+        impl From<u32> for $posit {
+            #[inline]
+            fn from(a: u32) -> Self {
+                Self::from_u32(a)
+            }
+        }
+
+        impl From<i32> for $posit {
+            #[inline]
+            fn from(i_a: i32) -> Self {
+                Self::from_i32(i_a)
+            }
+        }
+
+        impl From<u64> for $posit {
+            #[inline]
+            fn from(a: u64) -> Self {
+                Self::from_u64(a)
+            }
+        }
+
+        impl From<i64> for $posit {
+            #[inline]
+            fn from(i_a: i64) -> Self {
+                Self::from_i64(i_a)
+            }
+        }
+
+        impl From<$posit> for u64 {
+            #[inline]
+            fn from(p_a: $posit) -> Self {
+                p_a.to_u64()
+            }
+        }
+
+        impl From<$posit> for u32 {
+            #[inline]
+            fn from(p_a: $posit) -> Self {
+                p_a.to_u32()
+            }
+        }
     };
 }
 pub(crate) use impl_convert;

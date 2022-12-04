@@ -1,19 +1,18 @@
 use super::P32E2;
 use crate::{u32_with_sign, u64_with_sign};
-use core::cmp::Ordering;
 use core::f64;
+use core::mem::transmute;
 
 crate::macros::impl_convert!(P32E2);
 
-impl From<f32> for P32E2 {
-    fn from(float: f32) -> Self {
-        Self::from(float as f64)
+impl P32E2 {
+    #[inline]
+    pub fn from_f32(float: f32) -> Self {
+        Self::from_f64(float as f64)
     }
-}
 
-impl From<f64> for P32E2 {
     #[allow(clippy::cognitive_complexity)]
-    fn from(mut float: f64) -> Self {
+    pub fn from_f64(mut float: f64) -> Self {
         let mut reg: u32;
         let mut frac = 0_u32;
         let mut exp = 0_i32;
@@ -177,23 +176,18 @@ impl From<f64> for P32E2 {
         };
         Self::from_bits(u_z)
     }
-}
 
-impl From<P32E2> for f32 {
     #[inline]
-    fn from(a: P32E2) -> Self {
-        f64::from(a) as f32
+    pub fn to_f32(self) -> f32 {
+        self.to_f64() as f32
     }
-}
 
-impl From<P32E2> for f64 {
-    #[inline]
-    fn from(p_a: P32E2) -> Self {
-        let mut ui_a = p_a.to_bits();
+    pub const fn to_f64(self) -> f64 {
+        let mut ui_a = self.to_bits();
 
-        if p_a.is_zero() {
+        if self.is_zero() {
             0.
-        } else if p_a.is_nar() {
+        } else if self.is_nar() {
             f64::NAN
         } else {
             let sign_a = ui_a & P32E2::SIGN_MASK;
@@ -205,19 +199,17 @@ impl From<P32E2> for f64 {
             let frac_a = ((tmp << 3) as u64) << 20;
             let exp_a = (((k_a as u64) << 2) + ((tmp >> 29) as u64)).wrapping_add(1023) << 52;
 
-            f64::from_bits(exp_a + frac_a + ((sign_a as u64) << 32))
+            unsafe { transmute(exp_a + frac_a + ((sign_a as u64) << 32)) }
         }
     }
-}
 
-impl From<P32E2> for i32 {
     #[inline]
-    fn from(p_a: P32E2) -> Self {
-        if p_a.is_nar() {
+    pub const fn to_i32(self) -> i32 {
+        if self.is_nar() {
             return i32::min_value();
         }
 
-        let mut ui_a = p_a.to_bits();
+        let mut ui_a = self.to_bits();
 
         let sign = (ui_a & 0x8000_0000) != 0;
         if sign {
@@ -236,16 +228,14 @@ impl From<P32E2> for i32 {
 
         u32_with_sign(i_z, sign) as i32
     }
-}
 
-impl From<P32E2> for u32 {
     #[inline]
-    fn from(p_a: P32E2) -> Self {
-        if p_a.is_nar() {
+    pub const fn to_u32(self) -> u32 {
+        if self.is_nar() {
             return 0x8000_0000; // Error: Should be u32::max_value()
         }
 
-        let ui_a = p_a.to_bits();
+        let ui_a = self.to_bits();
 
         //negative
         if ui_a > 0x8000_0000 {
@@ -253,9 +243,94 @@ impl From<P32E2> for u32 {
         }
         convert_p32bits_to_u32(ui_a)
     }
+
+    #[inline]
+    pub const fn to_i64(self) -> i64 {
+        let mut ui_a = self.to_bits();
+
+        if ui_a == 0x8000_0000 {
+            return i64::min_value();
+        }
+
+        let sign = (ui_a & 0x8000_0000) != 0;
+        if sign {
+            ui_a = ui_a.wrapping_neg();
+        }
+
+        if ui_a > 0x_7fff_afff {
+            return if sign {
+                i64::min_value()
+            } else {
+                i64::max_value()
+            };
+        };
+
+        let i_z = convert_p32bits_to_u64(ui_a);
+
+        u64_with_sign(i_z, sign) as i64
+    }
+
+    #[inline]
+    pub const fn to_u64(self) -> u64 {
+        let ui_a = self.to_bits();
+
+        //NaR
+        if ui_a == 0x8000_0000 {
+            0x8000_0000_0000_0000
+        } else if ui_a > 0x8000_0000 {
+            0
+        } else {
+            convert_p32bits_to_u64(ui_a)
+        }
+    }
+
+    #[inline]
+    pub const fn from_i32(mut i_a: i32) -> Self {
+        if i_a < -2_147_483_135 {
+            //-2147483648 to -2147483136 rounds to P32 value -2147483648
+            return Self::from_bits(0x_8050_0000);
+        }
+        if i_a > 2_147_483_135 {
+            //2147483136 to 2147483647 rounds to P32 value (2147483648)=> 0x7FB00000
+            return Self::from_bits(0x_7FB0_0000);
+        }
+
+        let sign = i_a.is_negative();
+        if sign {
+            i_a = -i_a;
+        }
+        Self::from_bits(u32_with_sign(convert_u32_to_p32bits(i_a as u32), sign))
+    }
+
+    #[inline]
+    pub const fn from_u32(i_a: u32) -> Self {
+        Self::from_bits(convert_u32_to_p32bits(i_a))
+    }
+
+    #[inline]
+    pub const fn from_i64(mut i_a: i64) -> Self {
+        if i_a < -9_222_809_086_901_354_495 {
+            //-9222809086901354496 to -9223372036854775808 will be P32 value -9223372036854775808
+            return Self::from_bits(0x_8000_5000);
+        }
+        if i_a > 9_222_809_086_901_354_495 {
+            //9222809086901354496 to 9223372036854775807 will be P32 value 9223372036854775808
+            return Self::from_bits(0x_7FFF_B000); // 9223372036854775808
+        }
+        let sign = i_a.is_negative();
+        if sign {
+            i_a = -i_a;
+        }
+        Self::from_bits(u32_with_sign(convert_u64_to_p32bits(i_a as u64), sign))
+    }
+
+    #[inline]
+    pub const fn from_u64(a: u64) -> Self {
+        Self::from_bits(convert_u64_to_p32bits(a))
+    }
 }
 
-fn convert_p32bits_to_u32(ui_a: u32) -> u32 {
+const fn convert_p32bits_to_u32(ui_a: u32) -> u32 {
     if ui_a <= 0x3800_0000 {
         0 // 0 <= |pA| <= 1/2 rounds to zero.
     } else if ui_a < 0x4400_0000 {
@@ -290,49 +365,7 @@ fn convert_p32bits_to_u32(ui_a: u32) -> u32 {
     }
 }
 
-impl From<P32E2> for i64 {
-    #[inline]
-    fn from(p_a: P32E2) -> Self {
-        let mut ui_a = p_a.to_bits();
-
-        if ui_a == 0x8000_0000 {
-            return i64::min_value();
-        }
-
-        let sign = (ui_a & 0x8000_0000) != 0;
-        if sign {
-            ui_a = ui_a.wrapping_neg();
-        }
-
-        if ui_a > 0x_7fff_afff {
-            return if sign {
-                i64::min_value()
-            } else {
-                i64::max_value()
-            };
-        };
-
-        let i_z = convert_p32bits_to_u64(ui_a);
-
-        u64_with_sign(i_z, sign) as i64
-    }
-}
-
-impl From<P32E2> for u64 {
-    #[inline]
-    fn from(p_a: P32E2) -> Self {
-        let ui_a = p_a.to_bits();
-
-        //NaR
-        match ui_a.cmp(&0x8000_0000) {
-            Ordering::Equal => 0x8000_0000_0000_0000,
-            Ordering::Greater => 0,
-            Ordering::Less => convert_p32bits_to_u64(ui_a),
-        }
-    }
-}
-
-fn convert_p32bits_to_u64(ui_a: u32) -> u64 {
+const fn convert_p32bits_to_u64(ui_a: u32) -> u64 {
     if ui_a <= 0x3800_0000 {
         0 // 0 <= |pA| <= 1/2 rounds to zero.
     } else if ui_a < 0x4400_0000 {
@@ -346,86 +379,33 @@ fn convert_p32bits_to_u64(ui_a: u32) -> u64 {
 
         let mut i_z: u64 = (((bits as u64) | 0x1000_0000) & 0x1FFF_FFFF) << 34; // Left-justify fraction in 32-bit result (one left bit padding)
 
-        match scale.cmp(&62) {
-            Ordering::Less => {
-                let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
+        if scale < 62 {
+            let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
 
-                let bit_last = i_z & mask; // Extract the bit, without shifting it.
-                mask >>= 1;
-                let mut tmp = i_z & mask;
-                let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-                i_z ^= tmp; // Erase the bit, if it was set.
-                tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
-                i_z ^= tmp; // Erase those bits, if any were set.
+            let bit_last = i_z & mask; // Extract the bit, without shifting it.
+            mask >>= 1;
+            let mut tmp = i_z & mask;
+            let bit_n_plus_one = tmp != 0; // "True" if nonzero.
+            i_z ^= tmp; // Erase the bit, if it was set.
+            tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
+            i_z ^= tmp; // Erase those bits, if any were set.
 
-                if bit_n_plus_one {
-                    // logic for round to nearest, tie to even
-                    if (bit_last | tmp) != 0 {
-                        i_z += mask << 1;
-                    }
+            if bit_n_plus_one {
+                // logic for round to nearest, tie to even
+                if (bit_last | tmp) != 0 {
+                    i_z += mask << 1;
                 }
-                i_z >> (62 - scale) // Right-justify the integer.
             }
-            Ordering::Greater => i_z << (scale - 62),
-            Ordering::Equal => i_z,
+            i_z >> (62 - scale) // Right-justify the integer.
+        } else if scale > 64 {
+            i_z << (scale - 62)
+        } else {
+            i_z
         }
     }
 }
 
-impl From<i32> for P32E2 {
-    #[inline]
-    fn from(mut i_a: i32) -> Self {
-        if i_a < -2_147_483_135 {
-            //-2147483648 to -2147483136 rounds to P32 value -2147483648
-            return Self::from_bits(0x_8050_0000);
-        }
-        if i_a > 2_147_483_135 {
-            //2147483136 to 2147483647 rounds to P32 value (2147483648)=> 0x7FB00000
-            return Self::from_bits(0x_7FB0_0000);
-        }
-
-        let sign = i_a.is_negative();
-        if sign {
-            i_a = -i_a;
-        }
-        Self::from_bits(u32_with_sign(convert_u32_to_p32bits(i_a as u32), sign))
-    }
-}
-
-impl From<u32> for P32E2 {
-    #[inline]
-    fn from(a: u32) -> Self {
-        Self::from_bits(convert_u32_to_p32bits(a))
-    }
-}
-
-impl From<i64> for P32E2 {
-    #[inline]
-    fn from(mut i_a: i64) -> Self {
-        if i_a < -9_222_809_086_901_354_495 {
-            //-9222809086901354496 to -9223372036854775808 will be P32 value -9223372036854775808
-            return Self::from_bits(0x_8000_5000);
-        }
-        if i_a > 9_222_809_086_901_354_495 {
-            //9222809086901354496 to 9223372036854775807 will be P32 value 9223372036854775808
-            return Self::from_bits(0x_7FFF_B000); // 9223372036854775808
-        }
-        let sign = i_a.is_negative();
-        if sign {
-            i_a = -i_a;
-        }
-        Self::from_bits(u32_with_sign(convert_u64_to_p32bits(i_a as u64), sign))
-    }
-}
-
-impl From<u64> for P32E2 {
-    #[inline]
-    fn from(a: u64) -> Self {
-        Self::from_bits(convert_u64_to_p32bits(a))
-    }
-}
-
-fn convert_u32_to_p32bits(a: u32) -> u32 {
+const fn convert_u32_to_p32bits(a: u32) -> u32 {
     let mut mask = 0x8000_0000_u32;
     // NaR
     if a > 0xFFFF_FBFF {
@@ -459,7 +439,7 @@ fn convert_u32_to_p32bits(a: u32) -> u32 {
     }
 }
 
-fn convert_u64_to_p32bits(a: u64) -> u32 {
+const fn convert_u64_to_p32bits(a: u64) -> u32 {
     let mut mask = 0x8000_0000_0000_0000_u64;
     // NaR
     if a > 0xFFFB_FFFF_FFFF_FBFF {
