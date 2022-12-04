@@ -2,6 +2,84 @@ use crate::{u16_with_sign, u32_with_sign, u8_with_sign};
 use crate::{PxE1, PxE2};
 use crate::{P16E1, P32E2, P8E0};
 
+macro_rules! convert_float {
+    ($posit: ty, $float:ty, $x:ident) => {{
+        use crate::RawFloat;
+        use crate::RawPosit;
+        type UInt = <$float as RawFloat>::UInt;
+        type Int = <$float as RawFloat>::Int;
+
+        const fn bitround(mut ui: UInt) -> <$posit as RawPosit>::UInt {
+            const D_BITS: usize = <$float>::BITSIZE - <$posit>::BITSIZE; // difference in bits
+
+            // ROUND TO NEAREST, tie to even: create ulp/2 = ..007ff.. or ..0080..
+            const SHIFT: usize = if <$float>::BITSIZE <= <$posit>::BITSIZE {
+                0
+            } else {
+                <$posit>::BITSIZE // create ..007ff.. (just smaller than ulp/2)
+            };
+            let mut ulp_half = !<$float>::SIGN_MASK >> SHIFT;
+            ulp_half += (ui >> D_BITS) & 0x1; // turn into ..0080.. for odd (=round up if tie)
+            ui += ulp_half; // +ulp/2 and
+            (ui >> D_BITS) as _ // round down via >> is round nearest
+        }
+
+        // reinterpret input
+        let ui: UInt = unsafe { transmute($x) };
+
+        // check zero
+        if ui & !<$float>::SIGN_MASK == 0 {
+            return <$posit>::ZERO;
+        }
+
+        // extract exponent bits and shift to tail, then remove bias
+        let e = (ui & <$float>::EXPONENT_MASK) >> <$float>::SIGNIFICAND_BITS;
+        let e = (e as Int) - <$float>::EXPONENT_BIAS;
+        let signbit_e = e < 0; // sign of exponent
+        let k = e >> <$posit>::EXPONENT_BITS; // k-value for useed^k in posits
+
+        // ASSEMBLE POSIT REGIME, EXPONENT, MANTISSA
+        // get posit exponent_bits and shift to starting from bitposition 3 (they'll be shifted in later)
+        let mut exponent_bits = e & <$posit>::EXPONENT_MASK as Int;
+        exponent_bits <<= <$float>::BITSIZE - 2 - <$posit>::EXPONENT_BITS;
+
+        // create 01000... (for |x|<1) or 10000... (|x| > 1)
+        let regime_bits = (<$float>::SIGN_MASK >> (signbit_e as UInt)) as Int;
+
+        // extract mantissa bits and push to behind exponent rre..emm... (regime still hasn't been shifted)
+        let mut mantissa = (ui & <$float>::SIGNIFICAND_MASK) as Int;
+        mantissa <<= <$float>::EXPONENT_BITS - <$posit>::EXPONENT_BITS - 1;
+
+        // combine regime, exponent, mantissa and arithmetic bitshift for 11..110em or 00..001em
+        let mut regime_exponent_mantissa = regime_bits | exponent_bits | mantissa;
+        let shift = (k + 1).abs() + signbit_e as Int;
+        if shift < <$float>::BITSIZE as _ {
+            regime_exponent_mantissa >>= shift; // arithmetic bitshift
+        } else {
+            return <$posit>::NAR;
+        }
+        regime_exponent_mantissa &= !<$float>::SIGN_MASK as Int; // remove possible sign bit from arith shift
+
+        // round to nearest of the result
+        let mut p_rounded = bitround(regime_exponent_mantissa as UInt);
+
+        // no under or overflow rounding mode
+        let max_k = (<$float>::EXPONENT_BIAS >> 1) + 1;
+        let kabs = k.abs();
+        p_rounded = p_rounded.wrapping_sub((k.signum() * ((kabs >= <$posit>::BITSIZE as _ && kabs < max_k) as Int))
+            as <$posit as RawPosit>::Int as <$posit as RawPosit>::UInt);
+
+        let sign = (ui & <$float>::SIGN_MASK) != 0;
+        // two's complement for negative numbers
+        <$posit>::from_bits(if sign {
+            p_rounded.wrapping_neg()
+        } else {
+            p_rounded
+        })
+    }};
+}
+pub(crate) use convert_float;
+
 fn check_extra_p32_two_bits(
     mut float: f64,
     mut temp: f64,

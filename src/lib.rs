@@ -174,3 +174,64 @@ pub trait QuireDot<T> {
 
 #[cfg(feature = "linalg")]
 mod linalg;
+
+trait RawPosit {
+    type UInt;
+    type Int;
+
+    const BITSIZE: usize;
+
+    const EXPONENT_BITS: usize;
+    const EXPONENT_MASK: Self::UInt;
+}
+
+trait RawFloat {
+    type UInt;
+    type Int;
+
+    const BITSIZE: usize;
+
+    const EXPONENT_BITS: usize;
+    const EXPONENT_MASK: Self::UInt;
+
+    const EXPONENT_BIAS: Self::Int;
+
+    const SIGNIFICAND_BITS: Self::UInt;
+    const SIGNIFICAND_MASK: Self::UInt;
+
+    const SIGN_MASK: Self::UInt;
+}
+
+impl RawFloat for f32 {
+    type UInt = u32;
+    type Int = i32;
+
+    const BITSIZE: usize = 32;
+
+    const EXPONENT_BITS: usize = 8;
+    const EXPONENT_MASK: Self::UInt = 0x_7f80_0000;
+
+    const EXPONENT_BIAS: Self::Int = 127;
+
+    const SIGNIFICAND_BITS: Self::UInt = 23;
+    const SIGNIFICAND_MASK: Self::UInt = 0x_007f_ffff;
+
+    const SIGN_MASK: Self::UInt = 0x8000_0000;
+}
+
+impl RawFloat for f64 {
+    type UInt = u64;
+    type Int = i64;
+
+    const BITSIZE: usize = 64;
+
+    const EXPONENT_BITS: usize = 11;
+    const EXPONENT_MASK: Self::UInt = 0x_7ff0_0000_0000_0000;
+
+    const EXPONENT_BIAS: Self::Int = 1023;
+
+    const SIGNIFICAND_BITS: Self::UInt = 52;
+    const SIGNIFICAND_MASK: Self::UInt = 0x_000f_ffff_ffff_ffff;
+
+    const SIGN_MASK: Self::UInt = 0x_8000_0000_0000_0000;
+}

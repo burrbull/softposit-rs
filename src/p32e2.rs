@@ -230,3 +230,13 @@ impl rand::distributions::Distribution<P32E2> for rand::distributions::Standard 
         P32E2::from_bits((P32E2::from_bits(s) - P32E2::ONE).to_bits() ^ s2)
     }
 }
+
+impl crate::RawPosit for P32E2 {
+    type UInt = u32;
+    type Int = i32;
+
+    const BITSIZE: usize = 32;
+
+    const EXPONENT_BITS: usize = 2;
+    const EXPONENT_MASK: Self::UInt = 0x3;
+}

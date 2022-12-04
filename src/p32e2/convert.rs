@@ -7,65 +7,132 @@ crate::macros::impl_convert!(P32E2);
 
 impl P32E2 {
     #[inline]
-    pub fn from_f32(float: f32) -> Self {
-        Self::from_f64(float as f64)
+    pub const fn from_f32(float: f32) -> Self {
+        crate::convert::convert_float!(P32E2, f32, float)
     }
 
-    #[allow(clippy::cognitive_complexity)]
-    pub fn from_f64(mut float: f64) -> Self {
-        let mut reg: u32;
-        let mut frac = 0_u32;
-        let mut exp = 0_i32;
-        let mut bit_n_plus_one = false;
-        let mut bits_more = false;
+    pub const fn from_f64(float: f64) -> Self {
+        crate::convert::convert_float!(P32E2, f64, float)
+    }
+    /*
+        #[allow(clippy::cognitive_complexity)]
+        pub fn from_f64(mut float: f64) -> Self {
+            let mut reg: u32;
+            let mut frac = 0_u32;
+            let mut exp = 0_i32;
+            let mut bit_n_plus_one = false;
+            let mut bits_more = false;
 
-        if float == 0. {
-            return Self::ZERO;
-        } else if !float.is_finite() {
-            return Self::NAR;
-        } else if float >= 1.329_227_995_784_916_e36 {
-            //maxpos
-            return Self::MAX;
-        } else if float <= -1.329_227_995_784_916_e36 {
-            // -maxpos
-            return Self::MIN;
-        }
-
-        let sign = float < 0.;
-
-        let u_z: u32 = if float == 1. {
-            0x4000_0000
-        } else if float == -1. {
-            0xC000_0000
-        } else if (float <= 7.523_163_845_262_64_e-37) && !sign {
-            //minpos
-            0x1
-        } else if (float >= -7.523_163_845_262_64_e-37) && sign {
-            //-minpos
-            0xFFFF_FFFF
-        } else if !(-1. ..=1.).contains(&float) {
-            if sign {
-                //Make negative numbers positive for easier computation
-                float = -float;
+            if float == 0. {
+                return Self::ZERO;
+            } else if !float.is_finite() {
+                return Self::NAR;
+            } else if float >= 1.329_227_995_784_916_e36 {
+                //maxpos
+                return Self::MAX;
+            } else if float <= -1.329_227_995_784_916_e36 {
+                // -maxpos
+                return Self::MIN;
             }
 
-            reg = 1; //because k = m-1; so need to add back 1
-                     // minpos
-            if float <= 7.523_163_845_262_64_e-37 {
-                1
-            } else {
+            let sign = float < 0.;
+
+            let u_z: u32 = if float == 1. {
+                0x4000_0000
+            } else if float == -1. {
+                0xC000_0000
+            } else if (float <= 7.523_163_845_262_64_e-37) && !sign {
+                //minpos
+                0x1
+            } else if (float >= -7.523_163_845_262_64_e-37) && sign {
+                //-minpos
+                0xFFFF_FFFF
+            } else if !(-1. ..=1.).contains(&float) {
+                if sign {
+                    //Make negative numbers positive for easier computation
+                    float = -float;
+                }
+
+                reg = 1; //because k = m-1; so need to add back 1
+                         // minpos
+                if float <= 7.523_163_845_262_64_e-37 {
+                    1
+                } else {
+                    //regime
+                    while float >= 16. {
+                        float *= 0.0625; // float/=16;
+                        reg += 1;
+                    }
+                    while float >= 2. {
+                        float *= 0.5;
+                        exp += 1;
+                    }
+
+                    let frac_length = 28 - (reg as i8);
+
+                    if frac_length < 0 {
+                        //in both cases, reg=29 and 30, e is n+1 bit and frac are sticky bits
+                        if reg == 29 {
+                            bit_n_plus_one = (exp & 0x1) != 0;
+                            exp >>= 1; //taken care of by the pack algo
+                        } else {
+                            //reg=30
+                            bit_n_plus_one = (exp >> 1) != 0;
+                            bits_more = (exp & 0x1) != 0;
+                            exp = 0;
+                        }
+                        if float != 1. {
+                            //because of hidden bit
+                            bits_more = true;
+                            frac = 0;
+                        }
+                    } else {
+                        frac = crate::convert_fraction_p32(
+                            float,
+                            frac_length as u16,
+                            &mut bit_n_plus_one,
+                            &mut bits_more,
+                        );
+                    }
+
+                    u32_with_sign(
+                        if reg > 30 {
+                            0x7FFF_FFFF
+                        } else {
+                            //rounding off fraction bits
+
+                            let regime = ((1 << reg) - 1) << 1;
+                            if reg <= 28 {
+                                exp <<= 28 - reg;
+                            }
+                            let u_z = ((regime as u32) << (30 - reg)) + (exp as u32) + (frac as u32);
+                            u_z + (((bit_n_plus_one as u32) & (u_z & 1))
+                                | ((bit_n_plus_one & bits_more) as u32))
+                        },
+                        sign,
+                    )
+                }
+            } else if (float < 1.) || (float > -1.) {
+                if sign {
+                    //Make negative numbers positive for easier computation
+                    float = -float;
+                }
+                reg = 0;
+
                 //regime
-                while float >= 16. {
-                    float *= 0.0625; // float/=16;
+                while float < 1. {
+                    float *= 16.;
                     reg += 1;
                 }
+
                 while float >= 2. {
                     float *= 0.5;
                     exp += 1;
                 }
 
+                //only possible combination for reg=15 to reach here is 7FFF (maxpos) and FFFF (-minpos)
+                //but since it should be caught on top, so no need to handle
                 let frac_length = 28 - (reg as i8);
-
                 if frac_length < 0 {
                     //in both cases, reg=29 and 30, e is n+1 bit and frac are sticky bits
                     if reg == 29 {
@@ -93,11 +160,11 @@ impl P32E2 {
 
                 u32_with_sign(
                     if reg > 30 {
-                        0x7FFF_FFFF
+                        0x1
                     } else {
                         //rounding off fraction bits
 
-                        let regime = ((1 << reg) - 1) << 1;
+                        let regime = 1_u32;
                         if reg <= 28 {
                             exp <<= 28 - reg;
                         }
@@ -107,76 +174,13 @@ impl P32E2 {
                     },
                     sign,
                 )
-            }
-        } else if (float < 1.) || (float > -1.) {
-            if sign {
-                //Make negative numbers positive for easier computation
-                float = -float;
-            }
-            reg = 0;
-
-            //regime
-            while float < 1. {
-                float *= 16.;
-                reg += 1;
-            }
-
-            while float >= 2. {
-                float *= 0.5;
-                exp += 1;
-            }
-
-            //only possible combination for reg=15 to reach here is 7FFF (maxpos) and FFFF (-minpos)
-            //but since it should be caught on top, so no need to handle
-            let frac_length = 28 - (reg as i8);
-            if frac_length < 0 {
-                //in both cases, reg=29 and 30, e is n+1 bit and frac are sticky bits
-                if reg == 29 {
-                    bit_n_plus_one = (exp & 0x1) != 0;
-                    exp >>= 1; //taken care of by the pack algo
-                } else {
-                    //reg=30
-                    bit_n_plus_one = (exp >> 1) != 0;
-                    bits_more = (exp & 0x1) != 0;
-                    exp = 0;
-                }
-                if float != 1. {
-                    //because of hidden bit
-                    bits_more = true;
-                    frac = 0;
-                }
             } else {
-                frac = crate::convert_fraction_p32(
-                    float,
-                    frac_length as u16,
-                    &mut bit_n_plus_one,
-                    &mut bits_more,
-                );
-            }
-
-            u32_with_sign(
-                if reg > 30 {
-                    0x1
-                } else {
-                    //rounding off fraction bits
-
-                    let regime = 1_u32;
-                    if reg <= 28 {
-                        exp <<= 28 - reg;
-                    }
-                    let u_z = ((regime as u32) << (30 - reg)) + (exp as u32) + (frac as u32);
-                    u_z + (((bit_n_plus_one as u32) & (u_z & 1))
-                        | ((bit_n_plus_one & bits_more) as u32))
-                },
-                sign,
-            )
-        } else {
-            //NaR - for NaN, INF and all other combinations
-            0x8000_0000
-        };
-        Self::from_bits(u_z)
-    }
-
+                //NaR - for NaN, INF and all other combinations
+                0x8000_0000
+            };
+            Self::from_bits(u_z)
+        }
+    */
     #[inline]
     pub fn to_f32(self) -> f32 {
         self.to_f64() as f32
@@ -471,6 +475,26 @@ const fn convert_u64_to_p32bits(a: u64) -> u32 {
             ui_a += 1;
         }
         ui_a as u32
+    }
+}
+
+#[test]
+fn convert_f64_p32_rand() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..100_000 {
+        let f: f64 = rng.gen();
+        let _p = P32E2::from(f);
+    }
+}
+
+#[test]
+fn convert_f32_p32_rand() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..100_000 {
+        let f: f32 = rng.gen();
+        let _p = P32E2::from(f);
     }
 }
 

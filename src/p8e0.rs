@@ -212,3 +212,13 @@ impl rand::distributions::Distribution<P8E0> for rand::distributions::Standard {
         P8E0::new(s as i8)
     }
 }
+
+impl crate::RawPosit for P8E0 {
+    type UInt = u8;
+    type Int = i8;
+
+    const BITSIZE: usize = 8;
+
+    const EXPONENT_BITS: usize = 0;
+    const EXPONENT_MASK: Self::UInt = 0x0;
+}
