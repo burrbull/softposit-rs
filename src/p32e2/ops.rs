@@ -2,11 +2,18 @@ use super::P32E2;
 use crate::WithSign;
 use core::{mem, ops};
 
+impl P32E2 {
+    #[inline]
+    pub const fn neg(self) -> Self {
+        Self::new(self.0.wrapping_neg())
+    }
+}
+
 impl ops::Neg for P32E2 {
     type Output = Self;
     #[inline]
     fn neg(self) -> Self {
-        Self::new(self.0.wrapping_neg())
+        self.neg()
     }
 }
 

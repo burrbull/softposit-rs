@@ -2,11 +2,18 @@ use super::P16E1;
 use crate::WithSign;
 use core::{mem, ops};
 
+impl P16E1 {
+    #[inline]
+    pub const fn neg(self) -> Self {
+        Self::new(self.0.wrapping_neg())
+    }
+}
+
 impl ops::Neg for P16E1 {
     type Output = Self;
     #[inline]
     fn neg(self) -> Self {
-        Self::new(self.0.wrapping_neg())
+        self.neg()
     }
 }
 

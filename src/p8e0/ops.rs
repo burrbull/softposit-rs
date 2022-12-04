@@ -2,11 +2,18 @@ use super::P8E0;
 use crate::WithSign;
 use core::{mem, ops};
 
+impl P8E0 {
+    #[inline]
+    pub const fn neg(self) -> Self {
+        Self::new(self.0.wrapping_neg())
+    }
+}
+
 impl ops::Neg for P8E0 {
     type Output = Self;
     #[inline]
     fn neg(self) -> Self {
-        Self::new(self.0.wrapping_neg())
+        self.neg()
     }
 }
 
@@ -169,7 +176,7 @@ impl ops::Div for P8E0 {
 
 impl P8E0 {
     #[inline]
-    fn calc_ui(k: i8, mut frac16: u16) -> u8 {
+    const fn calc_ui(k: i8, mut frac16: u16) -> u8 {
         let (regime, reg_s, reg_len) = Self::calculate_regime(k);
 
         if reg_len > 6 {
@@ -256,9 +263,8 @@ impl P8E0 {
         let (k_b, frac_b) = Self::separate_bits(ui_b);
         let shift_right = (k_a as i16) - (k_b as i16);
 
-        frac16_a += (frac_b as u16)
-            .checked_shl((7 - shift_right) as u32)
-            .unwrap_or(0);
+        frac16_a += if let Some(val) = (frac_b as u16)
+            .checked_shl((7 - shift_right) as u32) { val } else { 0 };
 
         let rcarry = (0x8000 & frac16_a) != 0; //first left bit
         if rcarry {

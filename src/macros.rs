@@ -1,3 +1,112 @@
+macro_rules! impl_const_fns {
+    ($T:ty) => {
+        impl $T {
+            #[inline]
+            pub const fn abs(self) -> Self {
+                if self.is_sign_negative() {
+                    self.neg()
+                } else {
+                    self
+                }
+            }
+            #[inline]
+            pub const fn is_zero(self) -> bool {
+                self.eq(Self::ZERO)
+            }
+            #[inline]
+            pub const fn is_nar(self) -> bool {
+                self.eq(Self::NAR)
+            }
+            #[inline]
+            pub const fn is_nan(self) -> bool {
+                self.is_nar()
+            }
+            #[inline]
+            pub fn is_infinite(self) -> bool {
+                self.is_nar()
+            }
+            #[inline]
+            pub fn is_finite(self) -> bool {
+                !self.is_nar()
+            }
+            #[inline]
+            pub fn is_normal(self) -> bool {
+                !self.is_nar()
+            }
+            #[inline]
+            pub fn clamp(mut self, min: Self, max: Self) -> Self {
+                assert!(min <= max);
+                if self < min {
+                    self = min;
+                }
+                if self > max {
+                    self = max;
+                }
+                self
+            }
+            #[inline]
+            pub fn classify(self) -> core::num::FpCategory {
+                use core::num::FpCategory::*;
+                match self {
+                    Self::ZERO => Zero,
+                    Self::NAR => Nan,
+                    _ => Normal,
+                }
+            }
+            #[inline]
+            pub fn is_sign_positive(self) -> bool {
+                !self.is_sign_negative()
+            }
+            #[inline]
+            pub const fn is_sign_negative(self) -> bool {
+                self.lt(Self::ZERO)
+            }
+            #[inline]
+            pub const fn signum(self) -> Self {
+                match self.0 {
+                    n if n == Self::NAR.0 => Self::NAR,
+                    n if n > 0 => Self::ONE,
+                    0 => Self::ZERO,
+                    _ => Self::ONE.neg(),
+                }
+            }
+            #[inline]
+            pub const fn copysign(self, other: Self) -> Self {
+                if ((self.to_bits() ^ other.to_bits()) & Self::SIGN_MASK) != 0 {
+                    self.neg()
+                } else {
+                    self
+                }
+            }
+            #[inline]
+            pub const fn eq(self, other: Self) -> bool {
+                self.0 == other.0
+            }
+            #[inline]
+            pub const fn cmp(self, other: Self) -> Ordering {
+                let a = self.0;
+                let b = other.0;
+                if a == b {
+                    Ordering::Equal
+                } else if a < b {
+                    Ordering::Less
+                } else {
+                    Ordering::Greater
+                }
+            }
+            #[inline]
+            pub const fn lt(&self, other: Self) -> bool { self.0 < other.0 }
+            #[inline]
+            pub const fn le(&self, other: Self) -> bool { self.0 <= other.0 }
+            #[inline]
+            pub const fn ge(&self, other: Self) -> bool { self.0 >= other.0 }
+            #[inline]
+            pub const fn gt(&self, other: Self) -> bool { self.0 > other.0 }
+        }
+    };
+}
+pub(crate) use impl_const_fns;
+
 macro_rules! impl_num_traits {
     ($posit:ty) => {
         impl num_traits::Zero for $posit {
