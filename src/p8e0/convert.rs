@@ -5,12 +5,14 @@ use core::{f32, f64, mem::transmute};
 crate::macros::impl_convert!(P8E0);
 
 impl From<f32> for P8E0 {
+    #[inline]
     fn from(float: f32) -> Self {
         Self::from_f32(float)
     }
 }
 
 impl From<f64> for P8E0 {
+    #[inline]
     fn from(float: f64) -> Self {
         Self::from_f64(float)
     }
@@ -152,6 +154,7 @@ fn convert_fraction_p8(
 }
 
 impl P8E0 {
+    #[inline]
     pub fn from_f32(float: f32) -> Self {
         Self::from_f64(float as f64)
     }
