@@ -46,7 +46,7 @@ impl P16E1 {
 }
 
 #[inline]
-fn poly(f: u64) -> u64 {
+const fn poly(f: u64) -> u64 {
     let fsq = (f * f) >> 28;
     let mut s = 13_696 + ((fsq * 7_955) >> 27);
     s = 100_510 + ((fsq * s) >> 26);
@@ -55,7 +55,7 @@ fn poly(f: u64) -> u64 {
     0x_2000_0000 - ((f * s) >> 25)
 }
 
-fn to_fixed28_acos_pi(i: u64) -> u64 {
+const fn to_fixed28_acos_pi(i: u64) -> u64 {
     let mut s = 14_i32;
 
     let mut f = i;

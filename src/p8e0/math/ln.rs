@@ -11,7 +11,7 @@ const LOG8: [u8; 128] = [
 ];
 
 impl P8E0 {
-    pub fn ln(self) -> Self {
+    pub const fn ln(self) -> Self {
         let u_a = self.to_bits();
         if u_a > 127 {
             Self::NAR

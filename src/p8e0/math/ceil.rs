@@ -1,8 +1,8 @@
 use super::P8E0;
-use crate::WithSign;
+use crate::u8_with_sign;
 
 impl P8E0 {
-    pub fn ceil(self) -> Self {
+    pub const fn ceil(self) -> Self {
         let mut mask = 0x20_u8;
         let mut scale = 0_u8;
 
@@ -57,6 +57,6 @@ impl P8E0 {
             }
             ui_a
         };
-        Self::from_bits(u_a.with_sign(sign))
+        Self::from_bits(u8_with_sign(u_a, sign))
     }
 }

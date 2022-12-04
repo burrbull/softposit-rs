@@ -1,53 +1,16 @@
 use super::P16E1;
-use crate::WithSign;
-use core::{mem, ops};
+use crate::u16_with_sign;
+use core::ops;
 
-impl ops::Neg for P16E1 {
-    type Output = Self;
-    #[inline]
-    fn neg(self) -> Self {
-        Self::new(self.0.wrapping_neg())
-    }
-}
-
-impl ops::AddAssign for P16E1 {
-    #[inline]
-    fn add_assign(&mut self, other: Self) {
-        *self = *self + other
-    }
-}
-
-impl ops::SubAssign for P16E1 {
-    #[inline]
-    fn sub_assign(&mut self, other: Self) {
-        *self = *self - other
-    }
-}
-
-impl ops::MulAssign for P16E1 {
-    #[inline]
-    fn mul_assign(&mut self, other: Self) {
-        *self = *self * other
-    }
-}
-
-impl ops::DivAssign for P16E1 {
-    #[inline]
-    fn div_assign(&mut self, other: Self) {
-        *self = *self / other
-    }
-}
-
-impl ops::RemAssign for P16E1 {
-    #[inline]
-    fn rem_assign(&mut self, other: Self) {
-        *self = *self % other
-    }
-}
+crate::macros::impl_ops!(P16E1);
 
 impl P16E1 {
     #[inline]
-    pub(crate) fn form_ui(reg_len: u32, regime: u16, exp: i8, frac32: u32) -> u16 {
+    pub const fn neg(self) -> Self {
+        Self::new(self.0.wrapping_neg())
+    }
+
+    pub(crate) const fn form_ui(reg_len: u32, regime: u16, exp: i8, frac32: u32) -> u16 {
         let mut frac = (frac32 >> 16) as u16;
 
         let mut bits_more = false;
@@ -72,11 +35,9 @@ impl P16E1 {
         }
         u_z
     }
-}
 
-impl P16E1 {
-    #[inline]
-    fn sub_mags(mut ui_a: u16, mut ui_b: u16) -> Self {
+    #[allow(clippy::manual_swap)]
+    const fn sub_mags(mut ui_a: u16, mut ui_b: u16) -> Self {
         //Both ui_a and ui_b are actually the same signs if ui_b inherits sign of sub
         //Make both positive
         let mut sign = Self::sign_ui(ui_a);
@@ -91,7 +52,9 @@ impl P16E1 {
             return Self::ZERO;
         }
         if ui_a < ui_b {
-            mem::swap(&mut ui_a, &mut ui_b);
+            let temp = ui_a;
+            ui_a = ui_b;
+            ui_b = temp;
             sign = !sign; //A becomes B
         }
 
@@ -108,7 +71,7 @@ impl P16E1 {
 
         if shift_right != 0 {
             if shift_right >= 29 {
-                return Self::from_bits(ui_a.with_sign(sign));
+                return Self::from_bits(u16_with_sign(ui_a, sign));
             } else {
                 frac32_b >>= shift_right;
             }
@@ -147,11 +110,11 @@ impl P16E1 {
                 (frac32 & 0x3FFF_FFFF) >> (reg_len + 1),
             )
         };
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u16_with_sign(u_z, sign))
     }
 
-    #[inline]
-    fn add_mags(mut ui_a: u16, mut ui_b: u16) -> Self {
+    #[allow(clippy::manual_swap)]
+    const fn add_mags(mut ui_a: u16, mut ui_b: u16) -> Self {
         let sign = Self::sign_ui(ui_a); //sign is always positive.. actually don't have to do this.
         if sign {
             ui_a = ui_a.wrapping_neg();
@@ -159,7 +122,9 @@ impl P16E1 {
         }
 
         if (ui_a as i16) < (ui_b as i16) {
-            mem::swap(&mut ui_a, &mut ui_b);
+            let temp = ui_a;
+            ui_a = ui_b;
+            ui_b = temp;
         }
 
         let (mut k_a, mut exp_a, frac_a) = Self::separate_bits(ui_a);
@@ -181,7 +146,11 @@ impl P16E1 {
             exp_a ^= 1;
             frac32 >>= 1;
         } else {
-            frac32 += frac32_b.checked_shr(shift_right as u32).unwrap_or(0);
+            frac32 += if let Some(val) = frac32_b.checked_shr(shift_right as u32) {
+                val
+            } else {
+                0
+            };
 
             let rcarry = (frac32 & 0x8000_0000) != 0; //first left bit
             if rcarry {
@@ -211,14 +180,10 @@ impl P16E1 {
                 (frac32 & 0x3FFF_FFFF) >> (reg_len + 1),
             )
         };
-        Self::from_bits(u_z.with_sign(sign))
+        Self::from_bits(u16_with_sign(u_z, sign))
     }
-}
 
-impl ops::Add for P16E1 {
-    type Output = Self;
-    #[inline]
-    fn add(self, other: Self) -> Self {
+    pub const fn add(self, other: Self) -> Self {
         let ui_a = self.to_bits();
         let ui_b = other.to_bits();
 
@@ -237,12 +202,8 @@ impl ops::Add for P16E1 {
             }
         }
     }
-}
 
-impl ops::Sub for P16E1 {
-    type Output = Self;
-    #[inline]
-    fn sub(self, other: Self) -> Self {
+    pub const fn sub(self, other: Self) -> Self {
         let ui_a = self.to_bits();
         let ui_b = other.to_bits();
 
@@ -261,12 +222,8 @@ impl ops::Sub for P16E1 {
             }
         }
     }
-}
 
-impl ops::Mul for P16E1 {
-    type Output = Self;
-    #[inline]
-    fn mul(self, other: Self) -> Self {
+    pub const fn mul(self, other: Self) -> Self {
         let mut ui_a = self.to_bits();
         let mut ui_b = other.to_bits();
 
@@ -327,14 +284,10 @@ impl ops::Mul for P16E1 {
             )
         };
 
-        Self::from_bits(u_z.with_sign(sign_z))
+        Self::from_bits(u16_with_sign(u_z, sign_z))
     }
-}
 
-impl ops::Div for P16E1 {
-    type Output = Self;
-    #[inline]
-    fn div(self, other: Self) -> Self {
+    pub const fn div(self, other: Self) -> Self {
         let mut ui_a = self.to_bits();
         let mut ui_b = other.to_bits();
 
@@ -417,14 +370,12 @@ impl ops::Div for P16E1 {
             u_z
         };
 
-        Self::from_bits(u_z.with_sign(sign_z))
+        Self::from_bits(u16_with_sign(u_z, sign_z))
     }
-}
 
-impl ops::Rem for P16E1 {
-    type Output = Self;
-    fn rem(self, other: Self) -> Self {
-        self - (self / other).trunc() * other
+    #[inline]
+    pub const fn rem(self, other: Self) -> Self {
+        self.sub((self.div(other)).trunc().mul(other))
     }
 }
 

@@ -1,5 +1,5 @@
 use super::Q16E1;
-use crate::WithSign;
+use crate::u16_with_sign;
 use crate::P16E1;
 
 impl From<P16E1> for Q16E1 {
@@ -109,6 +109,6 @@ impl From<&Q16E1> for P16E1 {
             u_a
         };
 
-        Self::from_bits(u_a.with_sign(sign))
+        Self::from_bits(u16_with_sign(u_a, sign))
     }
 }

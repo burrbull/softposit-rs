@@ -1,5 +1,5 @@
 use super::P8E0;
-use crate::WithSign;
+use crate::u8_with_sign;
 
 impl P8E0 {
     pub fn round(self) -> Self {
@@ -46,7 +46,7 @@ impl P8E0 {
             }
             ui_a
         };
-        Self::from_bits(u_a.with_sign(sign))
+        Self::from_bits(u8_with_sign(u_a, sign))
     }
 }
 

@@ -64,124 +64,49 @@ impl P8E0 {
         Self(i)
     }
     #[inline]
-    pub fn from_bits(v: u8) -> Self {
+    pub const fn from_bits(v: u8) -> Self {
         Self(v as _)
     }
     #[inline]
-    pub fn to_bits(self) -> u8 {
+    pub const fn to_bits(self) -> u8 {
         self.0 as _
     }
     #[inline]
-    pub fn abs(self) -> Self {
-        if self.is_sign_negative() {
-            -self
-        } else {
-            self
-        }
-    }
-    #[inline]
-    pub fn is_zero(self) -> bool {
-        self == Self::ZERO
-    }
-    #[inline]
-    pub fn is_nar(self) -> bool {
-        self == Self::NAR
-    }
-    #[inline]
-    pub fn is_nan(self) -> bool {
-        self.is_nar()
-    }
-    #[inline]
-    pub fn is_infinite(self) -> bool {
-        self.is_nar()
-    }
-    #[inline]
-    pub fn is_finite(self) -> bool {
-        !self.is_nar()
-    }
-    #[inline]
-    pub fn is_normal(self) -> bool {
-        !self.is_nar()
-    }
-    #[inline]
-    pub fn clamp(mut self, min: Self, max: Self) -> Self {
-        assert!(min <= max);
-        if self < min {
-            self = min;
-        }
-        if self > max {
-            self = max;
-        }
-        self
-    }
-    #[inline]
-    pub fn classify(self) -> core::num::FpCategory {
-        use core::num::FpCategory::*;
-        match self {
-            Self::ZERO => Zero,
-            Self::NAR => Nan,
-            _ => Normal,
-        }
-    }
-    #[inline]
-    pub fn is_sign_positive(self) -> bool {
-        !self.is_sign_negative()
-    }
-    #[inline]
-    pub fn is_sign_negative(self) -> bool {
-        self < Self::ZERO
-    }
-    #[inline]
-    pub fn copysign(self, other: Self) -> Self {
-        if ((self.to_bits() ^ other.to_bits()) & Self::SIGN_MASK) != 0 {
-            -self
-        } else {
-            self
-        }
-    }
-    #[inline]
-    pub fn signum(self) -> Self {
-        match self.0 {
-            n if n == Self::NAR.0 => Self::NAR,
-            n if n > 0 => Self::ONE,
-            0 => Self::ZERO,
-            _ => -Self::ONE,
-        }
-    }
-    #[inline]
     // TODO: optimize
-    pub fn recip(self) -> Self {
-        Self::ONE / self
+    pub const fn recip(self) -> Self {
+        Self::ONE.div(self)
     }
 }
+
+crate::macros::impl_const_fns!(P8E0);
 
 impl P8E0 {
     pub const SIGN_MASK: u8 = 0x_80;
     pub const REGIME_SIGN_MASK: u8 = 0x_40;
 
     #[inline]
-    pub(crate) fn sign_ui(a: u8) -> bool {
+    pub(crate) const fn sign_ui(a: u8) -> bool {
         (a & Self::SIGN_MASK) != 0
     }
 
     #[inline]
-    fn sign_reg_ui(a: u8) -> bool {
+    const fn sign_reg_ui(a: u8) -> bool {
         (a & Self::REGIME_SIGN_MASK) != 0
     }
 
     #[inline]
-    pub(crate) fn pack_to_ui(regime: u8, frac: u8) -> u8 {
+    pub(crate) const fn pack_to_ui(regime: u8, frac: u8) -> u8 {
         regime + frac
     }
 
     #[inline]
-    pub(crate) fn separate_bits(bits: u8) -> (i8, u8) {
+    pub(crate) const fn separate_bits(bits: u8) -> (i8, u8) {
         let (k, tmp) = Self::separate_bits_tmp(bits);
         (k, 0x80 | tmp)
     }
 
     #[inline]
-    pub(crate) fn separate_bits_tmp(bits: u8) -> (i8, u8) {
+    pub(crate) const fn separate_bits_tmp(bits: u8) -> (i8, u8) {
         let mut k = 0;
         let mut tmp = bits << 2;
         if Self::sign_reg_ui(bits) {
@@ -201,7 +126,7 @@ impl P8E0 {
     }
 
     #[inline]
-    fn calculate_scale(mut bits: u8) -> (u8, u8) {
+    const fn calculate_scale(mut bits: u8) -> (u8, u8) {
         let mut scale = 0_u8;
         // Decode the posit, left-justifying as we go.
         bits -= 0x40; // Strip off first regime bit (which is a 1).
@@ -215,14 +140,30 @@ impl P8E0 {
     }
 
     #[inline]
-    pub(crate) fn calculate_regime(k: i8) -> (u8, bool, u32) {
+    pub(crate) const fn calculate_regime(k: i8) -> (u8, bool, u32) {
         let len;
         if k < 0 {
             len = (-k) as u32;
-            (0x40_u8.checked_shr(len).unwrap_or(0), false, len)
+            (
+                if let Some(val) = 0x40_u8.checked_shr(len) {
+                    val
+                } else {
+                    0
+                },
+                false,
+                len,
+            )
         } else {
             len = (k + 1) as u32;
-            (0x7f - 0x7f_u8.checked_shr(len).unwrap_or(0), true, len)
+            (
+                0x7f - if let Some(val) = 0x7f_u8.checked_shr(len) {
+                    val
+                } else {
+                    0
+                },
+                true,
+                len,
+            )
         }
     }
 }
@@ -235,7 +176,7 @@ impl core::str::FromStr for P8E0 {
     }
 }
 
-use core::fmt;
+use core::{cmp::Ordering, fmt};
 impl fmt::Display for P8E0 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", f64::from(*self))

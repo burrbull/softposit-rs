@@ -11,7 +11,7 @@ const P8E0_SQRT: [u8; 128] = [
 
 impl P8E0 {
     #[inline]
-    pub fn sqrt(self) -> Self {
+    pub const fn sqrt(self) -> Self {
         let ui_a = self.to_bits();
 
         if ui_a >= 0x80 {

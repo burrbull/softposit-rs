@@ -16,7 +16,7 @@ const EXP8: [u8; 256] = [
 ];
 
 impl P8E0 {
-    pub fn exp(self) -> Self {
+    pub const fn exp(self) -> Self {
         Self::from_bits(EXP8[self.to_bits() as usize])
     }
 }

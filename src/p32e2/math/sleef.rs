@@ -39,7 +39,7 @@ pub fn mulsign(x: P32E2, y: P32E2) -> P32E2 {
 mod kernel {
     use super::*;
     // TODO: |n| > 111
-    pub fn pow2i(mut n: i32) -> P32E2 {
+    pub const fn pow2i(mut n: i32) -> P32E2 {
         let sign = n.is_negative();
         if sign {
             n = -n;
@@ -55,15 +55,15 @@ mod kernel {
         }
     }
 
-    pub fn ilogb(d: P32E2) -> i32 {
+    pub const fn ilogb(d: P32E2) -> i32 {
         let ui = d.abs().to_bits();
         let (k_a, tmp) = P32E2::separate_bits_tmp(ui);
         ((k_a as i32) << 2) + ((tmp >> 29) as i32)
     }
 
-    pub fn ldexp2(d: P32E2, e: i32) -> P32E2 {
+    pub const fn ldexp2(d: P32E2, e: i32) -> P32E2 {
         // faster than ldexpkf, short reach
-        d * pow2i(e >> 1) * pow2i(e - (e >> 1))
+        d.mul(pow2i(e >> 1)).mul(pow2i(e - (e >> 1)))
     }
 
     #[inline]

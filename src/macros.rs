@@ -1,3 +1,207 @@
+macro_rules! impl_const_fns {
+    ($T:ty) => {
+        impl $T {
+            #[inline]
+            pub const fn abs(self) -> Self {
+                if self.is_sign_negative() {
+                    self.neg()
+                } else {
+                    self
+                }
+            }
+            #[inline]
+            pub const fn is_zero(self) -> bool {
+                self.eq(Self::ZERO)
+            }
+            #[inline]
+            pub const fn is_nar(self) -> bool {
+                self.eq(Self::NAR)
+            }
+            #[inline]
+            pub const fn is_nan(self) -> bool {
+                self.is_nar()
+            }
+            #[inline]
+            pub fn is_infinite(self) -> bool {
+                self.is_nar()
+            }
+            #[inline]
+            pub fn is_finite(self) -> bool {
+                !self.is_nar()
+            }
+            #[inline]
+            pub fn is_normal(self) -> bool {
+                !self.is_nar()
+            }
+            #[inline]
+            pub fn clamp(mut self, min: Self, max: Self) -> Self {
+                assert!(min <= max);
+                if self < min {
+                    self = min;
+                }
+                if self > max {
+                    self = max;
+                }
+                self
+            }
+            #[inline]
+            pub fn classify(self) -> core::num::FpCategory {
+                use core::num::FpCategory::*;
+                match self {
+                    Self::ZERO => Zero,
+                    Self::NAR => Nan,
+                    _ => Normal,
+                }
+            }
+            #[inline]
+            pub fn is_sign_positive(self) -> bool {
+                !self.is_sign_negative()
+            }
+            #[inline]
+            pub const fn is_sign_negative(self) -> bool {
+                self.lt(Self::ZERO)
+            }
+            #[inline]
+            pub const fn signum(self) -> Self {
+                match self.0 {
+                    n if n == Self::NAR.0 => Self::NAR,
+                    n if n > 0 => Self::ONE,
+                    0 => Self::ZERO,
+                    _ => Self::ONE.neg(),
+                }
+            }
+            #[inline]
+            pub const fn copysign(self, other: Self) -> Self {
+                if ((self.to_bits() ^ other.to_bits()) & Self::SIGN_MASK) != 0 {
+                    self.neg()
+                } else {
+                    self
+                }
+            }
+            #[inline]
+            pub const fn eq(self, other: Self) -> bool {
+                self.0 == other.0
+            }
+            #[inline]
+            pub const fn cmp(self, other: Self) -> Ordering {
+                let a = self.0;
+                let b = other.0;
+                if a == b {
+                    Ordering::Equal
+                } else if a < b {
+                    Ordering::Less
+                } else {
+                    Ordering::Greater
+                }
+            }
+            #[inline]
+            pub const fn lt(&self, other: Self) -> bool {
+                self.0 < other.0
+            }
+            #[inline]
+            pub const fn le(&self, other: Self) -> bool {
+                self.0 <= other.0
+            }
+            #[inline]
+            pub const fn ge(&self, other: Self) -> bool {
+                self.0 >= other.0
+            }
+            #[inline]
+            pub const fn gt(&self, other: Self) -> bool {
+                self.0 > other.0
+            }
+        }
+    };
+}
+pub(crate) use impl_const_fns;
+
+macro_rules! impl_ops {
+    ($T:ty) => {
+        impl ops::Neg for $T {
+            type Output = Self;
+            #[inline]
+            fn neg(self) -> Self {
+                self.neg()
+            }
+        }
+
+        impl ops::Add for $T {
+            type Output = Self;
+            #[inline]
+            fn add(self, other: Self) -> Self {
+                self.add(other)
+            }
+        }
+
+        impl ops::Sub for $T {
+            type Output = Self;
+            #[inline]
+            fn sub(self, other: Self) -> Self {
+                self.sub(other)
+            }
+        }
+
+        impl ops::Div for $T {
+            type Output = Self;
+            #[inline]
+            fn div(self, other: Self) -> Self {
+                self.div(other)
+            }
+        }
+
+        impl ops::Mul for $T {
+            type Output = Self;
+            #[inline]
+            fn mul(self, other: Self) -> Self {
+                self.mul(other)
+            }
+        }
+
+        impl ops::Rem for $T {
+            type Output = Self;
+            fn rem(self, other: Self) -> Self {
+                self.rem(other)
+            }
+        }
+
+        impl ops::AddAssign for $T {
+            #[inline]
+            fn add_assign(&mut self, other: Self) {
+                *self = *self + other
+            }
+        }
+
+        impl ops::SubAssign for $T {
+            #[inline]
+            fn sub_assign(&mut self, other: Self) {
+                *self = *self - other
+            }
+        }
+
+        impl ops::MulAssign for $T {
+            #[inline]
+            fn mul_assign(&mut self, other: Self) {
+                *self = *self * other
+            }
+        }
+
+        impl ops::DivAssign for $T {
+            #[inline]
+            fn div_assign(&mut self, other: Self) {
+                *self = *self / other
+            }
+        }
+
+        impl ops::RemAssign for $T {
+            #[inline]
+            fn rem_assign(&mut self, other: Self) {
+                *self = *self % other
+            }
+        }
+    };
+}
+pub(crate) use impl_ops;
+
 macro_rules! impl_num_traits {
     ($posit:ty) => {
         impl num_traits::Zero for $posit {
@@ -424,6 +628,90 @@ macro_rules! impl_convert {
             #[inline]
             fn from(a: $posit) -> Self {
                 u64::from(a) as usize
+            }
+        }
+
+        impl From<f32> for $posit {
+            #[inline]
+            fn from(float: f32) -> Self {
+                Self::from_f32(float)
+            }
+        }
+
+        impl From<f64> for $posit {
+            #[inline]
+            fn from(float: f64) -> Self {
+                Self::from_f64(float)
+            }
+        }
+
+        impl From<$posit> for f32 {
+            #[inline]
+            fn from(p_a: $posit) -> Self {
+                p_a.to_f32()
+            }
+        }
+
+        impl From<$posit> for f64 {
+            #[inline]
+            fn from(p_a: $posit) -> Self {
+                p_a.to_f64()
+            }
+        }
+
+        impl From<$posit> for i32 {
+            #[inline]
+            fn from(p_a: $posit) -> Self {
+                p_a.to_i32()
+            }
+        }
+
+        impl From<$posit> for i64 {
+            #[inline]
+            fn from(p_a: $posit) -> Self {
+                p_a.to_i64()
+            }
+        }
+
+        impl From<u32> for $posit {
+            #[inline]
+            fn from(a: u32) -> Self {
+                Self::from_u32(a)
+            }
+        }
+
+        impl From<i32> for $posit {
+            #[inline]
+            fn from(i_a: i32) -> Self {
+                Self::from_i32(i_a)
+            }
+        }
+
+        impl From<u64> for $posit {
+            #[inline]
+            fn from(a: u64) -> Self {
+                Self::from_u64(a)
+            }
+        }
+
+        impl From<i64> for $posit {
+            #[inline]
+            fn from(i_a: i64) -> Self {
+                Self::from_i64(i_a)
+            }
+        }
+
+        impl From<$posit> for u64 {
+            #[inline]
+            fn from(p_a: $posit) -> Self {
+                p_a.to_u64()
+            }
+        }
+
+        impl From<$posit> for u32 {
+            #[inline]
+            fn from(p_a: $posit) -> Self {
+                p_a.to_u32()
             }
         }
     };

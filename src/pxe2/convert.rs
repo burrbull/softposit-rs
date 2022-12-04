@@ -1,5 +1,5 @@
 use super::PxE2;
-use crate::WithSign;
+use crate::u32_with_sign;
 use core::f64;
 
 impl<const N: u32> From<PxE2<{ N }>> for f32 {
@@ -104,36 +104,38 @@ impl<const N: u32> From<f64> for PxE2<{ N }> {
                     );
                 }
 
-                if reg > (N - 2) {
-                    if reg_s {
-                        0x_7FFF_FFFF & Self::mask()
+                u32_with_sign(
+                    if reg > (N - 2) {
+                        if reg_s {
+                            0x_7FFF_FFFF & Self::mask()
+                        } else {
+                            0x1 << (32 - N)
+                        }
                     } else {
-                        0x1 << (32 - N)
-                    }
-                } else {
-                    //rounding off fraction bits
+                        //rounding off fraction bits
 
-                    let regime = if reg_s { ((1 << reg) - 1) << 1 } else { 1_u32 };
+                        let regime = if reg_s { ((1 << reg) - 1) << 1 } else { 1_u32 };
 
-                    if (N == 32) && (reg == 29) {
-                        exp >>= 1;
-                    } else if reg <= 28 {
-                        exp <<= 28 - reg;
-                    }
+                        if (N == 32) && (reg == 29) {
+                            exp >>= 1;
+                        } else if reg <= 28 {
+                            exp <<= 28 - reg;
+                        }
 
-                    let mut u_z = ((regime as u32) << (30 - reg))
-                        + (exp as u32)
-                        + ((frac << (32 - N)) as u32);
-                    //minpos
-                    if (u_z == 0) && (frac > 0) {
-                        u_z = 0x1 << (32 - N);
-                    }
-                    if bit_n_plus_one {
-                        u_z += (((u_z >> (32 - N)) & 0x1) | (bits_more as u32)) << (32 - N);
-                    }
-                    u_z
-                }
-                .with_sign(sign)
+                        let mut u_z = ((regime as u32) << (30 - reg))
+                            + (exp as u32)
+                            + ((frac << (32 - N)) as u32);
+                        //minpos
+                        if (u_z == 0) && (frac > 0) {
+                            u_z = 0x1 << (32 - N);
+                        }
+                        if bit_n_plus_one {
+                            u_z += (((u_z >> (32 - N)) & 0x1) | (bits_more as u32)) << (32 - N);
+                        }
+                        u_z
+                    },
+                    sign,
+                )
             }
         } else if (float < 1.) || (float > -1.) {
             if sign {
@@ -182,36 +184,39 @@ impl<const N: u32> From<f64> for PxE2<{ N }> {
                 );
             }
 
-            if reg > (N - 2) {
-                if reg_s {
-                    0x_7FFF_FFFF & Self::mask()
+            u32_with_sign(
+                if reg > (N - 2) {
+                    if reg_s {
+                        0x_7FFF_FFFF & Self::mask()
+                    } else {
+                        0x1 << (32 - N)
+                    }
                 } else {
-                    0x1 << (32 - N)
-                }
-            } else {
-                //rounding off fraction bits
+                    //rounding off fraction bits
 
-                let regime = if reg_s { ((1 << reg) - 1) << 1 } else { 1_u32 };
+                    let regime = if reg_s { ((1 << reg) - 1) << 1 } else { 1_u32 };
 
-                if (N == 32) && (reg == 29) {
-                    exp >>= 1;
-                } else if reg <= 28 {
-                    exp <<= 28 - reg;
-                }
+                    if (N == 32) && (reg == 29) {
+                        exp >>= 1;
+                    } else if reg <= 28 {
+                        exp <<= 28 - reg;
+                    }
 
-                let mut u_z =
-                    ((regime as u32) << (30 - reg)) + (exp as u32) + ((frac << (32 - N)) as u32);
-                //minpos
-                if (u_z == 0) && (frac > 0) {
-                    u_z = 0x1 << (32 - N);
-                }
+                    let mut u_z = ((regime as u32) << (30 - reg))
+                        + (exp as u32)
+                        + ((frac << (32 - N)) as u32);
+                    //minpos
+                    if (u_z == 0) && (frac > 0) {
+                        u_z = 0x1 << (32 - N);
+                    }
 
-                if bit_n_plus_one {
-                    u_z += (((u_z >> (32 - N)) & 0x1) | (bits_more as u32)) << (32 - N);
-                }
-                u_z
-            }
-            .with_sign(sign)
+                    if bit_n_plus_one {
+                        u_z += (((u_z >> (32 - N)) & 0x1) | (bits_more as u32)) << (32 - N);
+                    }
+                    u_z
+                },
+                sign,
+            )
         } else {
             //NaR - for NaN, INF and all other combinations
             0x8000_0000
@@ -246,7 +251,7 @@ impl<const N: u32> From<i32> for PxE2<{ N }> {
         } else {
             convert_u32_to_px2bits::<{ N }>(i_a as u32)
         };
-        Self::from_bits(ui_a.with_sign(sign))
+        Self::from_bits(u32_with_sign(ui_a, sign))
     }
 }
 
@@ -340,7 +345,7 @@ impl<const N: u32> From<i64> for PxE2<{ N }> {
         } else {
             convert_u32_to_px2bits::<{ N }>(i_a as u32)
         };
-        Self::from_bits(ui_a.with_sign(sign))
+        Self::from_bits(u32_with_sign(ui_a, sign))
     }
 }
 

@@ -1,7 +1,7 @@
 use super::P32E2;
 
 impl P32E2 {
-    pub fn sqrt(self) -> Self {
+    pub const fn sqrt(self) -> Self {
         let mut ui_a = self.to_bits();
 
         // If NaR or a negative number, return NaR.

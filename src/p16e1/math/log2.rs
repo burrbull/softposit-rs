@@ -1,7 +1,7 @@
 use super::P16E1;
 
 impl P16E1 {
-    pub fn log2(self) -> Self {
+    pub const fn log2(self) -> Self {
         let ui_a = self.to_bits();
 
         let mut f = ui_a as u64;
@@ -81,7 +81,7 @@ impl P16E1 {
 }
 
 #[inline]
-fn poly(f: u64) -> u64 {
+const fn poly(f: u64) -> u64 {
     let z = (f << 29) / (f + 8_192); // fixed-point divide; discard remainder
     let zsq = (z * z) >> 30; // fixed-point squaring
     let mut s = (zsq * 1_661) >> 25;

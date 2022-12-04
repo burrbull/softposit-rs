@@ -1,8 +1,8 @@
 use super::P16E1;
-use crate::WithSign;
+use crate::u16_with_sign;
 
 impl P16E1 {
-    pub fn round(self) -> Self {
+    pub const fn round(self) -> Self {
         let mut mask = 0x2000_u16;
         let mut scale = 0_u16;
 
@@ -54,7 +54,7 @@ impl P16E1 {
             }
             ui_a
         };
-        Self::from_bits(u_a.with_sign(sign))
+        Self::from_bits(u16_with_sign(u_a, sign))
     }
 }
 

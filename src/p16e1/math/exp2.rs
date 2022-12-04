@@ -103,7 +103,7 @@ impl P16E1 {
 }
 
 #[inline]
-fn poly(f: u64) -> u64 {
+const fn poly(f: u64) -> u64 {
     let mut s = (f * (0x_9BA0_0000 + (f * 491))) >> 34;
     s = (f * (0x_0013_F840 + s)) >> 20;
     s = (f * (0x_0071_8A80 + s)) >> 16;
