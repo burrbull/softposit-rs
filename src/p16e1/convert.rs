@@ -217,7 +217,7 @@ const fn convert_p16bits_to_u64(ui_a: u16) -> u64 {
         i_z >> (62 - scale)
     }
 }
-/*
+
 fn check_extra_two_bits_p16(
     mut float: f64,
     mut temp: f64,
@@ -281,7 +281,6 @@ fn convert_fraction_p16(
 
     frac
 }
-*/
 
 impl P16E1 {
     #[inline]
@@ -292,9 +291,9 @@ impl P16E1 {
     pub const fn from_f64(float: f64) -> Self {
         crate::convert::convert_float!(P16E1, f64, float)
     }
-    /*
+    
     #[allow(clippy::cognitive_complexity)]
-    pub fn from_f64(mut float: f64) -> Self {
+    pub fn from_f64_old(mut float: f64) -> Self {
         let mut reg: u16;
         let mut bit_n_plus_one = false;
         let mut bits_more = false;
@@ -450,7 +449,7 @@ impl P16E1 {
             0x8000
         };
         Self::from_bits(u_z)
-    } */
+    }
 
     #[inline]
     pub const fn to_f32(self) -> f32 {
@@ -558,5 +557,29 @@ fn convert_p16_i64() {
             continue;
         }
         assert_eq!(i64::from(p), f as i64);
+    }
+}
+
+#[test]
+fn convert_f64_p16_old() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..10_000_000 {
+        let f: f64 = rng.gen();
+        let p = P16E1::from_f64(f);
+        let p2 = P16E1::from_f64_old(f);
+        assert_eq!(p, p2);
+    }
+}
+
+#[test]
+fn convert_f32_p16_old() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..10_000_000 {
+        let f: f32 = rng.gen();
+        let p = P16E1::from_f32(f);
+        let p2 = P16E1::from_f64_old(f as f64);
+        assert_eq!(p, p2);
     }
 }

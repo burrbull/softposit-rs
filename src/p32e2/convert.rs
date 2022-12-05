@@ -14,9 +14,9 @@ impl P32E2 {
     pub const fn from_f64(float: f64) -> Self {
         crate::convert::convert_float!(P32E2, f64, float)
     }
-    /*
+
         #[allow(clippy::cognitive_complexity)]
-        pub fn from_f64(mut float: f64) -> Self {
+        pub fn from_f64_old(mut float: f64) -> Self {
             let mut reg: u32;
             let mut frac = 0_u32;
             let mut exp = 0_i32;
@@ -180,7 +180,7 @@ impl P32E2 {
             };
             Self::from_bits(u_z)
         }
-    */
+
     #[inline]
     pub fn to_f32(self) -> f32 {
         self.to_f64() as f32
@@ -540,5 +540,34 @@ fn convert_p32_i64() {
             continue;
         }
         assert_eq!(i64::from(p), f as i64);
+    }
+}
+
+
+#[test]
+fn convert_f64_p32_old() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..10_000_000 {
+        let f: f64 = rng.gen();
+        let p = P32E2::from_f64(f);
+        let p2 = P32E2::from_f64_old(f);
+        assert_eq!(p, p2);
+    }
+}
+
+#[test]
+#[cfg(feature="std")]
+fn convert_f32_p32_old() {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..10_000_000 {
+        let f: f32 = rng.gen();
+        println!("f = {}, f(b) = 0b{:b}", f, f.to_bits());
+        let p = P32E2::from_f32(f);
+        let p2 = P32E2::from_f64_old(f as f64);
+        println!("p(b) = 0b{:b}, p2(b) = 0b{:b}", p.to_bits(), p2.to_bits());
+        dbg!(p.to_f32(), p2.to_f32());
+        assert_eq!(p, p2);
     }
 }
