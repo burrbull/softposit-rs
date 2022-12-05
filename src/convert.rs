@@ -13,12 +13,7 @@ macro_rules! convert_float {
             const D_BITS: usize = <$float>::BITSIZE - <$posit>::BITSIZE; // difference in bits
 
             // ROUND TO NEAREST, tie to even: create ulp/2 = ..007ff.. or ..0080..
-            const SHIFT: usize = if <$float>::BITSIZE <= <$posit>::BITSIZE {
-                0
-            } else {
-                <$posit>::BITSIZE // create ..007ff.. (just smaller than ulp/2)
-            };
-            let mut ulp_half = !<$float>::SIGN_MASK >> SHIFT;
+            let (mut ulp_half, _) = (!<$float>::SIGN_MASK).overflowing_shr(<$posit>::BITSIZE as _); // create ..007ff.. (just smaller than ulp/2)
             ulp_half += (ui >> D_BITS) & 0x1; // turn into ..0080.. for odd (=round up if tie)
             ui += ulp_half; // +ulp/2 and
             (ui >> D_BITS) as _ // round down via >> is round nearest
