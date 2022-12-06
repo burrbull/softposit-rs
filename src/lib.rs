@@ -142,11 +142,23 @@ pub trait MathConsts {
 }
 
 #[cfg(test)]
-const NTESTS32: usize = 1000_000;
+#[cfg(debug_assertions)]
+const NTESTS32: usize = 1_000_000;
 #[cfg(test)]
+#[cfg(not(debug_assertions))]
+const NTESTS32: usize = 10_000_000;
+#[cfg(test)]
+#[cfg(debug_assertions)]
 const NTESTS16: usize = 100_000;
 #[cfg(test)]
+#[cfg(not(debug_assertions))]
+const NTESTS16: usize = 1000_000;
+#[cfg(test)]
+#[cfg(debug_assertions)]
 const NTESTS8: usize = 1_000;
+#[cfg(test)]
+#[cfg(not(debug_assertions))]
+const NTESTS8: usize = 10_000;
 
 pub trait AssociatedQuire<P> {
     type Q: Quire<P>;
