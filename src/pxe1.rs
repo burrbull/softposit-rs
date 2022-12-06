@@ -98,14 +98,10 @@ impl<const N: u32> PxE1<{ N }> {
         let reg;
         if k < 0 {
             reg = (-k) as u32;
-            (0x_4000_0000_u32.checked_shr(reg).unwrap_or(0), false, reg)
+            (0x_4000_0000_u32.wrapping_shr(reg), false, reg)
         } else {
             reg = (k + 1) as u32;
-            (
-                0x_7fff_ffff - 0x_7fff_ffff_u32.checked_shr(reg).unwrap_or(0),
-                true,
-                reg,
-            )
+            (0x_7fff_ffff - 0x_7fff_ffff_u32.wrapping_shr(reg), true, reg)
         }
     }
 }

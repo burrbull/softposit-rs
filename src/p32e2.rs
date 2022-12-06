@@ -160,27 +160,10 @@ impl P32E2 {
         let len;
         if k < 0 {
             len = (-k) as u32;
-            (
-                if let Some(val) = 0x4000_0000_u32.checked_shr(len) {
-                    val
-                } else {
-                    0
-                },
-                false,
-                len,
-            )
+            (0x4000_0000_u32.wrapping_shr(len), false, len)
         } else {
             len = (k + 1) as u32;
-            (
-                0x7fff_ffff
-                    - if let Some(val) = 0x7fff_ffff_u32.checked_shr(len) {
-                        val
-                    } else {
-                        0
-                    },
-                true,
-                len,
-            )
+            (0x7fff_ffff - 0x7fff_ffff_u32.wrapping_shr(len), true, len)
         }
     }
 }
