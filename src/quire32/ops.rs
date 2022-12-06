@@ -231,7 +231,15 @@ fn test_quire_mul_add() {
         q += p_c;
         let p = q.to_posit();
         let f = f_a.mul_add(f_b, f_c);
+        #[cfg(not(feature = "std"))]
         assert_eq!(p, P32E2::from(f));
+        #[cfg(feature = "std")]
+        assert_eq!(
+            p,
+            P32E2::from(f),
+            "\n  input: ({p_a:?}, {p_b:?}, {p_c:?})\n   or: {f_a}, {f_b}, {f_c}\n  answer: {}, expected {f}",
+            p.to_f64()
+        );
     }
 }
 

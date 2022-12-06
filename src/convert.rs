@@ -610,17 +610,14 @@ impl<const N: u32> From<P32E2> for PxE1<{ N }> {
                     reg_a -= 1;
                 }
                 exp_frac32_a <<= 1;
-                (false, 0x_4000_0000_u32.checked_shr(reg_a).unwrap_or(0))
+                (false, 0x_4000_0000_u32.wrapping_shr(reg_a))
             } else {
                 reg_a = ((k_a << 1) + 1) as u32;
                 if (exp_frac32_a & 0x_8000_0000) != 0 {
                     reg_a += 1;
                 }
                 exp_frac32_a <<= 1;
-                (
-                    true,
-                    0x_7fff_ffff - 0x_7fff_ffff_u32.checked_shr(reg_a).unwrap_or(0),
-                )
+                (true, 0x_7fff_ffff - 0x_7fff_ffff_u32.wrapping_shr(reg_a))
             };
 
             if reg_a > (N - 2) {
@@ -690,7 +687,7 @@ impl<const N: u32> From<P8E0> for PxE1<{ N }> {
                 if reg_a == 0 {
                     reg_a = 1;
                 }
-                0x_4000_0000_u32.checked_shr(reg_a).unwrap_or(0)
+                0x_4000_0000_u32.wrapping_shr(reg_a)
             } else {
                 if (k_a & 0x1) != 0 {
                     exp_frac32_a |= 0x_8000_0000;
@@ -700,7 +697,7 @@ impl<const N: u32> From<P8E0> for PxE1<{ N }> {
                 if reg_a == 0 {
                     reg_a = 1;
                 }
-                0x_7fff_ffff - 0x_7fff_ffff_u32.checked_shr(reg_a).unwrap_or(0)
+                0x_7fff_ffff - 0x_7fff_ffff_u32.wrapping_shr(reg_a)
             };
             exp_frac32_a >>= reg_a + 2; //2 because of sign and regime terminating bit
 
@@ -881,17 +878,14 @@ impl<const M: u32, const N: u32> From<PxE2<{ M }>> for PxE1<{ N }> {
                     reg_a -= 1;
                 }
                 exp_frac32_a <<= 1;
-                (false, 0x_4000_0000_u32.checked_shr(reg_a).unwrap_or(0))
+                (false, 0x_4000_0000_u32.wrapping_shr(reg_a))
             } else {
                 reg_a = ((k_a << 1) + 1) as u32;
                 if (exp_frac32_a & 0x_8000_0000) != 0 {
                     reg_a += 1;
                 }
                 exp_frac32_a <<= 1;
-                (
-                    true,
-                    0x_7fff_ffff - 0x_7fff_ffff_u32.checked_shr(reg_a).unwrap_or(0),
-                )
+                (true, 0x_7fff_ffff - 0x_7fff_ffff_u32.wrapping_shr(reg_a))
             };
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
@@ -958,14 +952,11 @@ impl<const M: u32, const N: u32> From<PxE1<{ M }>> for PxE2<{ N }> {
                 if reg_a == 0 {
                     reg_a = 1;
                 }
-                (false, 0x_4000_0000_u32.checked_shr(reg_a).unwrap_or(0))
+                (false, 0x_4000_0000_u32.wrapping_shr(reg_a))
             } else {
                 exp_frac32_a |= ((k_a & 0x1) as u32) << 31;
                 reg_a = if k_a == 0 { 1 } else { ((k_a + 2) >> 1) as u32 };
-                (
-                    true,
-                    0x_7fff_ffff - 0x_7fff_ffff_u32.checked_shr(reg_a).unwrap_or(0),
-                )
+                (true, 0x_7fff_ffff - 0x_7fff_ffff_u32.wrapping_shr(reg_a))
             };
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
@@ -1040,11 +1031,11 @@ impl<const N: u32> From<PxE1<{ N }>> for P32E2 {
             if reg_a == 0 {
                 reg_a = 1;
             }
-            0x_4000_0000_u32.checked_shr(reg_a).unwrap_or(0)
+            0x_4000_0000_u32.wrapping_shr(reg_a)
         } else {
             exp_frac32_a |= ((k_a & 0x1) as u32) << 31;
             reg_a = if k_a == 0 { 1 } else { ((k_a + 2) >> 1) as u32 };
-            0x_7fff_ffff - 0x_7fff_ffff_u32.checked_shr(reg_a).unwrap_or(0)
+            0x_7fff_ffff - 0x_7fff_ffff_u32.wrapping_shr(reg_a)
         };
 
         let bit_n_plus_one = ((exp_frac32_a >> (reg_a + 1)) & 0x1) != 0;

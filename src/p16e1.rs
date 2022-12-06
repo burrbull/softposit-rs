@@ -160,27 +160,10 @@ impl P16E1 {
         let len;
         if k < 0 {
             len = (-k) as u32;
-            (
-                if let Some(val) = 0x4000_u16.checked_shr(len) {
-                    val
-                } else {
-                    0
-                },
-                false,
-                len,
-            )
+            (0x4000_u16.wrapping_shr(len), false, len)
         } else {
             len = (k + 1) as u32;
-            (
-                0x7fff
-                    - if let Some(val) = 0x7fff_u16.checked_shr(len) {
-                        val
-                    } else {
-                        0
-                    },
-                true,
-                len,
-            )
+            (0x7fff - 0x7fff_u16.wrapping_shr(len), true, len)
         }
     }
 }
@@ -256,7 +239,7 @@ impl P16E1 {
             frac32 <<= 1;
         }
 
-        let regime = 0x4000_u16.checked_shr(reg_len).unwrap_or(0);
+        let regime = 0x4000_u16.wrapping_shr(reg_len);
 
         let u_z = if reg_len > 14 {
             0x1

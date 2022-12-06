@@ -144,26 +144,10 @@ impl P8E0 {
         let len;
         if k < 0 {
             len = (-k) as u32;
-            (
-                if let Some(val) = 0x40_u8.checked_shr(len) {
-                    val
-                } else {
-                    0
-                },
-                false,
-                len,
-            )
+            (0x40_u8.wrapping_shr(len), false, len)
         } else {
             len = (k + 1) as u32;
-            (
-                0x7f - if let Some(val) = 0x7f_u8.checked_shr(len) {
-                    val
-                } else {
-                    0
-                },
-                true,
-                len,
-            )
+            (0x7f - 0x7f_u8.wrapping_shr(len), true, len)
         }
     }
 }

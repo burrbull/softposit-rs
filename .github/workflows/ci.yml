@@ -34,3 +34,18 @@ jobs:
         with:
           command: test
           args: --all-features
+
+  test-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use the latest stable release
+        run: rustup update stable && rustup default stable
+
+      - name: Cache Dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --release
