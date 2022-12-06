@@ -274,11 +274,7 @@ impl P32E2 {
         //This is 4kZ + expZ; (where kZ=k_a-kB and expZ=exp_a-expB)
         shift_right = (shift_right << 2) + (exp_a as i16) - (exp_b as i16);
 
-        frac64 += if let Some(val) = ((frac_b as u64) << 32).checked_shr(shift_right as u32) {
-            val
-        } else {
-            0
-        };
+        frac64 += ((frac_b as u64) << 32).wrapping_shr(shift_right as u32);
 
         let rcarry = (0x8000_0000_0000_0000 & frac64) != 0; //first left bit
         if rcarry {
