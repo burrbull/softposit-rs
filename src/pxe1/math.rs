@@ -1,19 +1,31 @@
-use core::cmp::Ordering;
-
 use super::PxE1;
 use crate::{u32_with_sign, MulAddType};
 
 impl<const N: u32> PxE1<{ N }> {
     #[inline]
-    pub fn mul_add(self, b: Self, c: Self) -> Self {
+    pub const fn mul_add(self, b: Self, c: Self) -> Self {
         let ui_a = self.to_bits();
         let ui_b = b.to_bits();
         let ui_c = c.to_bits();
         Self::mul_add_ui(ui_a, ui_b, ui_c, crate::MulAddType::Add)
     }
+    #[inline]
+    pub const fn mul_sub(self, b: Self, c: Self) -> Self {
+        let ui_a = self.to_bits();
+        let ui_b = b.to_bits();
+        let ui_c = c.to_bits();
+        Self::mul_add_ui(ui_a, ui_b, ui_c, crate::MulAddType::SubC)
+    }
+    #[inline]
+    pub const fn sub_product(self, a: Self, b: Self) -> Self {
+        let ui_a = a.to_bits();
+        let ui_b = b.to_bits();
+        let ui_c = self.to_bits();
+        Self::mul_add_ui(ui_a, ui_b, ui_c, crate::MulAddType::SubProd)
+    }
 
     #[allow(clippy::cognitive_complexity)]
-    fn mul_add_ui(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> Self {
+    const fn mul_add_ui(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) -> Self {
         let mut bits_more = false;
         //NaR
         if (ui_a == 0x_8000_0000) || (ui_b == 0x_8000_0000) || (ui_c == 0x_8000_0000) {
@@ -110,66 +122,62 @@ impl<const N: u32> PxE1<{ N }> {
                 let mut frac64_c = (frac_c as u64) << 32;
                 let mut shift_right = (((k_a - k_c) as i16) << 1) + (exp_a - exp_c) as i16;
 
-                exp_z = match shift_right.cmp(&0) {
-                    Ordering::Less => {
-                        // |ui_c| > |Prod|
-                        if shift_right <= -63 {
-                            bits_more = true;
-                            frac64_z = 0;
-                            shift_right = 0;
-                        //set bits_more to one?
-                        } else if (frac64_z << (64 + shift_right)) != 0 {
-                            bits_more = true;
-                        }
-                        if sign_z == sign_c {
-                            frac64_z = frac64_c + (frac64_z >> -shift_right);
-                        } else {
-                            //different signs
-                            frac64_z = frac64_c - (frac64_z >> -shift_right);
-                            sign_z = sign_c;
-                            if bits_more {
-                                frac64_z -= 1;
-                            }
-                        }
-                        k_z = k_c;
-                        exp_c
+                exp_z = if shift_right < 0 {
+                    // |ui_c| > |Prod|
+                    if shift_right <= -63 {
+                        bits_more = true;
+                        frac64_z = 0;
+                        shift_right = 0;
+                    //set bits_more to one?
+                    } else if (frac64_z << (64 + shift_right)) != 0 {
+                        bits_more = true;
                     }
-                    Ordering::Greater => {
-                        // |ui_c| < |Prod|
-                        //if frac32C&((1<<shift_right)-1) {bits_more = true;}
-                        if shift_right >= 63 {
-                            bits_more = true;
-                            frac64_c = 0;
-                            shift_right = 0;
-                        } else if (frac64_c << (64 - shift_right)) != 0 {
-                            bits_more = true;
+                    if sign_z == sign_c {
+                        frac64_z = frac64_c + (frac64_z >> -shift_right);
+                    } else {
+                        //different signs
+                        frac64_z = frac64_c - (frac64_z >> -shift_right);
+                        sign_z = sign_c;
+                        if bits_more {
+                            frac64_z -= 1;
                         }
-                        if sign_z == sign_c {
-                            frac64_z += frac64_c >> shift_right;
-                        } else {
-                            frac64_z -= frac64_c >> shift_right;
-                            if bits_more {
-                                frac64_z -= 1;
-                            }
-                        }
-                        k_z = k_a;
-                        exp_a
                     }
-                    Ordering::Equal => {
-                        if (frac64_c == frac64_z) && (sign_z != sign_c) {
-                            //check if same number
-                            return Self::ZERO;
-                        } else if sign_z == sign_c {
-                            frac64_z += frac64_c;
-                        } else if frac64_z < frac64_c {
-                            frac64_z = frac64_c - frac64_z;
-                            sign_z = sign_c;
-                        } else {
-                            frac64_z -= frac64_c;
-                        }
-                        k_z = k_a; // actually can be k_c too, no diff
-                        exp_a //same here
+                    k_z = k_c;
+                    exp_c
+                } else if shift_right > 0 {
+                    // |ui_c| < |Prod|
+                    //if frac32C&((1<<shift_right)-1) {bits_more = true;}
+                    if shift_right >= 63 {
+                        bits_more = true;
+                        frac64_c = 0;
+                        shift_right = 0;
+                    } else if (frac64_c << (64 - shift_right)) != 0 {
+                        bits_more = true;
                     }
+                    if sign_z == sign_c {
+                        frac64_z += frac64_c >> shift_right;
+                    } else {
+                        frac64_z -= frac64_c >> shift_right;
+                        if bits_more {
+                            frac64_z -= 1;
+                        }
+                    }
+                    k_z = k_a;
+                    exp_a
+                } else {
+                    if (frac64_c == frac64_z) && (sign_z != sign_c) {
+                        //check if same number
+                        return Self::ZERO;
+                    } else if sign_z == sign_c {
+                        frac64_z += frac64_c;
+                    } else if frac64_z < frac64_c {
+                        frac64_z = frac64_c - frac64_z;
+                        sign_z = sign_c;
+                    } else {
+                        frac64_z -= frac64_c;
+                    }
+                    k_z = k_a; // actually can be k_c too, no diff
+                    exp_a //same here
                 };
                 let rcarry = (frac64_z & 0x_8000_0000_0000_0000) != 0; //first left bit
 
@@ -261,7 +269,7 @@ impl<const N: u32> PxE1<{ N }> {
     }
 
     #[inline]
-    pub fn round(p_a: Self) -> Self {
+    pub const fn round(p_a: Self) -> Self {
         let mut mask = 0x_2000_0000_u32;
         let mut scale = 0_u32;
 

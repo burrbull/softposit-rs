@@ -71,18 +71,18 @@ impl P32E2 {
     }
     // TODO: optimize
     #[inline]
-    pub fn recip(self) -> Self {
-        Self::ONE / self
+    pub const fn recip(self) -> Self {
+        Self::ONE.div(self)
     }
     #[inline]
-    pub fn to_degrees(self) -> Self {
+    pub const fn to_degrees(self) -> Self {
         const PIS_IN_180: P32E2 = P32E2::new(0x_6729_7707);
-        self * PIS_IN_180
+        self.mul(PIS_IN_180)
     }
     #[inline]
-    pub fn to_radians(self) -> Self {
-        let value: Self = crate::MathConsts::PI;
-        self * (value / Self::new(0x_6da0_0000))
+    pub const fn to_radians(self) -> Self {
+        const PIS_O_180: P32E2 = P32E2::PI.div(P32E2::new(0x_6da0_0000));
+        self.mul(PIS_O_180)
     }
 }
 

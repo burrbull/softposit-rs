@@ -1,7 +1,7 @@
 use super::P16E1;
 
 impl P16E1 {
-    pub fn sin_pi(self) -> Self {
+    pub const fn sin_pi(self) -> Self {
         let ui_a = self.to_bits();
 
         let mut f = ui_a as u64;
@@ -81,7 +81,7 @@ impl P16E1 {
 }
 
 #[inline]
-fn poly(f: u64) -> u64 {
+const fn poly(f: u64) -> u64 {
     if f < 0x_000A_5801 {
         return (f * 102_943) >> 15; // linear approximation suffices
     }

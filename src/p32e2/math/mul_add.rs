@@ -9,6 +9,20 @@ impl P32E2 {
         let ui_c = c.to_bits();
         mul_add(ui_a, ui_b, ui_c, crate::MulAddType::Add)
     }
+    #[inline]
+    pub const fn mul_sub(self, b: Self, c: Self) -> Self {
+        let ui_a = self.to_bits();
+        let ui_b = b.to_bits();
+        let ui_c = c.to_bits();
+        mul_add(ui_a, ui_b, ui_c, crate::MulAddType::SubC)
+    }
+    #[inline]
+    pub const fn sub_product(self, a: Self, b: Self) -> Self {
+        let ui_a = a.to_bits();
+        let ui_b = b.to_bits();
+        let ui_c = self.to_bits();
+        mul_add(ui_a, ui_b, ui_c, crate::MulAddType::SubProd)
+    }
 }
 
 #[allow(clippy::cognitive_complexity)]

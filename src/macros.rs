@@ -22,30 +22,46 @@ macro_rules! impl_const_fns {
                 self.is_nar()
             }
             #[inline]
-            pub fn is_infinite(self) -> bool {
+            pub const fn is_infinite(self) -> bool {
                 self.is_nar()
             }
             #[inline]
-            pub fn is_finite(self) -> bool {
+            pub const fn is_finite(self) -> bool {
                 !self.is_nar()
             }
             #[inline]
-            pub fn is_normal(self) -> bool {
+            pub const fn is_normal(self) -> bool {
                 !self.is_nar()
             }
             #[inline]
-            pub fn clamp(mut self, min: Self, max: Self) -> Self {
-                assert!(min <= max);
-                if self < min {
+            pub const fn clamp(mut self, min: Self, max: Self) -> Self {
+                assert!(min.le(max));
+                if self.lt(min) {
                     self = min;
                 }
-                if self > max {
+                if self.gt(max) {
                     self = max;
                 }
                 self
             }
             #[inline]
-            pub fn classify(self) -> core::num::FpCategory {
+            pub const fn min(self, other: Self) -> Self {
+                if self.lt(other) {
+                    self
+                } else {
+                    other
+                }
+            }
+            #[inline]
+            pub const fn max(self, other: Self) -> Self {
+                if self.gt(other) {
+                    self
+                } else {
+                    other
+                }
+            }
+            #[inline]
+            pub const fn classify(self) -> core::num::FpCategory {
                 use core::num::FpCategory::*;
                 match self {
                     Self::ZERO => Zero,
@@ -54,7 +70,7 @@ macro_rules! impl_const_fns {
                 }
             }
             #[inline]
-            pub fn is_sign_positive(self) -> bool {
+            pub const fn is_sign_positive(self) -> bool {
                 !self.is_sign_negative()
             }
             #[inline]

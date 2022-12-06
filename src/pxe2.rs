@@ -1,3 +1,5 @@
+use core::cmp::Ordering;
+
 mod convert;
 mod math;
 mod ops;
@@ -24,20 +26,53 @@ impl<const N: u32> PxE2<{ N }> {
         Self(i)
     }
     #[inline]
-    pub fn is_zero(self) -> bool {
-        self == Self::ZERO
+    pub const fn is_zero(self) -> bool {
+        self.eq(Self::ZERO)
     }
     #[inline]
-    pub fn is_nar(self) -> bool {
-        self == Self::NAR
+    pub const fn is_nar(self) -> bool {
+        self.eq(Self::NAR)
     }
     #[inline]
-    pub fn from_bits(v: u32) -> Self {
+    pub const fn from_bits(v: u32) -> Self {
         Self(v as _)
     }
     #[inline]
-    pub fn to_bits(self) -> u32 {
+    pub const fn to_bits(self) -> u32 {
         self.0 as _
+    }
+
+    #[inline]
+    pub const fn eq(self, other: Self) -> bool {
+        self.0 == other.0
+    }
+    #[inline]
+    pub const fn cmp(self, other: Self) -> Ordering {
+        let a = self.0;
+        let b = other.0;
+        if a == b {
+            Ordering::Equal
+        } else if a < b {
+            Ordering::Less
+        } else {
+            Ordering::Greater
+        }
+    }
+    #[inline]
+    pub const fn lt(&self, other: Self) -> bool {
+        self.0 < other.0
+    }
+    #[inline]
+    pub const fn le(&self, other: Self) -> bool {
+        self.0 <= other.0
+    }
+    #[inline]
+    pub const fn ge(&self, other: Self) -> bool {
+        self.0 >= other.0
+    }
+    #[inline]
+    pub const fn gt(&self, other: Self) -> bool {
+        self.0 > other.0
     }
 }
 
@@ -49,22 +84,22 @@ impl<const N: u32> PxE2<{ N }> {
     pub const REGIME_SIGN_MASK: u32 = 0x_4000_0000;
 
     #[inline]
-    pub(crate) fn sign_ui(a: u32) -> bool {
+    pub(crate) const fn sign_ui(a: u32) -> bool {
         (a & Self::SIGN_MASK) != 0
     }
 
     #[inline]
-    fn sign_reg_ui(a: u32) -> bool {
+    const fn sign_reg_ui(a: u32) -> bool {
         (a & Self::REGIME_SIGN_MASK) != 0
     }
 
     #[inline]
-    pub(crate) fn pack_to_ui(regime: u32, exp_a: u32, frac_a: u32) -> u32 {
+    pub(crate) const fn pack_to_ui(regime: u32, exp_a: u32, frac_a: u32) -> u32 {
         regime + exp_a + frac_a
     }
 
     #[inline]
-    pub(crate) fn separate_bits(bits: u32) -> (i8, i32, u32) {
+    pub(crate) const fn separate_bits(bits: u32) -> (i8, i32, u32) {
         let (k, tmp) = Self::separate_bits_tmp(bits);
         (
             k,
@@ -74,7 +109,7 @@ impl<const N: u32> PxE2<{ N }> {
     }
 
     #[inline]
-    pub(crate) fn separate_bits_tmp(bits: u32) -> (i8, u32) {
+    pub(crate) const fn separate_bits_tmp(bits: u32) -> (i8, u32) {
         let mut k = 0;
         let mut tmp = bits << 2;
         if Self::sign_reg_ui(bits) {
@@ -94,7 +129,7 @@ impl<const N: u32> PxE2<{ N }> {
     }
 
     #[inline]
-    pub(crate) fn calculate_regime(k: i8) -> (u32, bool, u32) {
+    pub(crate) const fn calculate_regime(k: i8) -> (u32, bool, u32) {
         let reg;
         if k < 0 {
             reg = (-k) as u32;

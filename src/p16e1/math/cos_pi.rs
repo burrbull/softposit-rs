@@ -1,7 +1,7 @@
 use super::P16E1;
 
 impl P16E1 {
-    pub fn cos_pi(self) -> Self {
+    pub const fn cos_pi(self) -> Self {
         let ui_a = self.to_bits();
 
         let mut f = ui_a as u64;
@@ -78,7 +78,7 @@ impl P16E1 {
 }
 
 #[inline]
-pub fn poly(f: u64) -> u64 {
+pub const fn poly(f: u64) -> u64 {
     if f < 0x_000E_6001 {
         return 0x_01FF_FFFF; // this rounds up to 1.0
     }

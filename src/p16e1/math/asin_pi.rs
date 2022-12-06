@@ -1,7 +1,7 @@
 use super::P16E1;
 
 impl P16E1 {
-    pub fn asin_pi(self) -> Self {
+    pub const fn asin_pi(self) -> Self {
         let ui_a = self.to_bits();
 
         let mut f = ui_a as u64;
@@ -57,7 +57,7 @@ impl P16E1 {
 }
 
 #[inline]
-fn poly(f: u64) -> u64 {
+const fn poly(f: u64) -> u64 {
     let fsq = (f * f) >> 28;
     let mut s = 13_944 + ((fsq * 3_855) >> 26);
     s = 100_344 + ((fsq * s) >> 26);

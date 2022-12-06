@@ -2,7 +2,7 @@ use super::P8E0;
 use crate::u8_with_sign;
 
 impl P8E0 {
-    pub fn round(self) -> Self {
+    pub const fn round(self) -> Self {
         let mut mask = 0x20_u8;
         let mut scale = 0_u8;
 

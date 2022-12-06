@@ -94,7 +94,7 @@ impl P32E2 {
     }
 
     #[inline]
-    pub fn to_f32(self) -> f32 {
+    pub const fn to_f32(self) -> f32 {
         self.to_f64() as f32
     }
 

@@ -28,11 +28,11 @@ const R_LN2: P32E2 = P32E2::new(0x_438a_a3b3); // 1.442_695_040_888_963_407_359_
 #[cfg(test)]
 const NTESTS: usize = 100_000;
 
-pub fn mulsign(x: P32E2, y: P32E2) -> P32E2 {
+pub const fn mulsign(x: P32E2, y: P32E2) -> P32E2 {
     if (x.to_bits() ^ y.to_bits()) & P32E2::SIGN_MASK == 0 {
         x
     } else {
-        -x
+        x.neg()
     }
 }
 
@@ -127,7 +127,7 @@ mod kernel {
         let mut quire = Q32E2::init();
         quire += (d, ONE);
         quire -= (qf, [L2U, L2L]);
-        let s = quire.clone().to_posit();
+        let s = quire.to_posit();
 
         let u = s.poly5(&[
             P32E2::new(0x_079d_b0ca), // 1.9726304345e-4,
@@ -341,19 +341,19 @@ fn test_log2() {
 }
 
 /// 2D Euclidian distance function
-pub fn hypot(mut x: P32E2, mut y: P32E2) -> P32E2 {
+pub const fn hypot(mut x: P32E2, mut y: P32E2) -> P32E2 {
     x = x.abs();
     y = y.abs();
     let min = x.min(y);
     let max = x.max(y);
 
-    let t = min / max;
+    let t = min.div(max);
     if x.is_nar() || y.is_nar() {
         NAR
-    } else if min == ZERO {
+    } else if min.eq(ZERO) {
         max
     } else {
-        max * (ONE + t * t).sqrt()
+        max.mul((ONE.add(t.mul(t))).sqrt())
     }
 }
 

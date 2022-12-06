@@ -1,7 +1,7 @@
 use super::P16E1;
 
 impl P16E1 {
-    pub fn acos_pi(self) -> Self {
+    pub const fn acos_pi(self) -> Self {
         let ui_a = self.to_bits();
 
         let mut f = ui_a as u64;
@@ -10,7 +10,7 @@ impl P16E1 {
             // return NaR unless -1 <= input <= 1
             return Self::NAR;
         }
-        if !(165..=65_307).contains(&f) {
+        if f < 165 || f > 65_307 {
             // return 1/2 for inputs near 0
             return Self::from_bits(0x3000);
         }

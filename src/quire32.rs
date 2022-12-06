@@ -1,12 +1,10 @@
-use crate::PxE2;
-use crate::P32E2;
-use core::mem;
+use crate::{PxE2, P32E2};
 
 mod convert;
 mod math;
 mod ops;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Q32E2(i64, u64, u64, u64, u64, u64, u64, u64);
 
 impl Q32E2 {
@@ -25,23 +23,44 @@ impl Q32E2 {
     }
 
     #[inline]
-    pub fn from_bits(v: [u64; 8]) -> Self {
-        unsafe { mem::transmute(v) }
+    pub const fn from_bits(v: [u64; 8]) -> Self {
+        Self(v[0] as _, v[1], v[2], v[3], v[4], v[5], v[6], v[7])
     }
 
     #[inline]
-    pub fn to_bits(&self) -> [u64; 8] {
-        unsafe { mem::transmute(self.clone()) }
+    pub const fn to_bits(&self) -> [u64; 8] {
+        [
+            self.0 as _,
+            self.1,
+            self.2,
+            self.3,
+            self.4,
+            self.5,
+            self.6,
+            self.7,
+        ]
     }
 
     #[inline]
-    pub fn is_zero(&self) -> bool {
-        self.to_bits() == [0, 0, 0, 0, 0, 0, 0, 0]
+    pub const fn is_zero(&self) -> bool {
+        self.0 == 0
+            && self.1 == 0
+            && self.2 == 0
+            && self.3 == 0
+            && self.4 == 0
+            && self.5 == 0
+            && self.7 == 0
     }
 
     #[inline]
-    pub fn is_nar(&self) -> bool {
-        self.to_bits() == [0x8000_0000_0000_0000, 0, 0, 0, 0, 0, 0, 0]
+    pub const fn is_nar(&self) -> bool {
+        self.0 as u64 == 0x8000_0000_0000_0000
+            && self.1 == 0
+            && self.2 == 0
+            && self.3 == 0
+            && self.4 == 0
+            && self.5 == 0
+            && self.7 == 0
     }
 
     #[inline]
@@ -56,11 +75,6 @@ impl Q32E2 {
         let ui_a = p_a.to_bits();
         let ui_b = p_b.to_bits();
         ops::fdp(self, ui_a, ui_b, false);
-    }
-
-    #[inline]
-    pub fn to_posit(&self) -> P32E2 {
-        P32E2::from(self)
     }
 
     #[inline]
@@ -171,6 +185,6 @@ impl<const N: u32> crate::Quire<PxE2<{ N }>> for Q32E2 {
 use core::fmt;
 impl fmt::Display for Q32E2 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", f64::from(self.clone().to_posit()))
+        write!(f, "{}", f64::from(self.to_posit()))
     }
 }
