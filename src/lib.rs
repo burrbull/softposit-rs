@@ -93,12 +93,11 @@ const APPROX_RECIP_SQRT1: [u16; 16] = [
     0x4a3e, 0x68fe, 0x432b, 0x5efd,
 ];
 
-#[allow(dead_code)]
 #[derive(Clone, Copy)]
 enum MulAddType {
-    Add = 0,
-    SubC = 1,
-    SubProd = 2,
+    Add,
+    SubC,
+    SubProd,
 }
 
 #[allow(clippy::declare_interior_mutable_const)]

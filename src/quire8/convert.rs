@@ -20,13 +20,19 @@ impl From<Q8E0> for P8E0 {
 
 impl From<&Q8E0> for P8E0 {
     fn from(q_a: &Q8E0) -> Self {
-        if q_a.is_zero() {
-            return Self::ZERO;
-        } else if q_a.is_nar() {
-            return Self::NAR;
+        q_a.to_posit()
+    }
+}
+
+impl Q8E0 {
+    pub const fn to_posit(&self) -> P8E0 {
+        if self.is_zero() {
+            return P8E0::ZERO;
+        } else if self.is_nar() {
+            return P8E0::NAR;
         }
 
-        let mut u_z = q_a.to_bits();
+        let mut u_z = self.to_bits();
 
         let sign = (u_z & 0x8000_0000) != 0;
 
@@ -46,7 +52,7 @@ impl From<&Q8E0> for P8E0 {
         //Scale =  k
         let k_a = 19 - no_lz;
 
-        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
+        let (regime, reg_sa, reg_a) = P8E0::calculate_regime(k_a);
 
         let u_a = if reg_a > 6 {
             //max or min pos. exp and frac does not matter.
@@ -63,7 +69,7 @@ impl From<&Q8E0> for P8E0 {
 
             let bit_n_plus_one = ((frac32_a >> (shift - 1)) & 0x1) != 0;
 
-            let mut u_a = Self::pack_to_ui(regime, frac_a);
+            let mut u_a = P8E0::pack_to_ui(regime, frac_a);
 
             if bit_n_plus_one {
                 let bits_more = (frac32_a << (33 - shift)) != 0;
@@ -72,6 +78,6 @@ impl From<&Q8E0> for P8E0 {
             u_a
         };
 
-        Self::from_bits(u8_with_sign(u_a, sign))
+        P8E0::from_bits(u8_with_sign(u_a, sign))
     }
 }

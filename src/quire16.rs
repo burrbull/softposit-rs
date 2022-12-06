@@ -4,7 +4,7 @@ mod convert;
 mod math;
 mod ops;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct Q16E1(i128);
 
@@ -24,22 +24,22 @@ impl Q16E1 {
     }
 
     #[inline]
-    pub fn from_bits(v: u128) -> Self {
+    pub const fn from_bits(v: u128) -> Self {
         Self(v as _)
     }
 
     #[inline]
-    pub fn to_bits(&self) -> u128 {
+    pub const fn to_bits(&self) -> u128 {
         self.0 as _
     }
 
     #[inline]
-    pub fn is_zero(&self) -> bool {
+    pub const fn is_zero(&self) -> bool {
         self.to_bits() == Self::ZERO.to_bits()
     }
 
     #[inline]
-    pub fn is_nar(&self) -> bool {
+    pub const fn is_nar(&self) -> bool {
         self.to_bits() == Self::NAR.to_bits()
     }
 
@@ -55,11 +55,6 @@ impl Q16E1 {
         let ui_a = p_a.to_bits();
         let ui_b = p_b.to_bits();
         ops::fdp(self, ui_a, ui_b, false);
-    }
-
-    #[inline]
-    pub fn to_posit(&self) -> P16E1 {
-        P16E1::from(self)
     }
 
     #[inline]
@@ -129,6 +124,6 @@ impl crate::Quire<P16E1> for Q16E1 {
 use core::fmt;
 impl fmt::Display for Q16E1 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", f64::from(self.clone().to_posit()))
+        write!(f, "{}", f64::from(self.to_posit()))
     }
 }

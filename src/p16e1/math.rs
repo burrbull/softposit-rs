@@ -173,7 +173,7 @@ mod tan_pi;
 
 mod kernel {
     #[inline]
-    pub fn isqrt(f: u64) -> u64 {
+    pub const fn isqrt(f: u64) -> u64 {
         let mut bit = 0x_0040_0000_0000_0000_u64;
         let mut res = 0_u64;
 

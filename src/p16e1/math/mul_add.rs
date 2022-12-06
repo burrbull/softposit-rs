@@ -1,15 +1,27 @@
-use core::cmp::Ordering;
-
 use super::P16E1;
 use crate::{u16_with_sign, MulAddType};
 
 impl P16E1 {
     #[inline]
-    pub fn mul_add(self, b: Self, c: Self) -> Self {
+    pub const fn mul_add(self, b: Self, c: Self) -> Self {
         let ui_a = self.to_bits();
         let ui_b = b.to_bits();
         let ui_c = c.to_bits();
         mul_add(ui_a, ui_b, ui_c, crate::MulAddType::Add)
+    }
+    #[inline]
+    pub const fn mul_sub(self, b: Self, c: Self) -> Self {
+        let ui_a = self.to_bits();
+        let ui_b = b.to_bits();
+        let ui_c = c.to_bits();
+        mul_add(ui_a, ui_b, ui_c, crate::MulAddType::SubC)
+    }
+    #[inline]
+    pub const fn sub_product(self, a: Self, b: Self) -> Self {
+        let ui_a = a.to_bits();
+        let ui_b = b.to_bits();
+        let ui_c = self.to_bits();
+        mul_add(ui_a, ui_b, ui_c, crate::MulAddType::SubProd)
     }
 }
 
@@ -17,7 +29,7 @@ impl P16E1 {
 //softposit_mulAdd_subProd => ui_c - (ui_a*ui_b)
 //Default is always op==0
 #[allow(clippy::cognitive_complexity)]
-fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1 {
+const fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1 {
     let mut bits_more = false;
 
     //NaR
@@ -78,65 +90,61 @@ fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) -> P16E1
 
         let mut shift_right: i16 = (((k_a - k_c) as i16) << 1) + ((exp_a - exp_c) as i16); //actually this is the scale
 
-        exp_z = match shift_right.cmp(&0) {
-            Ordering::Less => {
-                // |ui_c| > |Prod Z|
-                if shift_right <= -31 {
-                    bits_more = true;
-                    frac32_z = 0;
-                    shift_right = 0;
-                } else if (frac32_z << (32 + shift_right)/*&0xFFFF_FFFF*/) != 0 {
-                    bits_more = true;
-                }
-                if sign_z == sign_c {
-                    frac32_z = frac32_c + (frac32_z >> -shift_right);
-                } else {
-                    //different signs
-                    frac32_z = frac32_c - (frac32_z >> -shift_right);
-                    sign_z = sign_c;
-                    if bits_more {
-                        frac32_z -= 1;
-                    }
-                }
-                k_z = k_c;
-                exp_c
+        exp_z = if shift_right < 0 {
+            // |ui_c| > |Prod Z|
+            if shift_right <= -31 {
+                bits_more = true;
+                frac32_z = 0;
+                shift_right = 0;
+            } else if (frac32_z << (32 + shift_right)/*&0xFFFF_FFFF*/) != 0 {
+                bits_more = true;
             }
-            Ordering::Greater => {
-                // |ui_c| < |Prod|
-                //if (frac32_c&((1<<shift_right)-1)) bits_more = 1;
-                if shift_right >= 31 {
-                    bits_more = true;
-                    frac32_c = 0;
-                    shift_right = 0;
-                } else if (frac32_c << (32 - shift_right)) != 0 {
-                    bits_more = true;
+            if sign_z == sign_c {
+                frac32_z = frac32_c + (frac32_z >> -shift_right);
+            } else {
+                //different signs
+                frac32_z = frac32_c - (frac32_z >> -shift_right);
+                sign_z = sign_c;
+                if bits_more {
+                    frac32_z -= 1;
                 }
-                if sign_z == sign_c {
-                    frac32_z += frac32_c >> shift_right;
-                } else {
-                    frac32_z -= frac32_c >> shift_right;
-                    if bits_more {
-                        frac32_z -= 1;
-                    }
-                }
-                k_z = k_a;
-                exp_a
             }
-            Ordering::Equal => {
-                if (frac32_c == frac32_z) && (sign_z != sign_c) {
-                    //check if same number
-                    return P16E1::ZERO;
-                } else if sign_z == sign_c {
-                    frac32_z += frac32_c;
-                } else if frac32_z < frac32_c {
-                    frac32_z = frac32_c - frac32_z;
-                    sign_z = sign_c;
-                } else {
-                    frac32_z -= frac32_c;
-                }
-                k_z = k_a; // actually can be k_c too, no diff
-                exp_a //same here
+            k_z = k_c;
+            exp_c
+        } else if shift_right > 0 {
+            // |ui_c| < |Prod|
+            //if (frac32_c&((1<<shift_right)-1)) bits_more = 1;
+            if shift_right >= 31 {
+                bits_more = true;
+                frac32_c = 0;
+                shift_right = 0;
+            } else if (frac32_c << (32 - shift_right)) != 0 {
+                bits_more = true;
             }
+            if sign_z == sign_c {
+                frac32_z += frac32_c >> shift_right;
+            } else {
+                frac32_z -= frac32_c >> shift_right;
+                if bits_more {
+                    frac32_z -= 1;
+                }
+            }
+            k_z = k_a;
+            exp_a
+        } else {
+            if (frac32_c == frac32_z) && (sign_z != sign_c) {
+                //check if same number
+                return P16E1::ZERO;
+            } else if sign_z == sign_c {
+                frac32_z += frac32_c;
+            } else if frac32_z < frac32_c {
+                frac32_z = frac32_c - frac32_z;
+                sign_z = sign_c;
+            } else {
+                frac32_z -= frac32_c;
+            }
+            k_z = k_a; // actually can be k_c too, no diff
+            exp_a //same here
         };
 
         let rcarry = (frac32_z & 0x8000_0000) != 0; //first left bit

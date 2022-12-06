@@ -1,9 +1,7 @@
-use core::cmp::Ordering;
-
 use super::P16E1;
 
 impl P16E1 {
-    pub fn exp2(self) -> Self {
+    pub const fn exp2(self) -> Self {
         let ui_a = self.to_bits();
 
         let mut f = ui_a as u64;
@@ -94,10 +92,12 @@ impl P16E1 {
         }
 
         // Section for exception cases
-        match ui_a.cmp(&0x8000) {
-            Ordering::Less => Self::MAX,             // return maxpos
-            Ordering::Greater => Self::MIN_POSITIVE, // return minpos
-            Ordering::Equal => Self::NAR,            // return NaR
+        if ui_a < 0x8000 {
+            Self::MAX // return maxpos
+        } else if ui_a > 0x8000 {
+            Self::MIN_POSITIVE // return minpos
+        } else {
+            Self::NAR // return NaR
         }
     }
 }

@@ -29,17 +29,24 @@ impl From<Q32E2> for P32E2 {
 }
 
 impl From<&Q32E2> for P32E2 {
+    #[inline]
     fn from(q_a: &Q32E2) -> Self {
+        q_a.to_posit()
+    }
+}
+
+impl Q32E2 {
+    pub fn to_posit(&self) -> P32E2 {
         let mut bits_more = false;
         let mut frac64_a = 0_u64;
 
-        if q_a.is_zero() {
-            return Self::ZERO;
-        } else if q_a.is_nar() {
-            return Self::NAR;
+        if self.is_zero() {
+            return P32E2::ZERO;
+        } else if self.is_nar() {
+            return P32E2::NAR;
         }
 
-        let mut u_z = q_a.clone().to_bits();
+        let mut u_z = self.to_bits();
 
         let sign = (u_z[0] & 0x_8000_0000_0000_0000) != 0;
 
@@ -96,7 +103,7 @@ impl From<&Q32E2> for P32E2 {
         let k_a = ((271 - no_lz) >> 2) as i8;
         let mut exp_a = 271 - (no_lz as i32) - ((k_a << 2) as i32);
 
-        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
+        let (regime, reg_sa, reg_a) = P32E2::calculate_regime(k_a);
 
         let u_a = if reg_a > 30 {
             //max or min pos. exp and frac does not matter.
@@ -134,13 +141,13 @@ impl From<&Q32E2> for P32E2 {
                 }
             }
 
-            let mut u_a = Self::pack_to_ui(regime, exp_a as u32, frac_a);
+            let mut u_a = P32E2::pack_to_ui(regime, exp_a as u32, frac_a);
             if bit_n_plus_one {
                 u_a += (u_a & 1) | (bits_more as u32);
             }
             u_a
         };
-        Self::from_bits(u32_with_sign(u_a, sign))
+        P32E2::from_bits(u32_with_sign(u_a, sign))
     }
 }
 
@@ -162,7 +169,7 @@ impl<const N: u32> From<&Q32E2> for PxE2<{ N }> {
             return Self::NAR;
         }
 
-        let mut u_z = q_a.clone().to_bits();
+        let mut u_z = q_a.to_bits();
 
         let sign = (u_z[0] & 0x_8000_0000_0000_0000) != 0;
 

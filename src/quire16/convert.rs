@@ -19,14 +19,21 @@ impl From<Q16E1> for P16E1 {
 }
 
 impl From<&Q16E1> for P16E1 {
+    #[inline]
     fn from(q_a: &Q16E1) -> Self {
-        if q_a.is_zero() {
-            return Self::ZERO;
-        } else if q_a.is_nar() {
-            return Self::NAR;
+        q_a.to_posit()
+    }
+}
+
+impl Q16E1 {
+    pub const fn to_posit(&self) -> P16E1 {
+        if self.is_zero() {
+            return P16E1::ZERO;
+        } else if self.is_nar() {
+            return P16E1::NAR;
         }
 
-        let u_z: [u64; 2] = unsafe { core::mem::transmute(q_a.to_bits()) };
+        let u_z: [u64; 2] = unsafe { core::mem::transmute(self.to_bits()) };
         let mut u_z = [u_z[1], u_z[0]];
 
         let sign = (u_z[0] & 0x_8000_0000_0000_0000) != 0;
@@ -74,7 +81,7 @@ impl From<&Q16E1> for P16E1 {
         let k_a = (71 - no_lz) >> 1;
         let exp_a = 71 - no_lz - (k_a << 1);
 
-        let (regime, reg_sa, reg_a) = Self::calculate_regime(k_a);
+        let (regime, reg_sa, reg_a) = P16E1::calculate_regime(k_a);
 
         let u_a = if reg_a > 14 {
             //max or min pos. exp and frac does not matter.
@@ -87,7 +94,11 @@ impl From<&Q16E1> for P16E1 {
             //remove hidden bit
             frac64_a &= 0x7FFF_FFFF_FFFF_FFFF;
             let shift = reg_a + 50; //1 es bit, 1 sign bit and 1 r terminating bit , 16+31+3
-            let mut frac_a = frac64_a.checked_shr(shift as u32).unwrap_or(0) as u16;
+            let mut frac_a = (if let Some(val) = frac64_a.checked_shr(shift as u32) {
+                val
+            } else {
+                0
+            }) as u16;
 
             let mut bit_n_plus_one = false;
             if reg_a != 14 {
@@ -102,13 +113,13 @@ impl From<&Q16E1> for P16E1 {
             if (reg_a == 14) && (exp_a != 0) {
                 bit_n_plus_one = true;
             }
-            let mut u_a = Self::pack_to_ui(regime, reg_a, exp_a as u16, frac_a);
+            let mut u_a = P16E1::pack_to_ui(regime, reg_a, exp_a as u16, frac_a);
             if bit_n_plus_one {
                 u_a += (u_a & 1) | (bits_more as u16);
             }
             u_a
         };
 
-        Self::from_bits(u16_with_sign(u_a, sign))
+        P16E1::from_bits(u16_with_sign(u_a, sign))
     }
 }

@@ -4,7 +4,7 @@ mod convert;
 mod math;
 mod ops;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct Q8E0(i32);
 
@@ -24,22 +24,22 @@ impl Q8E0 {
     }
 
     #[inline]
-    pub fn from_bits(v: u32) -> Self {
+    pub const fn from_bits(v: u32) -> Self {
         Self(v as _)
     }
 
     #[inline]
-    pub fn to_bits(&self) -> u32 {
+    pub const fn to_bits(&self) -> u32 {
         self.0 as _
     }
 
     #[inline]
-    pub fn is_zero(&self) -> bool {
+    pub const fn is_zero(&self) -> bool {
         self.to_bits() == 0
     }
 
     #[inline]
-    pub fn is_nar(&self) -> bool {
+    pub const fn is_nar(&self) -> bool {
         self.to_bits() == 0x8000_0000
     }
 
@@ -55,11 +55,6 @@ impl Q8E0 {
         let ui_a = p_a.to_bits();
         let ui_b = p_b.to_bits();
         ops::fdp(self, ui_a, ui_b, false);
-    }
-
-    #[inline]
-    pub fn to_posit(&self) -> P8E0 {
-        P8E0::from(self)
     }
 
     #[inline]
@@ -129,6 +124,6 @@ impl crate::Quire<P8E0> for Q8E0 {
 use core::fmt;
 impl fmt::Display for Q8E0 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", f64::from(self.clone().to_posit()))
+        write!(f, "{}", f64::from(self.to_posit()))
     }
 }
