@@ -8,34 +8,7 @@ crate::macros::impl_convert!(P32E2);
 impl P32E2 {
     #[inline]
     pub fn from_f32(float: f32) -> Self {
-        if float == 0. {
-            return Self::ZERO;
-        } else if !float.is_finite() {
-            return Self::NAR;
-        } else if float >= 1.329_227_995_784_916_e36 {
-            //maxpos
-            return Self::MAX;
-        } else if float <= -1.329_227_995_784_916_e36 {
-            // -maxpos
-            return Self::MIN;
-        }
-
-        let sign = float < 0.;
-
-        let u_z: u32 = if float == 1. {
-            0x4000_0000
-        } else if float == -1. {
-            0xC000_0000
-        } else if (float <= 7.523_163_845_262_64_e-37) && !sign {
-            //minpos
-            0x1
-        } else if (float >= -7.523_163_845_262_64_e-37) && sign {
-            //-minpos
-            0xFFFF_FFFF
-        } else {
-            crate::convert::convert_float!(P32E2, f32, float.to_bits())
-        };
-        Self::from_bits(u_z)
+        Self::from_f64(float as f64)
     }
 
     pub fn from_f64(float: f64) -> Self {
@@ -70,15 +43,7 @@ impl P32E2 {
     }
 
     pub const fn const_from_f32(float: f32) -> Self {
-        use crate::RawFloat;
-        let ui: u32 = unsafe { transmute(float) };
-
-        // check zero
-        if ui & !f32::SIGN_MASK == 0 {
-            return Self::ZERO;
-        }
-
-        Self::from_bits(crate::convert::convert_float!(P32E2, f32, ui))
+        Self::const_from_f64(float as f64)
     }
 
     pub const fn const_from_f64(float: f64) -> Self {
