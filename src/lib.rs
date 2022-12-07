@@ -191,9 +191,9 @@ trait RawPosit {
     type UInt;
     type Int;
 
-    const BITSIZE: usize;
+    const BITSIZE: u32;
 
-    const EXPONENT_BITS: usize;
+    const EXPONENT_BITS: u32;
     const EXPONENT_MASK: Self::UInt;
 }
 
@@ -201,9 +201,9 @@ trait RawFloat {
     type UInt;
     type Int;
 
-    const BITSIZE: usize;
+    const BITSIZE: u32;
 
-    const EXPONENT_BITS: usize;
+    const EXPONENT_BITS: u32;
     const EXPONENT_MASK: Self::UInt;
 
     const EXPONENT_BIAS: Self::Int;
@@ -218,9 +218,9 @@ impl RawFloat for f32 {
     type UInt = u32;
     type Int = i32;
 
-    const BITSIZE: usize = 32;
+    const BITSIZE: u32 = 32;
 
-    const EXPONENT_BITS: usize = 8;
+    const EXPONENT_BITS: u32 = 8;
     const EXPONENT_MASK: Self::UInt = 0x_7f80_0000;
 
     const EXPONENT_BIAS: Self::Int = 127;
@@ -235,9 +235,9 @@ impl RawFloat for f64 {
     type UInt = u64;
     type Int = i64;
 
-    const BITSIZE: usize = 64;
+    const BITSIZE: u32 = 64;
 
-    const EXPONENT_BITS: usize = 11;
+    const EXPONENT_BITS: u32 = 11;
     const EXPONENT_MASK: Self::UInt = 0x_7ff0_0000_0000_0000;
 
     const EXPONENT_BIAS: Self::Int = 1023;
