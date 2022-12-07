@@ -3,56 +3,54 @@ use crate::{PxE1, PxE2};
 use crate::{P16E1, P32E2, P8E0};
 
 macro_rules! convert_float {
-    ($posit: ty, $float:ty, $x:expr) => {{
+    ($posit: ty, $float:ty, $x:expr, $buint:ty, $bint:ty) => {{
         use crate::RawFloat;
         use crate::RawPosit;
-        type UInt = <$float as RawFloat>::UInt;
         type Int = <$float as RawFloat>::Int;
+        type BUInt = $buint;
+        type BInt = $bint;
 
-        const fn bitround(mut ui: UInt) -> <$posit as RawPosit>::UInt {
-            const D_BITS: usize = <$float>::BITSIZE - <$posit>::BITSIZE; // difference in bits
+        const fn bitround(mut ui: BUInt) -> <$posit as RawPosit>::UInt {
+            const D_BITS: u32 = BUInt::BITS - <$posit>::BITSIZE; // difference in bits
 
             // ROUND TO NEAREST, tie to even: create ulp/2 = ..007ff.. or ..0080..
-            let Some(mut ulp_half) = (!<$float>::SIGN_MASK).checked_shr(<$posit>::BITSIZE as _) else {
-                return ui as _;
-            }; // create ..007ff.. (just smaller than ulp/2)
+            let mut ulp_half = (BUInt::MAX >> 1) >> <$posit>::BITSIZE; // create ..007ff.. (just smaller than ulp/2)
             ulp_half += (ui >> D_BITS) & 0x1; // turn into ..0080.. for odd (=round up if tie)
             ui += ulp_half; // +ulp/2 and
             (ui >> D_BITS) as _ // round down via >> is round nearest
         }
 
-        let ui: UInt = $x;
+        let ui: <$float as RawFloat>::UInt = $x;
 
         // extract exponent bits and shift to tail, then remove bias
         let e = (ui & <$float>::EXPONENT_MASK) >> <$float>::SIGNIFICAND_BITS;
         let e = (e as Int) - <$float>::EXPONENT_BIAS;
         let signbit_e = e < 0; // sign of exponent
         let k = e >> <$posit>::EXPONENT_BITS; // k-value for useed^k in posits
+        let shift = (k + 1).abs() + signbit_e as Int;
+        if shift >= <$float>::BITSIZE as _ {
+            return <$posit>::NAR;
+        }
 
         // ASSEMBLE POSIT REGIME, EXPONENT, MANTISSA
         // get posit exponent_bits and shift to starting from bitposition 3 (they'll be shifted in later)
-        let mut exponent_bits = e & <$posit>::EXPONENT_MASK as Int;
-        exponent_bits <<= <$float>::BITSIZE - 2 - <$posit>::EXPONENT_BITS;
+        let mut exponent_bits = e as BInt & <$posit>::EXPONENT_MASK as BInt;
+        exponent_bits <<= BInt::BITS - 2 - <$posit>::EXPONENT_BITS;
 
         // create 01000... (for |x|<1) or 10000... (|x| > 1)
-        let regime_bits = (<$float>::SIGN_MASK >> (signbit_e as UInt)) as Int;
+        let regime_bits = (!(BUInt::MAX >> 1) >> (signbit_e as u32)) as BInt;
 
         // extract mantissa bits and push to behind exponent rre..emm... (regime still hasn't been shifted)
-        let mut mantissa = (ui & <$float>::SIGNIFICAND_MASK) as Int;
-        mantissa <<= <$float>::EXPONENT_BITS - <$posit>::EXPONENT_BITS - 1;
+        let mut mantissa = (ui & <$float>::SIGNIFICAND_MASK) as BInt;
+        mantissa <<= (BInt::BITS - Int::BITS) + <$float>::EXPONENT_BITS - <$posit>::EXPONENT_BITS - 1;
 
         // combine regime, exponent, mantissa and arithmetic bitshift for 11..110em or 00..001em
         let mut regime_exponent_mantissa = regime_bits | exponent_bits | mantissa;
-        let shift = (k + 1).abs() + signbit_e as Int;
-        if shift < <$float>::BITSIZE as _ {
-            regime_exponent_mantissa >>= shift; // arithmetic bitshift
-        } else {
-            return <$posit>::NAR;
-        }
-        regime_exponent_mantissa &= !<$float>::SIGN_MASK as Int; // remove possible sign bit from arith shift
+        regime_exponent_mantissa >>= shift; // arithmetic bitshift
+        regime_exponent_mantissa &= (BUInt::MAX >> 1) as BInt; // remove possible sign bit from arith shift
 
         // round to nearest of the result
-        let mut p_rounded = bitround(regime_exponent_mantissa as UInt);
+        let mut p_rounded = bitround(regime_exponent_mantissa as BUInt);
 
         // no under or overflow rounding mode
         let max_k = (<$float>::EXPONENT_BIAS >> 1) + 1;
@@ -68,6 +66,15 @@ macro_rules! convert_float {
             p_rounded
         }
     }};
+    ($posit: ty, $float:ty, $x:expr) => {
+        $crate::convert::convert_float!(
+            $posit,
+            $float,
+            $x,
+            <$float as crate::RawFloat>::UInt,
+            <$float as crate::RawFloat>::Int
+        )
+    };
 }
 pub(crate) use convert_float;
 

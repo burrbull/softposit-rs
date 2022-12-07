@@ -218,8 +218,8 @@ impl crate::RawPosit for P32E2 {
     type UInt = u32;
     type Int = i32;
 
-    const BITSIZE: usize = 32;
+    const BITSIZE: u32 = 32;
 
-    const EXPONENT_BITS: usize = 2;
+    const EXPONENT_BITS: u32 = 2;
     const EXPONENT_MASK: Self::UInt = 0x3;
 }
