@@ -4,6 +4,8 @@ mod convert;
 mod math;
 mod ops;
 crate::macros::impl_num_traits!(P8E0);
+crate::macros::impl_math_consts!(P8E0);
+
 #[cfg(feature = "approx")]
 mod impl_approx {
     use super::*;

@@ -3,27 +3,6 @@ use super::P8E0;
 const HALF: P8E0 = P8E0::new(0x_20);
 const TWO: P8E0 = P8E0::new(0x_60);
 
-impl crate::MathConsts for P8E0 {
-    const E: Self = Self::new(0x_66);
-    const FRAC_1_PI: Self = Self::new(0x_14);
-    const FRAC_1_SQRT_2: Self = Self::new(0x_2d);
-    const FRAC_2_PI: Self = Self::new(0x_29);
-    const FRAC_2_SQRT_PI: Self = Self::new(0x_44);
-    const FRAC_PI_2: Self = Self::new(0x_52);
-    const FRAC_PI_3: Self = Self::new(0x_42);
-    const FRAC_PI_4: Self = Self::new(0x_32);
-    const FRAC_PI_6: Self = Self::new(0x_22);
-    const FRAC_PI_8: Self = Self::new(0x_19);
-    const LN_10: Self = Self::new(0x_62);
-    const LN_2: Self = Self::new(0x_2c);
-    const LOG10_E: Self = Self::new(0x_1c);
-    const LOG2_E: Self = Self::new(0x_4e);
-    const PI: Self = Self::new(0x_69);
-    const SQRT_2: Self = Self::new(0x_4d);
-    const LOG2_10: Self = Self::new(0x_6b);
-    const LOG10_2: Self = Self::new(0x_13);
-}
-
 impl P8E0 {
     #[inline]
     pub const fn trunc(self) -> Self {

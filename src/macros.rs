@@ -1,3 +1,29 @@
+macro_rules! impl_math_consts {
+    ($T:ty) => {
+        impl $crate::MathConsts for $T {
+            const E: Self = Self::from_f64(core::f64::consts::E);
+            const FRAC_1_PI: Self = Self::from_f64(core::f64::consts::FRAC_1_PI);
+            const FRAC_1_SQRT_2: Self = Self::from_f64(core::f64::consts::FRAC_1_SQRT_2);
+            const FRAC_2_PI: Self = Self::from_f64(core::f64::consts::FRAC_2_PI);
+            const FRAC_2_SQRT_PI: Self = Self::from_f64(core::f64::consts::FRAC_2_SQRT_PI);
+            const FRAC_PI_2: Self = Self::from_f64(core::f64::consts::FRAC_PI_2);
+            const FRAC_PI_3: Self = Self::from_f64(core::f64::consts::FRAC_PI_3);
+            const FRAC_PI_4: Self = Self::from_f64(core::f64::consts::FRAC_PI_4);
+            const FRAC_PI_6: Self = Self::from_f64(core::f64::consts::FRAC_PI_6);
+            const FRAC_PI_8: Self = Self::from_f64(core::f64::consts::FRAC_PI_8);
+            const LN_10: Self = Self::from_f64(core::f64::consts::LN_10);
+            const LN_2: Self = Self::from_f64(core::f64::consts::LN_2);
+            const LOG10_E: Self = Self::from_f64(core::f64::consts::LOG10_E);
+            const LOG2_E: Self = Self::from_f64(core::f64::consts::LOG2_E);
+            const PI: Self = Self::from_f64(core::f64::consts::PI);
+            const SQRT_2: Self = Self::from_f64(core::f64::consts::SQRT_2);
+            const LOG2_10: Self = Self::from_f64(core::f64::consts::LOG2_10);
+            const LOG10_2: Self = Self::from_f64(core::f64::consts::LOG10_2);
+        }
+    };
+}
+pub(crate) use impl_math_consts;
+
 macro_rules! impl_const_fns {
     ($T:ty) => {
         impl $T {
