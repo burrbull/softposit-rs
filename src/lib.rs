@@ -223,9 +223,9 @@ impl RawFloat for f32 {
     const EXPONENT_BITS: u32 = 8;
     const EXPONENT_MASK: Self::UInt = 0x_7f80_0000;
 
-    const EXPONENT_BIAS: Self::Int = 127;
+    const EXPONENT_BIAS: Self::Int = (Self::MAX_EXP - 1) as _;
 
-    const SIGNIFICAND_BITS: Self::UInt = 23;
+    const SIGNIFICAND_BITS: Self::UInt = (Self::MANTISSA_DIGITS - 1) as _;
     const SIGNIFICAND_MASK: Self::UInt = 0x_007f_ffff;
 
     const SIGN_MASK: Self::UInt = 0x8000_0000;
@@ -240,9 +240,9 @@ impl RawFloat for f64 {
     const EXPONENT_BITS: u32 = 11;
     const EXPONENT_MASK: Self::UInt = 0x_7ff0_0000_0000_0000;
 
-    const EXPONENT_BIAS: Self::Int = 1023;
+    const EXPONENT_BIAS: Self::Int = (Self::MAX_EXP - 1) as _;
 
-    const SIGNIFICAND_BITS: Self::UInt = 52;
+    const SIGNIFICAND_BITS: Self::UInt = (Self::MANTISSA_DIGITS - 1) as _;
     const SIGNIFICAND_MASK: Self::UInt = 0x_000f_ffff_ffff_ffff;
 
     const SIGN_MASK: Self::UInt = 0x_8000_0000_0000_0000;
