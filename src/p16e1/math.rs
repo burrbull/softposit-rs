@@ -3,27 +3,6 @@ use super::P16E1;
 const HALF: P16E1 = P16E1::new(0x_3000);
 const TWO: P16E1 = P16E1::new(0x_5000);
 
-impl crate::MathConsts for P16E1 {
-    const E: Self = Self::new(0x_55bf);
-    const FRAC_1_PI: Self = Self::new(0x_245f);
-    const FRAC_1_SQRT_2: Self = Self::new(0x_36a1);
-    const FRAC_2_PI: Self = Self::new(0x_345f);
-    const FRAC_2_SQRT_PI: Self = Self::new(0x_420e);
-    const FRAC_PI_2: Self = Self::new(0x_4922);
-    const FRAC_PI_3: Self = Self::new(0x_40c1);
-    const FRAC_PI_4: Self = Self::new(0x_3922);
-    const FRAC_PI_6: Self = Self::new(0x_30c1);
-    const FRAC_PI_8: Self = Self::new(0x_2922);
-    const LN_10: Self = Self::new(0x_526c);
-    const LN_2: Self = Self::new(0x_362e);
-    const LOG10_E: Self = Self::new(0x_2bcb);
-    const LOG2_E: Self = Self::new(0x_2344);
-    const PI: Self = Self::new(0x_5922);
-    const SQRT_2: Self = Self::new(0x_46a1);
-    const LOG2_10: Self = Self::new(0x_5a93);
-    const LOG10_2: Self = Self::new(0x_2344);
-}
-
 impl P16E1 {
     #[inline]
     pub const fn trunc(self) -> Self {

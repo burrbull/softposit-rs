@@ -6,7 +6,6 @@ macro_rules! convert_float {
     ($posit: ty, $float:ty, $x:expr, $buint:ty, $bint:ty) => {{
         use crate::RawFloat;
         use crate::RawPosit;
-        type Int = <$float as RawFloat>::Int;
         type BUInt = $buint;
         type BInt = $bint;
 
@@ -24,13 +23,9 @@ macro_rules! convert_float {
 
         // extract exponent bits and shift to tail, then remove bias
         let e = (ui & <$float>::EXPONENT_MASK) >> <$float>::SIGNIFICAND_BITS;
-        let e = (e as Int) - <$float>::EXPONENT_BIAS;
-        let signbit_e = e < 0; // sign of exponent
+        let e = (e as <$float as RawFloat>::Int) - <$float>::EXPONENT_BIAS;
+        let signbit_e = (e < 0) as u32; // sign of exponent
         let k = e >> <$posit>::EXPONENT_BITS; // k-value for useed^k in posits
-        let shift = (k + 1).abs() + signbit_e as Int;
-        if shift >= <$float>::BITSIZE as _ {
-            return <$posit>::NAR;
-        }
 
         // ASSEMBLE POSIT REGIME, EXPONENT, MANTISSA
         // get posit exponent_bits and shift to starting from bitposition 3 (they'll be shifted in later)
@@ -38,15 +33,15 @@ macro_rules! convert_float {
         exponent_bits <<= BInt::BITS - 2 - <$posit>::EXPONENT_BITS;
 
         // create 01000... (for |x|<1) or 10000... (|x| > 1)
-        let regime_bits = (!(BUInt::MAX >> 1) >> (signbit_e as u32)) as BInt;
+        let regime_bits = (!(BUInt::MAX >> 1) >> signbit_e) as BInt;
 
         // extract mantissa bits and push to behind exponent rre..emm... (regime still hasn't been shifted)
         let mut mantissa = (ui & <$float>::SIGNIFICAND_MASK) as BInt;
-        mantissa <<= (BInt::BITS - Int::BITS) + <$float>::EXPONENT_BITS - <$posit>::EXPONENT_BITS - 1;
+        mantissa <<= (BInt::BITS - <$float as RawFloat>::Int::BITS) + <$float>::EXPONENT_BITS - <$posit>::EXPONENT_BITS - 1;
 
         // combine regime, exponent, mantissa and arithmetic bitshift for 11..110em or 00..001em
         let mut regime_exponent_mantissa = regime_bits | exponent_bits | mantissa;
-        regime_exponent_mantissa >>= shift; // arithmetic bitshift
+        regime_exponent_mantissa >>= ((k + 1).abs() as u32) + signbit_e; // arithmetic bitshift
         regime_exponent_mantissa &= (BUInt::MAX >> 1) as BInt; // remove possible sign bit from arith shift
 
         // round to nearest of the result
@@ -55,8 +50,10 @@ macro_rules! convert_float {
         // no under or overflow rounding mode
         let max_k = (<$float>::EXPONENT_BIAS >> 1) + 1;
         let kabs = k.abs();
-        p_rounded = p_rounded.wrapping_sub((k.signum() * ((kabs >= <$posit>::BITSIZE as _ && kabs < max_k) as Int))
-            as <$posit as RawPosit>::Int as <$posit as RawPosit>::UInt);
+        p_rounded = p_rounded.wrapping_sub(
+            ((k.signum() as <$posit as RawPosit>::Int) * ((kabs >= <$posit>::BITSIZE as _ && kabs < max_k) as <$posit as RawPosit>::Int)
+            ) as <$posit as RawPosit>::UInt
+        );
 
         let sign = (ui & <$float>::SIGN_MASK) != 0;
         // two's complement for negative numbers

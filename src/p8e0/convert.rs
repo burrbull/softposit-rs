@@ -5,95 +5,80 @@ use core::{f32, f64, mem::transmute};
 crate::macros::impl_convert!(P8E0);
 
 impl P8E0 {
-    #[inline]
-    pub fn from_f32(float: f32) -> Self {
-        if float == 0. {
-            return P8E0::ZERO;
-        } else if !float.is_finite() {
-            return P8E0::INFINITY;
-        } else if float >= 64. {
-            //maxpos
-            return P8E0::MAX;
-        } else if float <= -64. {
-            // -maxpos
-            return P8E0::MIN;
-        }
-
-        let sign = float < 0.;
-
-        let u_z: u8 = if float == 0. {
-            0
-        } else if float == 1. {
-            0x40
-        } else if float == -1. {
-            0xC0
-        } else if (float <= 0.015_625) && !sign {
-            //minpos
-            0x1
-        } else if (float >= -0.015_625) && sign {
-            //-minpos
-            0xFF
-        } else {
-            crate::convert::convert_float!(P8E0, f32, float.to_bits())
-        };
-        Self::from_bits(u_z)
-    }
-
-    pub fn from_f64(float: f64) -> Self {
-        if float == 0. {
-            return P8E0::ZERO;
-        } else if !float.is_finite() {
-            return P8E0::INFINITY;
-        } else if float >= 64. {
-            //maxpos
-            return P8E0::MAX;
-        } else if float <= -64. {
-            // -maxpos
-            return P8E0::MIN;
-        }
-
-        let sign = float < 0.;
-
-        let u_z: u8 = if float == 0. {
-            0
-        } else if float == 1. {
-            0x40
-        } else if float == -1. {
-            0xC0
-        } else if (float <= 0.015_625) && !sign {
-            //minpos
-            0x1
-        } else if (float >= -0.015_625) && sign {
-            //-minpos
-            0xFF
-        } else {
-            crate::convert::convert_float!(P8E0, f64, float.to_bits())
-        };
-        Self::from_bits(u_z)
-    }
-
-    pub const fn const_from_f32(float: f32) -> Self {
+    pub const fn from_f32(float: f32) -> Self {
         use crate::RawFloat;
         let ui: u32 = unsafe { transmute(float) };
 
-        // check zero
-        if ui & !f32::SIGN_MASK == 0 {
-            return Self::ZERO;
-        }
+        let sign = (ui & f32::SIGN_MASK) != 0;
 
-        Self::from_bits(crate::convert::convert_float!(P8E0, f32, ui))
+        let uip = ui & !f32::SIGN_MASK;
+        // check zero
+        if uip == 0 {
+            Self::ZERO
+        } else if uip >= 0x_7f80_0000 {
+            Self::NAR
+        } else if uip >= 0x_4280_0000 {
+            // +- 64.
+            if !sign {
+                Self::MAX
+            } else {
+                Self::MIN
+            }
+        } else if uip == 0x_3f80_0000 {
+            // +- 1.
+            if !sign {
+                Self::ONE
+            } else {
+                Self::ONE.neg()
+            }
+        } else if uip <= 0x_3c80_0000 {
+            // +- 0.015_625
+            if !sign {
+                Self::MIN_POSITIVE
+            } else {
+                Self::MIN_POSITIVE.neg()
+            }
+        } else {
+            Self::from_bits(crate::convert::convert_float!(P8E0, f32, ui))
+        }
     }
 
-    pub const fn const_from_f64(float: f64) -> Self {
+    pub const fn from_f64(float: f64) -> Self {
         use crate::RawFloat;
         let ui: u64 = unsafe { transmute(float) };
 
-        // check zero
-        if ui & !f64::SIGN_MASK == 0 {
-            return Self::ZERO;
-        }
+        let sign = (ui & f64::SIGN_MASK) != 0;
 
-        Self::from_bits(crate::convert::convert_float!(P8E0, f64, ui))
+        let uip = ui & !f64::SIGN_MASK;
+        // check zero
+        if uip == 0 {
+            Self::ZERO
+        } else if uip >= 0x_7ff0_0000_0000_0000 {
+            Self::NAR
+        } else if uip >= 0x_4050_0000_0000_0000 {
+            // +- 64.
+            if !sign {
+                Self::MAX
+            } else {
+                Self::MIN
+            }
+        } else if uip == 0x_3ff0_0000_0000_0000 {
+            // +- 1.
+            if !sign {
+                Self::ONE
+            } else {
+                Self::ONE.neg()
+            }
+        } else if uip <= 0x_3f90_0000_0000_0000 {
+            // +- 0.015_625
+            if !sign {
+                Self::MIN_POSITIVE
+            } else {
+                Self::MIN_POSITIVE.neg()
+            }
+        } else {
+            Self::from_bits(crate::convert::convert_float!(P8E0, f64, ui))
+        }
     }
 
     pub const fn to_f32(self) -> f32 {

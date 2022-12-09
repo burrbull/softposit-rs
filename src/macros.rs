@@ -1,3 +1,29 @@
+macro_rules! impl_math_consts {
+    ($T:ty) => {
+        impl $crate::MathConsts for $T {
+            const E: Self = Self::from_f64(core::f64::consts::E);
+            const FRAC_1_PI: Self = Self::from_f64(core::f64::consts::FRAC_1_PI);
+            const FRAC_1_SQRT_2: Self = Self::from_f64(core::f64::consts::FRAC_1_SQRT_2);
+            const FRAC_2_PI: Self = Self::from_f64(core::f64::consts::FRAC_2_PI);
+            const FRAC_2_SQRT_PI: Self = Self::from_f64(core::f64::consts::FRAC_2_SQRT_PI);
+            const FRAC_PI_2: Self = Self::from_f64(core::f64::consts::FRAC_PI_2);
+            const FRAC_PI_3: Self = Self::from_f64(core::f64::consts::FRAC_PI_3);
+            const FRAC_PI_4: Self = Self::from_f64(core::f64::consts::FRAC_PI_4);
+            const FRAC_PI_6: Self = Self::from_f64(core::f64::consts::FRAC_PI_6);
+            const FRAC_PI_8: Self = Self::from_f64(core::f64::consts::FRAC_PI_8);
+            const LN_10: Self = Self::from_f64(core::f64::consts::LN_10);
+            const LN_2: Self = Self::from_f64(core::f64::consts::LN_2);
+            const LOG10_E: Self = Self::from_f64(core::f64::consts::LOG10_E);
+            const LOG2_E: Self = Self::from_f64(core::f64::consts::LOG2_E);
+            const PI: Self = Self::from_f64(core::f64::consts::PI);
+            const SQRT_2: Self = Self::from_f64(core::f64::consts::SQRT_2);
+            const LOG2_10: Self = Self::from_f64(core::f64::consts::LOG2_10);
+            const LOG10_2: Self = Self::from_f64(core::f64::consts::LOG10_2);
+        }
+    };
+}
+pub(crate) use impl_math_consts;
+
 macro_rules! impl_const_fns {
     ($T:ty) => {
         impl $T {
@@ -249,13 +275,13 @@ macro_rules! impl_num_traits {
 
         impl num_traits::ToPrimitive for $posit {
             fn to_i64(&self) -> Option<i64> {
-                Some(i64::from(*self))
+                Some((*self).to_i64())
             }
             fn to_u64(&self) -> Option<u64> {
-                Some(u64::from(*self))
+                Some((*self).to_u64())
             }
             fn to_f64(&self) -> Option<f64> {
-                Some(f64::from(*self))
+                Some((*self).to_f64())
             }
         }
 
@@ -268,45 +294,45 @@ macro_rules! impl_num_traits {
         impl num_traits::FromPrimitive for $posit {
             #[inline]
             fn from_i8(n: i8) -> Option<$posit> {
-                Some((n as i32).into())
+                Some(Self::from_i8(n))
             }
             #[inline]
             fn from_i16(n: i16) -> Option<$posit> {
-                Some((n as i32).into())
+                Some(Self::from_i16(n))
             }
             #[inline]
             fn from_i32(n: i32) -> Option<$posit> {
-                Some(n.into())
+                Some(Self::from_i32(n))
             }
             #[inline]
             fn from_i64(n: i64) -> Option<$posit> {
-                Some(n.into())
+                Some(Self::from_i64(n))
             }
 
             #[inline]
             fn from_u8(n: u8) -> Option<$posit> {
-                Some((n as u32).into())
+                Some(Self::from_u8(n))
             }
             #[inline]
             fn from_u16(n: u16) -> Option<$posit> {
-                Some((n as u32).into())
+                Some(Self::from_u16(n))
             }
             #[inline]
             fn from_u32(n: u32) -> Option<$posit> {
-                Some(n.into())
+                Some(Self::from_u32(n))
             }
             #[inline]
             fn from_u64(n: u64) -> Option<$posit> {
-                Some(n.into())
+                Some(Self::from_u64(n))
             }
 
             #[inline]
-            fn from_f32(n: f32) -> Option<$posit> {
-                Some(n.into())
+            fn from_f32(f: f32) -> Option<$posit> {
+                Some(Self::from_f32(f))
             }
             #[inline]
-            fn from_f64(n: f64) -> Option<$posit> {
-                Some(n.into())
+            fn from_f64(f: f64) -> Option<$posit> {
+                Some(Self::from_f64(f))
             }
         }
 
@@ -566,84 +592,146 @@ macro_rules! impl_convert {
         impl From<i8> for $posit {
             #[inline]
             fn from(a: i8) -> Self {
-                Self::from(a as i32)
+                Self::from_i8(a)
             }
         }
 
         impl From<$posit> for i8 {
             #[inline]
             fn from(a: $posit) -> Self {
-                i32::from(a) as i8
+                a.to_i8()
             }
         }
 
         impl From<i16> for $posit {
             #[inline]
             fn from(a: i16) -> Self {
-                Self::from(a as i32)
+                Self::from_i16(a)
             }
         }
 
         impl From<$posit> for i16 {
             #[inline]
             fn from(a: $posit) -> Self {
-                i32::from(a) as i16
+                a.to_i16()
             }
         }
 
         impl From<isize> for $posit {
             #[inline]
             fn from(a: isize) -> Self {
-                Self::from(a as i64)
+                Self::from_isize(a)
             }
         }
 
         impl From<$posit> for isize {
             #[inline]
             fn from(a: $posit) -> Self {
-                i64::from(a) as isize
+                a.to_isize()
             }
         }
 
         impl From<u8> for $posit {
             #[inline]
             fn from(a: u8) -> Self {
-                Self::from(a as u32)
+                Self::from_u8(a)
             }
         }
 
         impl From<$posit> for u8 {
             #[inline]
             fn from(a: $posit) -> Self {
-                u32::from(a) as u8
+                a.to_u8()
             }
         }
 
         impl From<u16> for $posit {
             #[inline]
             fn from(a: u16) -> Self {
-                Self::from(a as u32)
+                Self::from_u16(a)
             }
         }
 
         impl From<$posit> for u16 {
             #[inline]
             fn from(a: $posit) -> Self {
-                u32::from(a) as u16
+                a.to_u16()
             }
         }
 
         impl From<usize> for $posit {
             #[inline]
             fn from(a: usize) -> Self {
-                Self::from(a as u64)
+                Self::from_usize(a)
             }
         }
 
         impl From<$posit> for usize {
             #[inline]
             fn from(a: $posit) -> Self {
-                u64::from(a) as usize
+                a.to_usize()
+            }
+        }
+
+        impl $posit {
+            #[inline]
+            pub const fn from_i8(a: i8) -> Self {
+                Self::from_i32(a as i32)
+            }
+
+            #[inline]
+            pub const fn to_i8(self) -> i8 {
+                self.to_i32() as i8
+            }
+
+            #[inline]
+            pub const fn from_i16(a: i16) -> Self {
+                Self::from_i32(a as i32)
+            }
+
+            #[inline]
+            pub const fn to_i16(self) -> i16 {
+                self.to_i32() as i16
+            }
+
+            #[inline]
+            pub const fn from_isize(a: isize) -> Self {
+                Self::from_i64(a as i64)
+            }
+
+            #[inline]
+            pub const fn to_isize(self) -> isize {
+                self.to_i64() as isize
+            }
+
+            #[inline]
+            pub const fn from_u8(a: u8) -> Self {
+                Self::from_u32(a as u32)
+            }
+
+            #[inline]
+            pub const fn to_u8(self) -> u8 {
+                self.to_u32() as u8
+            }
+
+            #[inline]
+            pub const fn from_u16(a: u16) -> Self {
+                Self::from_u32(a as u32)
+            }
+
+            #[inline]
+            pub const fn to_u16(self) -> u16 {
+                self.to_u32() as u16
+            }
+
+            #[inline]
+            pub const fn from_usize(a: usize) -> Self {
+                Self::from_u64(a as u64)
+            }
+
+            #[inline]
+            pub const fn to_usize(self) -> usize {
+                self.to_u64() as usize
             }
         }
 

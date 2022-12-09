@@ -2,6 +2,8 @@ mod convert;
 mod math;
 mod ops;
 crate::macros::impl_num_traits!(P32E2);
+crate::macros::impl_math_consts!(P32E2);
+
 #[cfg(feature = "approx")]
 mod impl_approx {
     use super::*;

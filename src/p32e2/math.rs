@@ -5,27 +5,6 @@ pub mod sleef;
 const HALF: P32E2 = P32E2::new(0x_3800_0000);
 const TWO: P32E2 = P32E2::new(0x_4800_0000);
 
-impl crate::MathConsts for P32E2 {
-    const E: Self = Self::new(0x_4adf_8546);
-    const FRAC_1_PI: Self = Self::new(0x_322f_9837);
-    const FRAC_1_SQRT_2: Self = Self::new(0x_3b50_4f33);
-    const FRAC_2_PI: Self = Self::new(0x_3a2f_9837);
-    const FRAC_2_SQRT_PI: Self = Self::new(0x_4106_eba8);
-    const FRAC_PI_2: Self = Self::new(0x_4490_fdaa);
-    const FRAC_PI_3: Self = Self::new(0x_4060_a91c);
-    const FRAC_PI_4: Self = Self::new(0x_3c90_fdaa);
-    const FRAC_PI_6: Self = Self::new(0x_3860_a91c);
-    const FRAC_PI_8: Self = Self::new(0x_3490_fdaa);
-    const LN_10: Self = Self::new(0x_4935_d8de);
-    const LN_2: Self = Self::new(0x_3b17_217f);
-    const LOG10_E: Self = Self::new(0x_35e5_bd8b);
-    const LOG2_E: Self = Self::new(0x_438a_a3b3);
-    const PI: Self = Self::new(0x_4c90_fdaa);
-    const SQRT_2: Self = Self::new(0x_4350_4f33);
-    const LOG2_10: Self = Self::new(0x_4d49_a785);
-    const LOG10_2: Self = Self::new(0x_31a2_09a8);
-}
-
 impl P32E2 {
     #[inline]
     pub const fn trunc(self) -> Self {
