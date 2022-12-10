@@ -208,3 +208,28 @@ impl crate::RawPosit for P8E0 {
     const EXPONENT_BITS: u32 = 0;
     const EXPONENT_MASK: Self::UInt = 0x0;
 }
+
+#[cfg(test)]
+fn test21_exact(fun: fn(P8E0, P8E0, f64, f64) -> (P8E0, f64)) {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..crate::NTESTS8 {
+        let i: i8 = rng.gen();
+        let p_a = P8E0::new(i);
+        let i: i8 = rng.gen();
+        let p_b = P8E0::new(i);
+        let f_a = f64::from(p_a);
+        let f_b = f64::from(p_b);
+        let (answer, f) = fun(p_a, p_b, f_a, f_b);
+        let expected = P8E0::from_f64(f);
+        #[cfg(not(feature = "std"))]
+        assert_eq!(answer, expected);
+        #[cfg(feature = "std")]
+        assert_eq!(
+            answer,
+            expected,
+            "\n\tinput: ({p_a:?}, {p_b:?})\n\tor: {f_a}, {f_b}\n\tanswer: {}, expected {f}",
+            answer.to_f64()
+        );
+    }
+}

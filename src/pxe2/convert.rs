@@ -5,18 +5,99 @@ use core::f64;
 impl<const N: u32> From<PxE2<{ N }>> for f32 {
     #[inline]
     fn from(a: PxE2<{ N }>) -> Self {
-        f64::from(a) as f32
+        a.to_f32()
     }
 }
 
 impl<const N: u32> From<PxE2<{ N }>> for f64 {
     #[inline]
     fn from(p_a: PxE2<{ N }>) -> Self {
-        let mut ui_a = p_a.to_bits();
+        p_a.to_f64()
+    }
+}
 
-        if p_a.is_zero() {
+impl<const N: u32> From<f32> for PxE2<{ N }> {
+    #[inline]
+    fn from(float: f32) -> Self {
+        Self::from_f32(float)
+    }
+}
+
+impl<const N: u32> From<f64> for PxE2<{ N }> {
+    #[inline]
+    fn from(float: f64) -> Self {
+        Self::from_f64(float)
+    }
+}
+
+impl<const N: u32> From<i32> for PxE2<{ N }> {
+    #[inline]
+    fn from(i_a: i32) -> Self {
+        Self::from_i32(i_a)
+    }
+}
+
+impl<const N: u32> From<u32> for PxE2<{ N }> {
+    #[inline]
+    fn from(a: u32) -> Self {
+        Self::from_u32(a)
+    }
+}
+
+impl<const N: u32> From<i64> for PxE2<{ N }> {
+    #[inline]
+    fn from(i_a: i64) -> Self {
+        Self::from_i64(i_a)
+    }
+}
+
+impl<const N: u32> From<u64> for PxE2<{ N }> {
+    #[inline]
+    fn from(a: u64) -> Self {
+        Self::from_u64(a)
+    }
+}
+
+impl<const N: u32> From<PxE2<{ N }>> for i32 {
+    #[inline]
+    fn from(p_a: PxE2<{ N }>) -> Self {
+        crate::P32E2::from_bits(p_a.to_bits()).to_i32()
+    }
+}
+
+impl<const N: u32> From<PxE2<{ N }>> for u32 {
+    #[inline]
+    fn from(p_a: PxE2<{ N }>) -> Self {
+        crate::P32E2::from_bits(p_a.to_bits()).to_u32()
+    }
+}
+
+impl<const N: u32> From<PxE2<{ N }>> for u64 {
+    #[inline]
+    fn from(p_a: PxE2<{ N }>) -> Self {
+        crate::P32E2::from_bits(p_a.to_bits()).to_u64()
+    }
+}
+
+impl<const N: u32> From<PxE2<{ N }>> for i64 {
+    #[inline]
+    fn from(p_a: PxE2<{ N }>) -> Self {
+        crate::P32E2::from_bits(p_a.to_bits()).to_i64()
+    }
+}
+
+impl<const N: u32> PxE2<{ N }> {
+    #[inline]
+    pub fn to_f32(self) -> f32 {
+        self.to_f64() as f32
+    }
+
+    pub fn to_f64(self) -> f64 {
+        let mut ui_a = self.to_bits();
+
+        if self.is_zero() {
             0.
-        } else if p_a.is_nar() {
+        } else if self.is_nar() {
             f64::NAN
         } else {
             let sign_a = ui_a & 0x_8000_0000;
@@ -31,11 +112,14 @@ impl<const N: u32> From<PxE2<{ N }>> for f64 {
             f64::from_bits(exp_a + frac_a + ((sign_a as u64) << 32))
         }
     }
-}
 
-impl<const N: u32> From<f64> for PxE2<{ N }> {
+    #[inline]
+    pub fn from_f32(float: f32) -> Self {
+        Self::from_f64(float as f64)
+    }
+
     #[allow(clippy::cognitive_complexity)]
-    fn from(mut float: f64) -> Self {
+    pub fn from_f64(mut float: f64) -> Self {
         let mut reg: u32;
         let mut frac = 0_u32;
         let mut exp = 0_i32;
@@ -223,11 +307,8 @@ impl<const N: u32> From<f64> for PxE2<{ N }> {
         };
         Self::from_bits(u_z)
     }
-}
 
-impl<const N: u32> From<i32> for PxE2<{ N }> {
-    #[inline]
-    fn from(mut i_a: i32) -> Self {
+    pub const fn from_i32(mut i_a: i32) -> Self {
         if i_a < -2_147_483_135 {
             Self::from_bits(0x_8050_0000);
         }
@@ -253,11 +334,8 @@ impl<const N: u32> From<i32> for PxE2<{ N }> {
         };
         Self::from_bits(u32_with_sign(ui_a, sign))
     }
-}
 
-impl<const N: u32> From<u32> for PxE2<{ N }> {
-    #[inline]
-    fn from(a: u32) -> Self {
+    pub const fn from_u32(a: u32) -> Self {
         let ui_a = if (N == 2) && (a > 0) {
             0x_4000_0000
         } else if a > 0x_FFFF_FBFF {
@@ -272,9 +350,66 @@ impl<const N: u32> From<u32> for PxE2<{ N }> {
         };
         Self::from_bits(ui_a)
     }
+
+    pub const fn from_i64(mut i_a: i64) -> Self {
+        let sign = i_a.is_negative();
+        if sign {
+            i_a = -i_a;
+        }
+
+        let ui_a = if (N == 2) && (i_a > 0) {
+            0x_4000_0000
+        } else if i_a > 0x_7FFD_FFFF_FFFF_FFFF {
+            //9222809086901354495
+            let mut ui_a = 0x_7FFF_B000; // P32: 9223372036854775808
+            if N < 18 {
+                ui_a &= Self::mask();
+            }
+            ui_a
+        } else {
+            convert_u32_to_px2bits::<{ N }>(i_a as u32)
+        };
+        Self::from_bits(u32_with_sign(ui_a, sign))
+    }
+
+    pub const fn from_u64(a: u64) -> Self {
+        let ui_a = if (N == 2) && (a > 0) {
+            0x_4000_0000
+        } else if a > 0x_FFFB_FFFF_FFFF_FFFF {
+            //18445618173802708991
+            let mut ui_a = 0x_7FFF_C000; // 18446744073709552000
+            if N < 18 {
+                ui_a &= Self::mask();
+            }
+            ui_a
+        } else {
+            convert_u64_to_px2bits::<{ N }>(a)
+        };
+        Self::from_bits(ui_a)
+    }
+
+    #[inline]
+    pub const fn to_i32(self) -> i32 {
+        crate::P32E2::from_bits(self.to_bits()).to_i32()
+    }
+
+    #[inline]
+    pub const fn to_u32(self) -> u32 {
+        crate::P32E2::from_bits(self.to_bits()).to_u32()
+    }
+
+    #[inline]
+    pub const fn to_u64(self) -> u64 {
+        crate::P32E2::from_bits(self.to_bits()).to_u64()
+    }
+
+    #[inline]
+    pub const fn to_i64(self) -> i64 {
+        crate::P32E2::from_bits(self.to_bits()).to_i64()
+    }
 }
 
-fn convert_u32_to_px2bits<const N: u32>(a: u32) -> u32 {
+const fn convert_u32_to_px2bits<const N: u32>(a: u32) -> u32 {
     let mut log2 = 31_i8; //length of bit (e.g. 4294966271) in int (32 but because we have only 32 bits, so one bit off to accomdate that fact)
     let mut mask = 0x_8000_0000_u32;
     if a < 0x2 {
@@ -325,50 +460,7 @@ fn convert_u32_to_px2bits<const N: u32>(a: u32) -> u32 {
     }
 }
 
-impl<const N: u32> From<i64> for PxE2<{ N }> {
-    #[inline]
-    fn from(mut i_a: i64) -> Self {
-        let sign = i_a.is_negative();
-        if sign {
-            i_a = -i_a;
-        }
-
-        let ui_a = if (N == 2) && (i_a > 0) {
-            0x_4000_0000
-        } else if i_a > 0x_7FFD_FFFF_FFFF_FFFF {
-            //9222809086901354495
-            let mut ui_a = 0x_7FFF_B000; // P32: 9223372036854775808
-            if N < 18 {
-                ui_a &= Self::mask();
-            }
-            ui_a
-        } else {
-            convert_u32_to_px2bits::<{ N }>(i_a as u32)
-        };
-        Self::from_bits(u32_with_sign(ui_a, sign))
-    }
-}
-
-impl<const N: u32> From<u64> for PxE2<{ N }> {
-    #[inline]
-    fn from(a: u64) -> Self {
-        let ui_a = if (N == 2) && (a > 0) {
-            0x_4000_0000
-        } else if a > 0x_FFFB_FFFF_FFFF_FFFF {
-            //18445618173802708991
-            let mut ui_a = 0x_7FFF_C000; // 18446744073709552000
-            if N < 18 {
-                ui_a &= Self::mask();
-            }
-            ui_a
-        } else {
-            convert_u64_to_px2bits::<{ N }>(a)
-        };
-        Self::from_bits(ui_a)
-    }
-}
-
-fn convert_u64_to_px2bits<const N: u32>(a: u64) -> u32 {
+const fn convert_u64_to_px2bits<const N: u32>(a: u64) -> u32 {
     let mut log2 = 63_i8; //length of bit (e.g. 18445618173802708991) in int (64 but because we have only 64 bits, so one bit off to accommodate that fact)
     let mut mask = 0x_8000_0000_0000_0000_u64;
     if a < 0x2 {
@@ -424,34 +516,5 @@ fn convert_u64_to_px2bits<const N: u32>(a: u64) -> u32 {
             }
         }
         ui_a
-    }
-}
-
-use crate::P32E2;
-impl<const N: u32> From<PxE2<{ N }>> for i32 {
-    #[inline]
-    fn from(p_a: PxE2<{ N }>) -> Self {
-        Self::from(P32E2::from_bits(p_a.to_bits()))
-    }
-}
-
-impl<const N: u32> From<PxE2<{ N }>> for u32 {
-    #[inline]
-    fn from(p_a: PxE2<{ N }>) -> Self {
-        Self::from(P32E2::from_bits(p_a.to_bits()))
-    }
-}
-
-impl<const N: u32> From<PxE2<{ N }>> for u64 {
-    #[inline]
-    fn from(p_a: PxE2<{ N }>) -> Self {
-        Self::from(P32E2::from_bits(p_a.to_bits()))
-    }
-}
-
-impl<const N: u32> From<PxE2<{ N }>> for i64 {
-    #[inline]
-    fn from(p_a: PxE2<{ N }>) -> Self {
-        Self::from(P32E2::from_bits(p_a.to_bits()))
     }
 }

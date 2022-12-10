@@ -5,18 +5,99 @@ use core::f64;
 impl<const N: u32> From<PxE1<{ N }>> for f32 {
     #[inline]
     fn from(a: PxE1<{ N }>) -> Self {
-        f64::from(a) as f32
+        a.to_f32()
     }
 }
 
 impl<const N: u32> From<PxE1<{ N }>> for f64 {
     #[inline]
     fn from(p_a: PxE1<{ N }>) -> Self {
-        let mut ui_a = p_a.to_bits();
+        p_a.to_f64()
+    }
+}
 
-        if p_a.is_zero() {
+impl<const N: u32> From<f32> for PxE1<{ N }> {
+    #[inline]
+    fn from(float: f32) -> Self {
+        Self::from_f32(float)
+    }
+}
+
+impl<const N: u32> From<f64> for PxE1<{ N }> {
+    #[inline]
+    fn from(float: f64) -> Self {
+        Self::from_f64(float)
+    }
+}
+
+impl<const N: u32> From<PxE1<{ N }>> for i32 {
+    #[inline]
+    fn from(p_a: PxE1<{ N }>) -> Self {
+        p_a.to_i32()
+    }
+}
+
+impl<const N: u32> From<PxE1<{ N }>> for u32 {
+    #[inline]
+    fn from(p_a: PxE1<{ N }>) -> Self {
+        p_a.to_u32()
+    }
+}
+
+impl<const N: u32> From<PxE1<{ N }>> for i64 {
+    #[inline]
+    fn from(p_a: PxE1<{ N }>) -> Self {
+        p_a.to_i64()
+    }
+}
+
+impl<const N: u32> From<PxE1<{ N }>> for u64 {
+    #[inline]
+    fn from(p_a: PxE1<{ N }>) -> Self {
+        p_a.to_u64()
+    }
+}
+
+impl<const N: u32> From<u64> for PxE1<{ N }> {
+    #[inline]
+    fn from(a: u64) -> Self {
+        Self::from_u64(a)
+    }
+}
+
+impl<const N: u32> From<i64> for PxE1<{ N }> {
+    #[inline]
+    fn from(a: i64) -> Self {
+        Self::from_i64(a)
+    }
+}
+
+impl<const N: u32> From<u32> for PxE1<{ N }> {
+    #[inline]
+    fn from(a: u32) -> Self {
+        Self::from_u32(a)
+    }
+}
+
+impl<const N: u32> From<i32> for PxE1<{ N }> {
+    #[inline]
+    fn from(a: i32) -> Self {
+        Self::from_i32(a)
+    }
+}
+
+impl<const N: u32> PxE1<{ N }> {
+    #[inline]
+    pub fn to_f32(self) -> f32 {
+        self.to_f64() as f32
+    }
+
+    pub fn to_f64(self) -> f64 {
+        let mut ui_a = self.to_bits();
+
+        if self.is_zero() {
             0.
-        } else if p_a.is_nar() {
+        } else if self.is_nar() {
             f64::NAN
         } else {
             let sign_a = ui_a & 0x_8000_0000;
@@ -31,11 +112,14 @@ impl<const N: u32> From<PxE1<{ N }>> for f64 {
             f64::from_bits(exp_a + frac_a + ((sign_a as u64) << 32))
         }
     }
-}
 
-impl<const N: u32> From<f64> for PxE1<{ N }> {
+    #[inline]
+    pub fn from_f32(float: f32) -> Self {
+        Self::from_f64(float as f64)
+    }
+
     #[allow(clippy::cognitive_complexity)]
-    fn from(mut float: f64) -> Self {
+    pub fn from_f64(mut float: f64) -> Self {
         let mut reg: u32;
         let mut frac = 0_u32;
         let mut exp = 0_i32;
@@ -202,17 +286,14 @@ impl<const N: u32> From<f64> for PxE1<{ N }> {
         };
         Self::from_bits(u_z)
     }
-}
 
-impl<const N: u32> From<PxE1<{ N }>> for i32 {
-    #[inline]
-    fn from(p_a: PxE1<{ N }>) -> Self {
+    pub const fn to_i32(self) -> i32 {
         //NaR
-        if p_a.is_nar() {
+        if self.is_nar() {
             return i32::min_value();
         }
 
-        let mut ui_a = p_a.to_bits();
+        let mut ui_a = self.to_bits();
 
         let sign = ui_a > 0x_8000_0000; // sign is True if pA > NaR.
 
@@ -223,12 +304,9 @@ impl<const N: u32> From<PxE1<{ N }>> for i32 {
         let i_z = convert_px1bits_to_u32(ui_a);
         u32_with_sign(i_z, sign) as i32
     }
-}
 
-impl<const N: u32> From<PxE1<{ N }>> for u32 {
-    #[inline]
-    fn from(p_a: PxE1<{ N }>) -> Self {
-        let ui_a = p_a.to_bits();
+    pub const fn to_u32(self) -> u32 {
+        let ui_a = self.to_bits();
         //NaR
         if ui_a >= 0x_8000_0000 {
             0
@@ -236,67 +314,14 @@ impl<const N: u32> From<PxE1<{ N }>> for u32 {
             convert_px1bits_to_u32(ui_a)
         }
     }
-}
 
-fn convert_px1bits_to_u32(mut ui_a: u32) -> u32 {
-    if ui_a <= 0x_3000_0000 {
-        // 0 <= |pA| <= 1/2 rounds to zero.
-        0
-    } else if ui_a < 0x_4800_0000 {
-        // 1/2 < x < 3/2 rounds to 1.
-        1
-    } else if ui_a <= 0x_5400_0000 {
-        // 3/2 <= x <= 5/2 rounds to 2.
-        2
-    } else if ui_a > 0x_7FFF_BFFF {
-        //4294836223
-        4_294_967_295
-    } else {
-        // Decode the posit, left-justifying as we go.
-        let mut scale = 0_u32;
-
-        ui_a -= 0x_4000_0000; // Strip off first regime bit (which is a 1).
-        while (0x_2000_0000 & ui_a) != 0 {
-            // Increment scale by 2 for each regime sign bit.
-            scale += 2; // Regime sign bit is always 1 in this range.
-            ui_a = (ui_a - 0x_2000_0000) << 1; // Remove the bit; line up the next regime bit.
-        }
-        ui_a <<= 1; // Skip over termination bit, which is 0.
-        if (0x_2000_0000 & ui_a) != 0 {
-            scale += 1;
-        } // If exponent is 1, increment the scale.
-        let mut i_z64 = ((ui_a | 0x_2000_0000) as u64) << 33; // Left-justify fraction in 64-bit result (one left bit padding)
-
-        let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
-
-        let bit_last = i_z64 & mask; // Extract the bit, without shifting it.
-        mask >>= 1;
-        let mut tmp = i_z64 & mask;
-        let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-        i_z64 ^= tmp; // Erase the bit, if it was set.
-        tmp = i_z64 & (mask - 1); // tmp has any remaining bits. // This is bits_more
-        i_z64 ^= tmp; // Erase those bits, if any were set.
-
-        if bit_n_plus_one {
-            // logic for round to nearest, tie to even
-            if (bit_last | tmp) != 0 {
-                i_z64 += mask << 1;
-            }
-        }
-
-        (i_z64 >> (62 - scale)) as u32 // Right-justify the integer.
-    }
-}
-
-impl<const N: u32> From<PxE1<{ N }>> for i64 {
-    #[inline]
-    fn from(p_a: PxE1<{ N }>) -> Self {
+    pub const fn to_i64(self) -> i64 {
         //NaR
-        if p_a.is_nar() {
+        if self.is_nar() {
             return i64::min_value();
         }
 
-        let mut ui_a = p_a.to_bits();
+        let mut ui_a = self.to_bits();
 
         let sign = ui_a > 0x_8000_0000; // sign is True if pA > NaR.
 
@@ -308,12 +333,9 @@ impl<const N: u32> From<PxE1<{ N }>> for i64 {
 
         u64_with_sign(i_z, sign) as i64
     }
-}
 
-impl<const N: u32> From<PxE1<{ N }>> for u64 {
-    #[inline]
-    fn from(p_a: PxE1<{ N }>) -> Self {
-        let ui_a = p_a.to_bits();
+    pub const fn to_u64(self) -> u64 {
+        let ui_a = self.to_bits();
         //NaR
         if ui_a >= 0x_8000_0000 {
             0
@@ -321,111 +343,8 @@ impl<const N: u32> From<PxE1<{ N }>> for u64 {
             convert_px1bits_to_u64(ui_a)
         }
     }
-}
 
-fn convert_px1bits_to_u64(mut ui_a: u32) -> u64 {
-    if ui_a <= 0x_3000_0000 {
-        // 0 <= |pA| <= 1/2 rounds to zero.
-        0
-    } else if ui_a < 0x_4800_0000 {
-        // 1/2 < x < 3/2 rounds to 1.
-        1
-    } else if ui_a <= 0x_5400_0000 {
-        // 3/2 <= x <= 5/2 rounds to 2.
-        2
-    } else {
-        // Decode the posit, left-justifying as we go.
-        let mut scale = 0_u32;
-
-        ui_a -= 0x_4000_0000; // Strip off first regime bit (which is a 1).
-        while (0x_2000_0000 & ui_a) != 0 {
-            // Increment scale by 2 for each regime sign bit.
-            scale += 2; // Regime sign bit is always 1 in this range.
-            ui_a = (ui_a - 0x_2000_0000) << 1; // Remove the bit; line up the next regime bit.
-        }
-        ui_a <<= 1; // Skip over termination bit, which is 0.
-        if (0x_2000_0000 & ui_a) != 0 {
-            scale += 1;
-        } // If exponent is 1, increment the scale.
-        let mut i_z = ((ui_a | 0x_2000_0000) as u64) << 33; // Left-justify fraction in 64-bit result (one left bit padding)
-        let mut mask = 0x_4000_0000_0000_0000 >> scale; // Point to the last bit of the integer part.
-
-        let bit_last = i_z & mask; // Extract the bit, without shifting it.
-        mask >>= 1;
-        let mut tmp = i_z & mask;
-        let bit_n_plus_one = tmp != 0; // "True" if nonzero.
-        i_z ^= tmp; // Erase the bit, if it was set.
-        tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
-        i_z ^= tmp; // Erase those bits, if any were set.
-
-        if bit_n_plus_one {
-            // logic for round to nearest, tie to even
-            if (bit_last | tmp) != 0 {
-                i_z += mask << 1;
-            }
-        }
-
-        i_z >> (62 - scale) // Right-justify the integer.
-    }
-}
-
-fn convert_u64_to_px1bits<const N: u32>(a: u64) -> u32 {
-    let mut log2 = 63_i8; //60;//length of bit (e.g. 576460752303423488 = 2^59) in int (64 but because we have only 64 bits, so one bit off to accommodate that fact)
-    let mut mask = 0x_8000_0000_0000_0000_u64;
-    if a < 0x2 {
-        (a as u32) << 30
-    } else {
-        let mut frac64_a = a;
-        while (frac64_a & mask) == 0 {
-            log2 -= 1;
-            frac64_a <<= 1;
-        }
-
-        let k = (log2 >> 1) as u32;
-
-        let exp_a = (log2 & 0x1) as u32;
-        frac64_a ^= mask;
-        frac64_a <<= 1;
-
-        let mut ui_a: u32;
-        if k >= (N - 2) {
-            //maxpos
-            ui_a = 0x_7FFF_FFFF & PxE1::<{ N }>::mask();
-        } else if k == (N - 3) {
-            //bitNPlusOne-> exp bit //bitLast is zero
-            ui_a = 0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k);
-            if ((exp_a & 0x1) != 0) && (frac64_a != 0) {
-                //bitNPlusOne //bitsMore
-                ui_a |= 0x_8000_0000_u32 >> (N - 1);
-            }
-        } else if k == (N - 4) {
-            //bitLast = regime terminating bit
-            ui_a = (0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k)) | (exp_a << (28 - k));
-            mask = 0x_0008_0000_0000_u64 << (k + 32 - N);
-            if (mask & frac64_a) != 0 {
-                //bitNPlusOne
-                if (((mask - 1) & frac64_a) | ((exp_a & 0x1) as u64)) != 0 {
-                    ui_a += 0x_8000_0000_u32 >> (N - 1);
-                }
-            }
-        } else {
-            ui_a = (0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k))
-                | (exp_a << (28 - k))
-                | (((frac64_a >> (k + 36)) as u32) & PxE1::<{ N }>::mask());
-            mask = 0x_0008_0000_0000_u64 << (k + 32 - N); //bitNPlusOne position
-            if ((mask & frac64_a) != 0)
-                && ((((mask - 1) & frac64_a) | ((mask << 1) & frac64_a)) != 0)
-            {
-                ui_a += 0x_8000_0000_u32 >> (N - 1);
-            }
-        }
-        ui_a
-    }
-}
-
-impl<const N: u32> From<u64> for PxE1<{ N }> {
-    #[inline]
-    fn from(a: u64) -> Self {
+    pub const fn from_u64(a: u64) -> Self {
         let ui_a = if a == 0x_8000_0000_0000_0000 {
             0x_8000_0000
         } else if N == 2 {
@@ -442,10 +361,12 @@ impl<const N: u32> From<u64> for PxE1<{ N }> {
         };
         Self::from_bits(ui_a)
     }
-}
 
-impl<const N: u32> From<i32> for PxE1<{ N }> {
-    fn from(a: i32) -> Self {
+    pub const fn from_i64(_a: i64) -> Self {
+        unimplemented!()
+    }
+
+    pub const fn from_i32(a: i32) -> Self {
         let mut log2 = 31_i8; //length of bit (e.g. 2147418111) in int (32 but because we have only 32 bits, so one bit off to accommodate that fact)
 
         let mut ui_a = 0u32;
@@ -511,5 +432,156 @@ impl<const N: u32> From<i32> for PxE1<{ N }> {
             }
         }
         Self::from_bits(if sign { ui_a.wrapping_neg() } else { ui_a })
+    }
+
+    pub const fn from_u32(_a: u32) -> Self {
+        unimplemented!()
+    }
+}
+
+#[inline]
+const fn calculate_scale(mut bits: u32) -> (u32, u32) {
+    // Decode the posit, left-justifying as we go.
+    let mut scale = 0_u32;
+
+    bits -= 0x_4000_0000; // Strip off first regime bit (which is a 1).
+    while (0x_2000_0000 & bits) != 0 {
+        // Increment scale by 2 for each regime sign bit.
+        scale += 2; // Regime sign bit is always 1 in this range.
+        bits = (bits - 0x_2000_0000) << 1; // Remove the bit; line up the next regime bit.
+    }
+    bits <<= 1; // Skip over termination bit, which is 0.
+    if (0x_2000_0000 & bits) != 0 {
+        scale += 1;
+    } // If exponent is 1, increment the scale.
+
+    (scale, bits)
+}
+
+const fn convert_px1bits_to_u32(ui_a: u32) -> u32 {
+    if ui_a <= 0x_3000_0000 {
+        // 0 <= |pA| <= 1/2 rounds to zero.
+        0
+    } else if ui_a < 0x_4800_0000 {
+        // 1/2 < x < 3/2 rounds to 1.
+        1
+    } else if ui_a <= 0x_5400_0000 {
+        // 3/2 <= x <= 5/2 rounds to 2.
+        2
+    } else if ui_a > 0x_7FFF_BFFF {
+        //4294836223
+        4_294_967_295
+    } else {
+        let (scale, bits) = calculate_scale(ui_a);
+
+        let mut i_z64 = ((bits | 0x_2000_0000) as u64) << 33; // Left-justify fraction in 64-bit result (one left bit padding)
+
+        let mut mask = 0x4000_0000_0000_0000_u64 >> scale; // Point to the last bit of the integer part.
+
+        let bit_last = i_z64 & mask; // Extract the bit, without shifting it.
+        mask >>= 1;
+        let mut tmp = i_z64 & mask;
+        let bit_n_plus_one = tmp != 0; // "True" if nonzero.
+        i_z64 ^= tmp; // Erase the bit, if it was set.
+        tmp = i_z64 & (mask - 1); // tmp has any remaining bits. // This is bits_more
+        i_z64 ^= tmp; // Erase those bits, if any were set.
+
+        if bit_n_plus_one {
+            // logic for round to nearest, tie to even
+            if (bit_last | tmp) != 0 {
+                i_z64 += mask << 1;
+            }
+        }
+
+        (i_z64 >> (62 - scale)) as u32 // Right-justify the integer.
+    }
+}
+
+const fn convert_px1bits_to_u64(ui_a: u32) -> u64 {
+    if ui_a <= 0x_3000_0000 {
+        // 0 <= |pA| <= 1/2 rounds to zero.
+        0
+    } else if ui_a < 0x_4800_0000 {
+        // 1/2 < x < 3/2 rounds to 1.
+        1
+    } else if ui_a <= 0x_5400_0000 {
+        // 3/2 <= x <= 5/2 rounds to 2.
+        2
+    } else {
+        let (scale, bits) = calculate_scale(ui_a);
+
+        let mut i_z = ((bits | 0x_2000_0000) as u64) << 33; // Left-justify fraction in 64-bit result (one left bit padding)
+        let mut mask = 0x_4000_0000_0000_0000 >> scale; // Point to the last bit of the integer part.
+
+        let bit_last = i_z & mask; // Extract the bit, without shifting it.
+        mask >>= 1;
+        let mut tmp = i_z & mask;
+        let bit_n_plus_one = tmp != 0; // "True" if nonzero.
+        i_z ^= tmp; // Erase the bit, if it was set.
+        tmp = i_z & (mask - 1); // tmp has any remaining bits. // This is bits_more
+        i_z ^= tmp; // Erase those bits, if any were set.
+
+        if bit_n_plus_one {
+            // logic for round to nearest, tie to even
+            if (bit_last | tmp) != 0 {
+                i_z += mask << 1;
+            }
+        }
+
+        i_z >> (62 - scale) // Right-justify the integer.
+    }
+}
+
+const fn convert_u64_to_px1bits<const N: u32>(a: u64) -> u32 {
+    let mut log2 = 63_i8; //60;//length of bit (e.g. 576460752303423488 = 2^59) in int (64 but because we have only 64 bits, so one bit off to accommodate that fact)
+    let mut mask = 0x_8000_0000_0000_0000_u64;
+    if a < 0x2 {
+        (a as u32) << 30
+    } else {
+        let mut frac64_a = a;
+        while (frac64_a & mask) == 0 {
+            log2 -= 1;
+            frac64_a <<= 1;
+        }
+
+        let k = (log2 >> 1) as u32;
+
+        let exp_a = (log2 & 0x1) as u32;
+        frac64_a ^= mask;
+        frac64_a <<= 1;
+
+        let mut ui_a: u32;
+        if k >= (N - 2) {
+            //maxpos
+            ui_a = 0x_7FFF_FFFF & PxE1::<{ N }>::mask();
+        } else if k == (N - 3) {
+            //bitNPlusOne-> exp bit //bitLast is zero
+            ui_a = 0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k);
+            if ((exp_a & 0x1) != 0) && (frac64_a != 0) {
+                //bitNPlusOne //bitsMore
+                ui_a |= 0x_8000_0000_u32 >> (N - 1);
+            }
+        } else if k == (N - 4) {
+            //bitLast = regime terminating bit
+            ui_a = (0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k)) | (exp_a << (28 - k));
+            mask = 0x_0008_0000_0000_u64 << (k + 32 - N);
+            if (mask & frac64_a) != 0 {
+                //bitNPlusOne
+                if (((mask - 1) & frac64_a) | ((exp_a & 0x1) as u64)) != 0 {
+                    ui_a += 0x_8000_0000_u32 >> (N - 1);
+                }
+            }
+        } else {
+            ui_a = (0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k))
+                | (exp_a << (28 - k))
+                | (((frac64_a >> (k + 36)) as u32) & PxE1::<{ N }>::mask());
+            mask = 0x_0008_0000_0000_u64 << (k + 32 - N); //bitNPlusOne position
+            if ((mask & frac64_a) != 0)
+                && ((((mask - 1) & frac64_a) | ((mask << 1) & frac64_a)) != 0)
+            {
+                ui_a += 0x_8000_0000_u32 >> (N - 1);
+            }
+        }
+        ui_a
     }
 }

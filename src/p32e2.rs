@@ -225,3 +225,28 @@ impl crate::RawPosit for P32E2 {
     const EXPONENT_BITS: u32 = 2;
     const EXPONENT_MASK: Self::UInt = 0x3;
 }
+
+#[cfg(test)]
+fn test21_exact(fun: fn(P32E2, P32E2, f64, f64) -> (P32E2, f64)) {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    for _ in 0..crate::NTESTS32 {
+        let i: i32 = rng.gen();
+        let p_a = P32E2::new(i);
+        let i: i32 = rng.gen();
+        let p_b = P32E2::new(i);
+        let f_a = f64::from(p_a);
+        let f_b = f64::from(p_b);
+        let (answer, f) = fun(p_a, p_b, f_a, f_b);
+        let expected = P32E2::from_f64(f);
+        #[cfg(not(feature = "std"))]
+        assert_eq!(answer, expected);
+        #[cfg(feature = "std")]
+        assert_eq!(
+            answer,
+            expected,
+            "\n\tinput: ({p_a:?}, {p_b:?})\n\tor: {f_a}, {f_b}\n\tanswer: {}, expected {f}",
+            answer.to_f64()
+        );
+    }
+}

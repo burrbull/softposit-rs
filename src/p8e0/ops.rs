@@ -277,36 +277,22 @@ impl P8E0 {
     }
 }
 
-#[cfg(test)]
-fn test_ops(fun: fn(P8E0, P8E0, f64, f64) -> (P8E0, f64)) {
-    use rand::Rng;
-    let mut rng = rand::thread_rng();
-    for _ in 0..crate::NTESTS8 {
-        let p_a: P8E0 = rng.gen();
-        let p_b: P8E0 = rng.gen();
-        let f_a = f64::from(p_a);
-        let f_b = f64::from(p_b);
-        let (p, f) = fun(p_a, p_b, f_a, f_b);
-        assert_eq!(p, P8E0::from(f));
-    }
-}
-
 #[test]
 fn add() {
-    test_ops(|p_a, p_b, f_a, f_b| (p_a + p_b, f_a + f_b));
+    super::test21_exact(|p_a, p_b, f_a, f_b| (p_a + p_b, f_a + f_b));
 }
 
 #[test]
 fn sub() {
-    test_ops(|p_a, p_b, f_a, f_b| (p_a - p_b, f_a - f_b));
+    super::test21_exact(|p_a, p_b, f_a, f_b| (p_a - p_b, f_a - f_b));
 }
 
 #[test]
 fn mul() {
-    test_ops(|p_a, p_b, f_a, f_b| (p_a * p_b, f_a * f_b));
+    super::test21_exact(|p_a, p_b, f_a, f_b| (p_a * p_b, f_a * f_b));
 }
 
 #[test]
 fn div() {
-    test_ops(|p_a, p_b, f_a, f_b| (p_a / p_b, f_a / f_b));
+    super::test21_exact(|p_a, p_b, f_a, f_b| (p_a / p_b, f_a / f_b));
 }
