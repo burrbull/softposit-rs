@@ -141,6 +141,7 @@ const fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) ->
             k_z = k_a; // actually can be k_c too, no diff
             exp_a //same here
         };
+
         let rcarry = (frac64_z & 0x_8000_0000_0000_0000) != 0; //first left bit
 
         if rcarry {
@@ -203,7 +204,7 @@ const fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) ->
         let mut u_z = P32E2::pack_to_ui(regime, exp_z as u32, frac_z);
 
         if bit_n_plus_one {
-            if (frac64_z << (32 - reg_z)) != 0 {
+            if (frac64_z << (31 - reg_z)) != 0 {
                 bits_more = true;
             }
             u_z += (u_z & 1) | (bits_more as u32);
@@ -217,10 +218,10 @@ const fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) ->
 fn test_mul_add() {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    for _ in 0..crate::NTESTS32 {
-        let p_a: P32E2 = rng.gen();
-        let p_b: P32E2 = rng.gen();
-        let p_c: P32E2 = rng.gen();
+    for _ in 0..100_000_000 {
+        let p_a = P32E2::new(rng.gen());
+        let p_b = P32E2::new(rng.gen());
+        let p_c = P32E2::new(rng.gen());
         let f_a = f64::from(p_a);
         let f_b = f64::from(p_b);
         let f_c = f64::from(p_c);
@@ -232,8 +233,9 @@ fn test_mul_add() {
         assert_eq!(
             p,
             P32E2::from(f),
-            "\n  input: ({p_a:?}, {p_b:?}, {p_c:?})\n   or: {f_a}, {f_b}, {f_c}\n  answer: {}, expected {f}",
-            p.to_f64()
+            "\n  input: ({p_a:?}, {p_b:?}, {p_c:?})\n   or: {f_a}, {f_b}, {f_c}\n  answer: {}, expected {f}, nearest {}",
+            p.to_f64(),
+            P32E2::from_f64(f).to_f64()
         );
     }
 }
