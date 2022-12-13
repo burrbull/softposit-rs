@@ -380,7 +380,7 @@ pub fn sin(mut d: P32E2) -> P32E2 {
         quire -= (qf, [PI_A, PI_B, PI_C]);
         d = quire.into();
     } else {
-        unimplemented!()
+        todo!()
     }
 
     let s = d * d;
@@ -415,7 +415,7 @@ pub fn cos(mut d: P32E2) -> P32E2 {
         quire -= (qf, [PI_A * HALF, PI_B * HALF, PI_C * HALF]);
         d = quire.into();
     } else {
-        unimplemented!()
+        todo!()
     }
 
     let s = d * d;
@@ -453,7 +453,7 @@ pub fn sin_cos(d: P32E2) -> (P32E2, P32E2) {
         quire -= (qf, [PI_A * HALF, PI_B * HALF, PI_C * HALF]);
         s = quire.into();
     } else {
-        unimplemented!()
+        todo!()
     }
 
     let t = s;
@@ -497,7 +497,7 @@ pub fn tan(d: P32E2) -> P32E2 {
         quire -= (qf, [PI_A * HALF, PI_B * HALF, PI_C * HALF]);
         x = quire.into();
     } else {
-        unimplemented!()
+        todo!()
     }
 
     let s = x * x;

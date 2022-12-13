@@ -462,7 +462,7 @@ macro_rules! impl_num_traits {
                 core::cmp::Ord::min(self, other)
             }
             fn abs_sub(self, _other: Self) -> Self {
-                unimplemented!()
+                todo!()
             }
             fn cbrt(self) -> Self {
                 Self::cbrt(self)
@@ -519,7 +519,7 @@ macro_rules! impl_num_traits {
                 Self::atanh(self)
             }
             fn integer_decode(self) -> (u64, i16, i8) {
-                unimplemented!()
+                todo!()
             }
         }
 

@@ -363,7 +363,7 @@ impl<const N: u32> PxE1<{ N }> {
     }
 
     pub const fn from_i64(_a: i64) -> Self {
-        unimplemented!()
+        todo!()
     }
 
     pub const fn from_i32(a: i32) -> Self {
@@ -435,7 +435,7 @@ impl<const N: u32> PxE1<{ N }> {
     }
 
     pub const fn from_u32(_a: u32) -> Self {
-        unimplemented!()
+        todo!()
     }
 }
 

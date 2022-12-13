@@ -41,7 +41,7 @@ impl P32E2 {
     }
     #[inline]
     pub fn powi(self, _n: i32) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn powf(self, other: Self) -> Self {
@@ -65,7 +65,7 @@ impl P32E2 {
     }
     #[inline]
     pub fn log(self, _base: Self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn log2(self) -> Self {
@@ -73,7 +73,7 @@ impl P32E2 {
     }
     #[inline]
     pub fn log10(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn cbrt(self) -> Self {
@@ -117,11 +117,11 @@ impl P32E2 {
     }
     #[inline]
     pub fn exp_m1(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub const fn ln_1p(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn sinh(self) -> Self {
