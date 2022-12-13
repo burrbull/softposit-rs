@@ -2,22 +2,41 @@ use crate::{u16_with_sign, u32_with_sign, u8_with_sign};
 use crate::{PxE1, PxE2};
 use crate::{P16E1, P32E2, P8E0};
 
+// TODO: remove when const impl trait stabilized
+pub(crate) trait BitRound {
+    type Ux;
+}
+pub(crate) struct U32;
+pub(crate) struct U64;
+
+macro_rules! impl_bitround {
+    ($Ux:ty, $ux:ty) => {
+        impl $Ux {
+            pub const fn bitround<const BITS: u32>(mut ui: $ux) -> $ux {
+                let d_bits: u32 = <$ux>::BITS - BITS; // difference in bits
+
+                // ROUND TO NEAREST, tie to even: create ulp/2 = ..007ff.. or ..0080..
+                let mut ulp_half = (<$ux>::MAX >> 1) >> BITS; // create ..007ff.. (just smaller than ulp/2)
+                ulp_half += (ui >> d_bits) & 0x1; // turn into ..0080.. for odd (=round up if tie)
+                ui += ulp_half; // +ulp/2 and
+                ui >> d_bits // round down via >> is round nearest
+            }
+        }
+        impl BitRound for $ux {
+            type Ux = $Ux;
+        }
+    };
+}
+
+impl_bitround!(U32, u32);
+impl_bitround!(U64, u64);
+
 macro_rules! convert_float {
     ($posit: ty, $float:ty, $x:expr, $buint:ty, $bint:ty) => {{
-        use crate::RawFloat;
-        use crate::RawPosit;
+        use $crate::RawFloat;
+        use $crate::RawPosit;
         type BUInt = $buint;
         type BInt = $bint;
-
-        const fn bitround(mut ui: BUInt) -> <$posit as RawPosit>::UInt {
-            const D_BITS: u32 = BUInt::BITS - <$posit>::BITSIZE; // difference in bits
-
-            // ROUND TO NEAREST, tie to even: create ulp/2 = ..007ff.. or ..0080..
-            let mut ulp_half = (BUInt::MAX >> 1) >> <$posit>::BITSIZE; // create ..007ff.. (just smaller than ulp/2)
-            ulp_half += (ui >> D_BITS) & 0x1; // turn into ..0080.. for odd (=round up if tie)
-            ui += ulp_half; // +ulp/2 and
-            (ui >> D_BITS) as _ // round down via >> is round nearest
-        }
 
         let ui: <$float as RawFloat>::UInt = $x;
 
@@ -45,7 +64,7 @@ macro_rules! convert_float {
         regime_exponent_mantissa &= (BUInt::MAX >> 1) as BInt; // remove possible sign bit from arith shift
 
         // round to nearest of the result
-        let mut p_rounded = bitround(regime_exponent_mantissa as BUInt);
+        let mut p_rounded = <$buint as $crate::convert::BitRound>::Ux::bitround::<{ <$posit>::BITSIZE }>(regime_exponent_mantissa as BUInt) as <$posit as RawPosit>::UInt;
 
         // no under or overflow rounding mode
         let max_k = (<$float>::EXPONENT_BIAS >> 1) + 1;
@@ -68,8 +87,8 @@ macro_rules! convert_float {
             $posit,
             $float,
             $x,
-            <$float as crate::RawFloat>::UInt,
-            <$float as crate::RawFloat>::Int
+            <$float as $crate::RawFloat>::UInt,
+            <$float as $crate::RawFloat>::Int
         )
     };
 }
