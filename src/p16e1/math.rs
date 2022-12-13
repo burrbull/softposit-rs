@@ -39,55 +39,55 @@ impl P16E1 {
     }
     #[inline]
     pub fn powi(self, _n: i32) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn powf(self, _n: Self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn log(self, _base: Self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn log10(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn cbrt(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn hypot(self, _other: Self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn sin(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn cos(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn tan(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn asin(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn acos(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn atan(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn atan2(self, _other: Self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn sin_cos(self) -> (Self, Self) {
@@ -95,23 +95,23 @@ impl P16E1 {
     }
     #[inline]
     pub fn exp_m1(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub const fn ln_1p(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn sinh(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn cosh(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub fn tanh(self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[inline]
     pub const fn asinh(self) -> Self {
