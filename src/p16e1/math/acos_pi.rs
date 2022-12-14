@@ -69,3 +69,15 @@ const fn to_fixed28_acos_pi(i: u64) -> u64 {
     f = (f & 0xFFF) | 0x1000;
     f << s
 }
+
+#[test]
+fn test_acos_pi() {
+    for i in i16::MIN..i16::MAX {
+        let p_a = P16E1::new(i);
+        let f_a = f64::from(p_a);
+        let answer = p_a.acos_pi();
+        let f = f_a.acos() / core::f64::consts::PI;
+        let expected = P16E1::from(f);
+        assert_eq!(answer, expected);
+    }
+}

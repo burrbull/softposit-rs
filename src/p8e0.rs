@@ -1,4 +1,4 @@
-use crate::Q8E0;
+use crate::{u8_zero_shr, Q8E0};
 
 mod convert;
 mod math;
@@ -30,9 +30,9 @@ mod impl_simba {
 pub struct P8E0(i8);
 
 impl P8E0 {
-    pub const SIZE: usize = 8;
-    pub const ES: usize = 0;
-    pub const USEED: usize = 2;
+    pub const BITS: u32 = 8;
+    pub const ES: u32 = 0;
+    pub const USEED: u32 = 2u32.pow(2u32.pow(Self::ES));
 
     /// Machine epsilon (3.125e-2).
     pub const EPSILON: Self = Self::new(0x_0002);
@@ -83,6 +83,9 @@ impl P8E0 {
 crate::macros::impl_const_fns!(P8E0);
 
 impl P8E0 {
+    /*pub(crate) const fn mask() -> u8 {
+        u8::MAX
+    }*/
     pub const SIGN_MASK: u8 = 0x_80;
     pub const REGIME_SIGN_MASK: u8 = 0x_40;
 
@@ -146,10 +149,10 @@ impl P8E0 {
         let len;
         if k < 0 {
             len = (-k) as u32;
-            (0x40_u8.wrapping_shr(len), false, len)
+            (u8_zero_shr(0x40, len), false, len)
         } else {
             len = (k + 1) as u32;
-            (0x7f - 0x7f_u8.wrapping_shr(len), true, len)
+            (0x7f - u8_zero_shr(0x7f, len), true, len)
         }
     }
 }
@@ -202,11 +205,7 @@ impl rand::distributions::Distribution<P8E0> for rand::distributions::Standard {
 impl crate::RawPosit for P8E0 {
     type UInt = u8;
     type Int = i8;
-
-    const BITSIZE: u32 = 8;
-
-    const EXPONENT_BITS: u32 = 0;
-    const EXPONENT_MASK: Self::UInt = 0x0;
+    const ES_MASK: Self::UInt = u8_zero_shr(u8::MAX, u8::BITS - Self::ES);
 }
 
 #[cfg(test)]
@@ -222,9 +221,6 @@ fn test21_exact(fun: fn(P8E0, P8E0, f64, f64) -> (P8E0, f64)) {
         let f_b = f64::from(p_b);
         let (answer, f) = fun(p_a, p_b, f_a, f_b);
         let expected = P8E0::from_f64(f);
-        #[cfg(not(feature = "std"))]
-        assert_eq!(answer, expected);
-        #[cfg(feature = "std")]
         assert_eq!(
             answer,
             expected,

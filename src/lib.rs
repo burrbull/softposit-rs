@@ -190,11 +190,7 @@ mod linalg;
 trait RawPosit {
     type UInt;
     type Int;
-
-    const BITSIZE: u32;
-
-    const EXPONENT_BITS: u32;
-    const EXPONENT_MASK: Self::UInt;
+    const ES_MASK: Self::UInt;
 }
 
 trait RawFloat {
@@ -208,7 +204,7 @@ trait RawFloat {
 
     const EXPONENT_BIAS: Self::Int;
 
-    const SIGNIFICAND_BITS: Self::UInt;
+    const SIGNIFICAND_BITS: u32;
     const SIGNIFICAND_MASK: Self::UInt;
 
     const SIGN_MASK: Self::UInt;
@@ -225,8 +221,8 @@ impl RawFloat for f32 {
 
     const EXPONENT_BIAS: Self::Int = (Self::MAX_EXP - 1) as _;
 
-    const SIGNIFICAND_BITS: Self::UInt = (Self::MANTISSA_DIGITS - 1) as _;
-    const SIGNIFICAND_MASK: Self::UInt = 0x_007f_ffff;
+    const SIGNIFICAND_BITS: u32 = Self::MANTISSA_DIGITS - 1;
+    const SIGNIFICAND_MASK: Self::UInt = u32::MAX >> (u32::BITS - Self::SIGNIFICAND_BITS);
 
     const SIGN_MASK: Self::UInt = 0x8000_0000;
 }
@@ -242,8 +238,32 @@ impl RawFloat for f64 {
 
     const EXPONENT_BIAS: Self::Int = (Self::MAX_EXP - 1) as _;
 
-    const SIGNIFICAND_BITS: Self::UInt = (Self::MANTISSA_DIGITS - 1) as _;
-    const SIGNIFICAND_MASK: Self::UInt = 0x_000f_ffff_ffff_ffff;
+    const SIGNIFICAND_BITS: u32 = Self::MANTISSA_DIGITS - 1;
+    const SIGNIFICAND_MASK: Self::UInt = u64::MAX >> (u64::BITS - Self::SIGNIFICAND_BITS);
 
     const SIGN_MASK: Self::UInt = 0x_8000_0000_0000_0000;
+}
+
+const fn u8_zero_shr(val: u8, rhs: u32) -> u8 {
+    if let Some(val) = val.checked_shr(rhs) {
+        val
+    } else {
+        0
+    }
+}
+
+const fn u16_zero_shr(val: u16, rhs: u32) -> u16 {
+    if let Some(val) = val.checked_shr(rhs) {
+        val
+    } else {
+        0
+    }
+}
+
+const fn u32_zero_shr(val: u32, rhs: u32) -> u32 {
+    if let Some(val) = val.checked_shr(rhs) {
+        val
+    } else {
+        0
+    }
 }

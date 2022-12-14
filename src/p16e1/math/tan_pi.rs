@@ -4,17 +4,17 @@ impl P16E1 {
     pub const fn tan_pi(self) -> Self {
         let ui_a = self.to_bits();
 
-        let mut f = ui_a as u64;
-
-        let mut sign = f & 0x8000;
-        if sign != 0 {
-            f = 0x_0001_0000 - f; // 2's complement if negative
-        }
+        let mut sign = ui_a & 0x8000;
+        let mut f = if sign != 0 {
+            ui_a.wrapping_neg() // 2's complement if negative
+        } else {
+            ui_a
+        };
         if f > 31743 {
             // input value is an integer?
             return if f == 0x8000 { Self::NAR } else { Self::ZERO }; // handles NaR and integer cases
         }
-        if f != 0 {
+        let mut f = if f != 0 {
             // decode posit to fixed-point
             let mut s: i32;
             if (f & 0x4000) != 0 {
@@ -34,8 +34,15 @@ impl P16E1 {
                 s += 1; // decode exponent
             }
             f = (f & 0x0FFF) | 0x1000; // get 12-bit fraction; restore hidden bit
-            f = if s < 0 { f >> -s } else { f << s };
-        }
+            let f = f as u64;
+            if s < 0 {
+                f >> -s
+            } else {
+                f << s
+            }
+        } else {
+            0
+        };
         f &= 0x_0FFF_FFFF; // 28-bit fraction
 
         if f == 0 {
@@ -62,9 +69,9 @@ impl P16E1 {
             f = 0x_0800_0000 - f; // reverse if original input value is negative
         }
 
-        f = poly(f); // apply the polynomial approximation
+        let mut f = poly(f); // apply the polynomial approximation
 
-        let mut s: i32;
+        let mut s: u8;
         if f > 0x_0FFF_FFFF {
             // convert 28-bit fixed-point to a posit
             s = 12;
@@ -97,8 +104,8 @@ impl P16E1 {
                 f += bit;
             }
         }
-        f >>= s;
-        Self::from_bits((if sign != 0 { 0x_0001_0000 - f } else { f }) as u16)
+        let ui = (f >> s) as u16;
+        Self::from_bits(if sign != 0 { ui.wrapping_neg() } else { ui })
     }
 }
 
@@ -110,20 +117,18 @@ const fn poly(f: u64) -> u64 {
     let fs = f >> 9;
     let fsq = (fs * fs) >> 10;
     // alternating num, den may help superscalar speed
-    let mut num = (fsq * 182_527) >> 27;
+    let num = (fsq * 182_527) >> 27;
     let den = (fsq * 13_335_493) >> 25;
-    num = (fsq * (3_648_552 - num)) >> 23;
+    let num = (fsq * (3_648_552 - num)) >> 23;
     let den = 0x_0800_0000 - ((fsq * (295_106_440 - den)) >> 27);
-    num = (fs * (105_414_368 - num)) << 11;
+    let num = (fs * (105_414_368 - num)) << 11;
     num / den
 }
 
 #[test]
 fn test_tan_pi() {
-    use rand::Rng;
-    let mut rng = rand::thread_rng();
-    for _ in 0..crate::NTESTS16 {
-        let p_a: P16E1 = rng.gen();
+    for i in i16::MIN..i16::MAX {
+        let p_a = P16E1::new(i);
         let f_a = f64::from(p_a);
         let p = p_a.tan_pi();
         let f = (f_a * core::f64::consts::PI).tan();

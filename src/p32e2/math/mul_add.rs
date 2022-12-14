@@ -226,9 +226,6 @@ fn test_mul_add() {
         let f_c = f64::from(p_c);
         let p = p_a.mul_add(p_b, p_c);
         let f = f_a.mul_add(f_b, f_c);
-        #[cfg(not(feature = "std"))]
-        assert_eq!(p, P32E2::from(f));
-        #[cfg(feature = "std")]
         assert_eq!(
             p,
             P32E2::from(f),

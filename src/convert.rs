@@ -1,4 +1,4 @@
-use crate::{u16_with_sign, u32_with_sign, u8_with_sign};
+use crate::{u16_with_sign, u32_with_sign, u32_zero_shr, u8_with_sign};
 use crate::{PxE1, PxE2};
 use crate::{P16E1, P32E2, P8E0};
 
@@ -6,6 +6,7 @@ use crate::{P16E1, P32E2, P8E0};
 pub(crate) trait BitRound {
     type Ux;
 }
+//pub(crate) struct U16;
 pub(crate) struct U32;
 pub(crate) struct U64;
 
@@ -28,6 +29,7 @@ macro_rules! impl_bitround {
     };
 }
 
+//impl_bitround!(U16, u16);
 impl_bitround!(U32, u32);
 impl_bitround!(U64, u64);
 
@@ -44,19 +46,19 @@ macro_rules! convert_float {
         let e = (ui & <$float>::EXPONENT_MASK) >> <$float>::SIGNIFICAND_BITS;
         let e = (e as <$float as RawFloat>::Int) - <$float>::EXPONENT_BIAS;
         let signbit_e = (e < 0) as u32; // sign of exponent
-        let k = e >> <$posit>::EXPONENT_BITS; // k-value for useed^k in posits
+        let k = e >> <$posit>::ES; // k-value for useed^k in posits
 
         // ASSEMBLE POSIT REGIME, EXPONENT, MANTISSA
         // get posit exponent_bits and shift to starting from bitposition 3 (they'll be shifted in later)
-        let mut exponent_bits = e as BInt & <$posit>::EXPONENT_MASK as BInt;
-        exponent_bits <<= BInt::BITS - 2 - <$posit>::EXPONENT_BITS;
+        let mut exponent_bits = e as BInt & <$posit>::ES_MASK as BInt;
+        exponent_bits <<= BInt::BITS - 2 - <$posit>::ES;
 
         // create 01000... (for |x|<1) or 10000... (|x| > 1)
         let regime_bits = (!(BUInt::MAX >> 1) >> signbit_e) as BInt;
 
         // extract mantissa bits and push to behind exponent rre..emm... (regime still hasn't been shifted)
         let mut mantissa = (ui & <$float>::SIGNIFICAND_MASK) as BInt;
-        mantissa <<= (BInt::BITS - <$float as RawFloat>::Int::BITS) + <$float>::EXPONENT_BITS - <$posit>::EXPONENT_BITS - 1;
+        mantissa <<= (BInt::BITS - <$float as RawFloat>::Int::BITS) + <$float>::EXPONENT_BITS - <$posit>::ES - 1;
 
         // combine regime, exponent, mantissa and arithmetic bitshift for 11..110em or 00..001em
         let mut regime_exponent_mantissa = regime_bits | exponent_bits | mantissa;
@@ -64,13 +66,13 @@ macro_rules! convert_float {
         regime_exponent_mantissa &= (BUInt::MAX >> 1) as BInt; // remove possible sign bit from arith shift
 
         // round to nearest of the result
-        let mut p_rounded = <$buint as $crate::convert::BitRound>::Ux::bitround::<{ <$posit>::BITSIZE }>(regime_exponent_mantissa as BUInt) as <$posit as RawPosit>::UInt;
+        let mut p_rounded = <$buint as $crate::convert::BitRound>::Ux::bitround::<{ <$posit>::BITS }>(regime_exponent_mantissa as BUInt) as <$posit as RawPosit>::UInt;
 
         // no under or overflow rounding mode
         let max_k = (<$float>::EXPONENT_BIAS >> 1) + 1;
         let kabs = k.abs();
         p_rounded = p_rounded.wrapping_sub(
-            ((k.signum() as <$posit as RawPosit>::Int) * ((kabs >= <$posit>::BITSIZE as _ && kabs < max_k) as <$posit as RawPosit>::Int)
+            ((k.signum() as <$posit as RawPosit>::Int) * ((kabs >= <$posit>::BITS as _ && kabs < max_k) as <$posit as RawPosit>::Int)
             ) as <$posit as RawPosit>::UInt
         );
 
@@ -797,11 +799,11 @@ impl P32E2 {
             if reg_a == 0 {
                 reg_a = 1;
             }
-            0x_4000_0000_u32.wrapping_shr(reg_a)
+            u32_zero_shr(0x_4000_0000, reg_a)
         } else {
             exp_frac32_a |= ((k_a & 0x1) as u32) << 31;
             reg_a = if k_a == 0 { 1 } else { ((k_a + 2) >> 1) as u32 };
-            0x_7fff_ffff - 0x_7fff_ffff_u32.wrapping_shr(reg_a)
+            0x_7fff_ffff - u32_zero_shr(0x_7fff_ffff, reg_a)
         };
 
         let bit_n_plus_one = ((exp_frac32_a >> (reg_a + 1)) & 0x1) != 0;
@@ -1029,11 +1031,11 @@ impl<const N: u32> PxE2<{ N }> {
                 if reg_a == 0 {
                     reg_a = 1;
                 }
-                (false, 0x_4000_0000_u32.wrapping_shr(reg_a))
+                (false, u32_zero_shr(0x_4000_0000, reg_a))
             } else {
                 exp_frac32_a |= ((k_a & 0x1) as u32) << 31;
                 reg_a = if k_a == 0 { 1 } else { ((k_a + 2) >> 1) as u32 };
-                (true, 0x_7fff_ffff - 0x_7fff_ffff_u32.wrapping_shr(reg_a))
+                (true, 0x_7fff_ffff - u32_zero_shr(0x_7fff_ffff, reg_a))
             };
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
@@ -1116,14 +1118,14 @@ impl<const N: u32> PxE1<{ N }> {
                     reg_a -= 1;
                 }
                 exp_frac32_a <<= 1;
-                (false, 0x_4000_0000_u32.wrapping_shr(reg_a))
+                (false, u32_zero_shr(0x_4000_0000, reg_a))
             } else {
                 reg_a = ((k_a << 1) + 1) as u32;
                 if (exp_frac32_a & 0x_8000_0000) != 0 {
                     reg_a += 1;
                 }
                 exp_frac32_a <<= 1;
-                (true, 0x_7fff_ffff - 0x_7fff_ffff_u32.wrapping_shr(reg_a))
+                (true, 0x_7fff_ffff - u32_zero_shr(0x_7fff_ffff, reg_a))
             };
 
             if reg_a > (N - 2) {
@@ -1190,7 +1192,7 @@ impl<const N: u32> PxE1<{ N }> {
                 if reg_a == 0 {
                     reg_a = 1;
                 }
-                0x_4000_0000_u32.wrapping_shr(reg_a)
+                u32_zero_shr(0x_4000_0000, reg_a)
             } else {
                 if (k_a & 0x1) != 0 {
                     exp_frac32_a |= 0x_8000_0000;
@@ -1200,7 +1202,7 @@ impl<const N: u32> PxE1<{ N }> {
                 if reg_a == 0 {
                     reg_a = 1;
                 }
-                0x_7fff_ffff - 0x_7fff_ffff_u32.wrapping_shr(reg_a)
+                0x_7fff_ffff - u32_zero_shr(0x_7fff_ffff, reg_a)
             };
             exp_frac32_a >>= reg_a + 2; //2 because of sign and regime terminating bit
 
@@ -1295,14 +1297,14 @@ impl<const N: u32> PxE1<{ N }> {
                     reg_a -= 1;
                 }
                 exp_frac32_a <<= 1;
-                (false, 0x_4000_0000_u32.wrapping_shr(reg_a))
+                (false, u32_zero_shr(0x_4000_0000, reg_a))
             } else {
                 reg_a = ((k_a << 1) + 1) as u32;
                 if (exp_frac32_a & 0x_8000_0000) != 0 {
                     reg_a += 1;
                 }
                 exp_frac32_a <<= 1;
-                (true, 0x_7fff_ffff - 0x_7fff_ffff_u32.wrapping_shr(reg_a))
+                (true, 0x_7fff_ffff - u32_zero_shr(0x_7fff_ffff, reg_a))
             };
             if reg_a > (N - 2) {
                 //max or min pos. exp and frac does not matter.
