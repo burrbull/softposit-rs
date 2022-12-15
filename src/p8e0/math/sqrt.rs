@@ -24,10 +24,8 @@ impl P8E0 {
 
 #[test]
 fn test_sqrt() {
-    use rand::Rng;
-    let mut rng = rand::thread_rng();
-    for _ in 0..crate::NTESTS8 {
-        let p_a: P8E0 = rng.gen();
+    for i in i8::MIN..i8::MAX {
+        let p_a = P8E0::new(i);
         let f_a = f64::from(p_a);
         let p = p_a.sqrt();
         let f = f_a.sqrt();

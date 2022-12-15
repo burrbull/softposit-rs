@@ -1,5 +1,5 @@
 use super::P8E0;
-use crate::{u32_with_sign, u64_with_sign, u8_with_sign};
+use crate::{u32_with_sign, u64_with_sign};
 use core::{f32, f64, mem::transmute};
 
 crate::macros::impl_convert!(P8E0);
@@ -166,7 +166,7 @@ impl P8E0 {
         if sign {
             i_a = -i_a;
         }
-        Self::from_bits(u8_with_sign(convert_u32_to_p8bits(i_a as u32), sign))
+        Self::from_bits(convert_u32_to_p8bits(i_a as u32)).with_sign(sign)
     }
 
     #[inline]
@@ -213,7 +213,7 @@ impl P8E0 {
         if sign {
             i_a = -i_a;
         }
-        Self::from_bits(u8_with_sign(convert_u64_to_p8bits(i_a as u64), sign))
+        Self::from_bits(convert_u64_to_p8bits(i_a as u64)).with_sign(sign)
     }
 }
 

@@ -1,5 +1,5 @@
 use super::P32E2;
-use crate::{u32_with_sign, u64_zero_shr};
+use crate::u64_zero_shr;
 use core::ops;
 
 crate::macros::impl_ops!(P32E2);
@@ -148,7 +148,7 @@ impl P32E2 {
             u_z
         };
 
-        Self::from_bits(u32_with_sign(u_z, sign_z))
+        Self::from_bits(u_z).with_sign(sign_z)
     }
 
     const fn form_ui(reg_len: u32, regime: u32, mut exp: i32, frac64: u64) -> u32 {
@@ -246,7 +246,7 @@ impl P32E2 {
             )
         };
 
-        Self::from_bits(u32_with_sign(u_z, sign_z))
+        Self::from_bits(u_z).with_sign(sign_z)
     }
 
     #[allow(clippy::manual_swap)]
@@ -304,7 +304,7 @@ impl P32E2 {
             )
         };
 
-        Self::from_bits(u32_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[allow(clippy::manual_swap)]
@@ -339,7 +339,7 @@ impl P32E2 {
         shift_right = (shift_right << 2) + (exp_a as i16) - (exp_b as i16);
 
         if shift_right > 63 {
-            return Self::from_bits(u32_with_sign(ui_a, sign));
+            return Self::from_bits(ui_a).with_sign(sign);
         } else {
             frac64_b >>= shift_right;
         }
@@ -381,7 +381,7 @@ impl P32E2 {
             )
         };
 
-        Self::from_bits(u32_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[inline]

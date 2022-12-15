@@ -55,12 +55,7 @@ macro_rules! with_sign {
     }
 }
 
-with_sign!(
-    u8: u8_with_sign,
-    u16: u16_with_sign,
-    u32: u32_with_sign,
-    u64: u64_with_sign
-);
+with_sign!(u32: u32_with_sign, u64: u64_with_sign);
 
 const fn lldiv(numer: i64, denom: i64) -> (i64, i64) {
     let mut quot = numer / denom;

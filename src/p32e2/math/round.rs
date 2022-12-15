@@ -1,5 +1,4 @@
 use super::P32E2;
-use crate::u32_with_sign;
 
 impl P32E2 {
     pub const fn round(self) -> Self {
@@ -61,7 +60,7 @@ impl P32E2 {
             }
             u_a = ui_a;
         }
-        Self::from_bits(u32_with_sign(u_a, sign))
+        Self::from_bits(u_a).with_sign(sign)
     }
 }
 

@@ -148,7 +148,7 @@ impl Q32E2 {
             }
             u_a
         };
-        P32E2::from_bits(u32_with_sign(u_a, sign))
+        P32E2::from_bits(u_a).with_sign(sign)
     }
 }
 

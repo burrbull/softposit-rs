@@ -92,10 +92,8 @@ impl P16E1 {
 
 #[test]
 fn test_sqrt() {
-    use rand::Rng;
-    let mut rng = rand::thread_rng();
-    for _ in 0..crate::NTESTS16 {
-        let p_a: P16E1 = rng.gen();
+    for i in i16::MIN..i16::MAX {
+        let p_a = P16E1::new(i);
         let f_a = f64::from(p_a);
         let p = p_a.sqrt();
         let f = f_a.sqrt();

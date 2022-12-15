@@ -1,5 +1,5 @@
 use super::P32E2;
-use crate::{u32_with_sign, MulAddType};
+use crate::MulAddType;
 
 impl P32E2 {
     #[inline]
@@ -210,7 +210,7 @@ const fn mul_add(mut ui_a: u32, mut ui_b: u32, mut ui_c: u32, op: MulAddType) ->
         }
         u_z
     };
-    P32E2::from_bits(u32_with_sign(u_z, sign_z))
+    P32E2::from_bits(u_z).with_sign(sign_z)
 }
 
 #[test]

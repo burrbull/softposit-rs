@@ -1,5 +1,5 @@
 use super::P16E1;
-use crate::{u16_with_sign, MulAddType};
+use crate::MulAddType;
 
 impl P16E1 {
     #[inline]
@@ -214,7 +214,7 @@ const fn mul_add(mut ui_a: u16, mut ui_b: u16, mut ui_c: u16, op: MulAddType) ->
         u_z
     };
 
-    P16E1::from_bits(u16_with_sign(u_z, sign_z))
+    P16E1::from_bits(u_z).with_sign(sign_z)
 }
 
 #[test]

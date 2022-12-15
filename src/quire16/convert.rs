@@ -1,5 +1,4 @@
 use super::Q16E1;
-use crate::u16_with_sign;
 use crate::u64_zero_shr;
 use crate::P16E1;
 
@@ -117,6 +116,6 @@ impl Q16E1 {
             u_a
         };
 
-        P16E1::from_bits(u16_with_sign(u_a, sign))
+        P16E1::from_bits(u_a).with_sign(sign)
     }
 }

@@ -204,7 +204,7 @@ impl P32E2 {
         if sign {
             i_a = -i_a;
         }
-        Self::from_bits(u32_with_sign(convert_u32_to_p32bits(i_a as u32), sign))
+        Self::from_bits(convert_u32_to_p32bits(i_a as u32)).with_sign(sign)
     }
 
     #[inline]
@@ -226,7 +226,7 @@ impl P32E2 {
         if sign {
             i_a = -i_a;
         }
-        Self::from_bits(u32_with_sign(convert_u64_to_p32bits(i_a as u64), sign))
+        Self::from_bits(convert_u64_to_p32bits(i_a as u64)).with_sign(sign)
     }
 
     #[inline]

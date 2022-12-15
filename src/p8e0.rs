@@ -5,6 +5,7 @@ mod math;
 mod ops;
 crate::macros::impl_num_traits!(P8E0);
 crate::macros::impl_math_consts!(P8E0);
+crate::macros::impl_const_fns!(P8E0);
 
 #[cfg(feature = "approx")]
 mod impl_approx {
@@ -78,11 +79,15 @@ impl P8E0 {
     pub const fn recip(self) -> Self {
         Self::ONE.div(self)
     }
-}
 
-crate::macros::impl_const_fns!(P8E0);
-
-impl P8E0 {
+    #[inline]
+    pub(crate) const fn with_sign(self, sign: bool) -> Self {
+        if sign {
+            self.neg()
+        } else {
+            self
+        }
+    }
     /*pub(crate) const fn mask() -> u8 {
         u8::MAX
     }*/

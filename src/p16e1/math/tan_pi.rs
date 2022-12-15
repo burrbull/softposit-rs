@@ -104,8 +104,7 @@ impl P16E1 {
                 f += bit;
             }
         }
-        let ui = (f >> s) as u16;
-        Self::from_bits(if sign != 0 { ui.wrapping_neg() } else { ui })
+        Self::from_bits((f >> s) as u16).with_sign(sign != 0)
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::{u16_with_sign, u32_with_sign, u32_zero_shr, u8_with_sign};
+use crate::{u32_with_sign, u32_zero_shr};
 use crate::{PxE1, PxE2};
 use crate::{P16E1, P32E2, P8E0};
 
@@ -359,7 +359,7 @@ impl P8E0 {
             u_z += (u_z & 1) | (bits_more as u8);
         }
 
-        Self::from_bits(u8_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[inline]
@@ -424,7 +424,7 @@ impl P8E0 {
             u_z
         };
 
-        Self::from_bits(u8_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[inline]
@@ -494,7 +494,7 @@ impl P8E0 {
             u_z += (u_z & 1) | (bits_more as u8);
         }
 
-        P8E0::from_bits(u8_with_sign(u_z, sign))
+        P8E0::from_bits(u_z).with_sign(sign)
     }
 }
 
@@ -543,7 +543,7 @@ impl P16E1 {
 
         let u_z = regime + exp_frac16_a;
 
-        Self::from_bits(u16_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     pub const fn to_p8e0(self) -> P8E0 {
@@ -614,7 +614,7 @@ impl P16E1 {
             u_z
         };
 
-        Self::from_bits(u16_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[inline]
@@ -659,7 +659,7 @@ impl P16E1 {
             }
             u_z
         };
-        Self::from_bits(u16_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 }
 
@@ -702,7 +702,7 @@ impl P32E2 {
 
         let u_z = regime + exp_frac32_a;
 
-        Self::from_bits(u32_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[inline]
@@ -752,7 +752,7 @@ impl P32E2 {
 
         let u_z = regime + exp_frac32_a;
 
-        Self::from_bits(u32_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[inline]
@@ -816,7 +816,7 @@ impl P32E2 {
             u_z += (u_z & 1) | (bits_more as u32);
         }
 
-        Self::from_bits(u32_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 }
 
