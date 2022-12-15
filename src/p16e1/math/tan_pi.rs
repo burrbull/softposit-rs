@@ -60,7 +60,7 @@ impl P16E1 {
         }
         if (f & 0x_03FF_FFFF) == 0 {
             // tanpi is +1 or -1 at 1/4 * odd integers
-            return Self::from_bits(sign as u16 | 0x4000);
+            return Self::from_bits(sign | 0x4000);
         }
         if sign != 0 {
             f = 0x_0800_0000 - f; // reverse input direction for odd quadrants

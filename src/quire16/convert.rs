@@ -94,7 +94,7 @@ impl Q16E1 {
             //remove hidden bit
             frac64_a &= 0x7FFF_FFFF_FFFF_FFFF;
             let shift = reg_a + 50; //1 es bit, 1 sign bit and 1 r terminating bit , 16+31+3
-            let mut frac_a = u64_zero_shr(frac64_a, shift as u32) as u16;
+            let mut frac_a = u64_zero_shr(frac64_a, shift) as u16;
 
             let mut bit_n_plus_one = false;
             if reg_a != 14 {

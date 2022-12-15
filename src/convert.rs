@@ -138,7 +138,7 @@ pub(crate) fn convert_fraction_p32(
                 frac_length -= 1;
                 frac = (frac << 1) + 1; //shift in one
                 if float == 0. {
-                    frac <<= frac_length as u16;
+                    frac <<= frac_length;
                     break;
                 }
 
@@ -385,10 +385,9 @@ impl P8E0 {
             0x1
         } else {
             let (k_a, tmp) = P32E2::separate_bits_tmp(ui_a);
-            let k_a = k_a as i8;
 
             //2nd and 3rd bit exp
-            let mut exp_frac32_a = tmp as u32;
+            let mut exp_frac32_a = tmp;
 
             let mut reg_a: i8;
             let regime = if k_a < 0 {
@@ -1026,7 +1025,7 @@ impl<const N: u32> PxE2<{ N }> {
             let mut reg_a: u32;
             let (reg_sa, regime) = if k_a < 0 {
                 reg_a = -k_a as u32;
-                exp_frac32_a |= ((reg_a & 0x1) as u32) << 31;
+                exp_frac32_a |= (reg_a & 0x1) << 31;
                 reg_a = (reg_a + 1) >> 1;
                 if reg_a == 0 {
                     reg_a = 1;
@@ -1327,7 +1326,7 @@ impl<const N: u32> PxE1<{ N }> {
                 if u_z == 0 {
                     u_z = 0x1 << (32 - N);
                 } else if bit_n_plus_one {
-                    u_z += (((u_z >> (32 - N)) & 1) | (bits_more as u32)) << (32 - N);
+                    u_z += (((u_z >> (32 - N)) & 1) | bits_more) << (32 - N);
                 }
                 u_z
             }

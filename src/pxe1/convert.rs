@@ -196,7 +196,7 @@ impl<const N: u32> PxE1<{ N }> {
 
                         let mut u_z = (regime << (30 - reg))
                             + ((exp as u32) << (29 - reg))
-                            + ((frac << (32 - N)) as u32);
+                            + (frac << (32 - N));
                         //minpos
                         if (u_z == 0) && (frac > 0) {
                             u_z = 0x1 << (32 - N);
@@ -265,9 +265,8 @@ impl<const N: u32> PxE1<{ N }> {
 
                     let regime = if reg_s { ((1 << reg) - 1) << 1 } else { 1_u32 };
 
-                    let mut u_z = (regime << (30 - reg))
-                        + ((exp as u32) << (29 - reg))
-                        + ((frac << (32 - N)) as u32);
+                    let mut u_z =
+                        (regime << (30 - reg)) + ((exp as u32) << (29 - reg)) + (frac << (32 - N));
                     //minpos
                     if (u_z == 0) && (frac > 0) {
                         u_z = 0x1 << (32 - N);
@@ -386,7 +385,7 @@ impl<const N: u32> PxE1<{ N }> {
             ui_a = 0x7FFF9FFF; // 2147483648
                                //if (x<12)  ui_a&=((int32_t)0x80000000>>(x-1));
         } else if a < 0x2 {
-            ui_a = (a << 30) as u32;
+            ui_a = a << 30;
         } else {
             let mut frac_a = a;
             while (frac_a & mask) == 0 {
