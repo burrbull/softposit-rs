@@ -5,6 +5,7 @@ mod math;
 mod ops;
 crate::macros::impl_num_traits!(P16E1);
 crate::macros::impl_math_consts!(P16E1);
+crate::macros::impl_const_fns!(P16E1);
 
 #[cfg(feature = "approx")]
 mod impl_approx {
@@ -88,11 +89,15 @@ impl P16E1 {
         const PIS_O_180: P16E1 = P16E1::new(0x_0878);
         self.mul(PIS_O_180)
     }
-}
 
-crate::macros::impl_const_fns!(P16E1);
-
-impl P16E1 {
+    #[inline]
+    pub(crate) const fn with_sign(self, sign: bool) -> Self {
+        if sign {
+            self.neg()
+        } else {
+            self
+        }
+    }
     /*pub(crate) const fn mask() -> u16 {
         u16::MAX
     }*/
@@ -244,7 +249,7 @@ impl P16E1 {
             frac32 <<= 1;
         }
 
-        let regime = 0x4000_u16.checked_shr(reg_len).unwrap_or(0);
+        let regime = u16_zero_shr(0x4000, reg_len);
 
         let u_z = if reg_len > 14 {
             0x1

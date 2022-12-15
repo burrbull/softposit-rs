@@ -1,5 +1,4 @@
 use super::P8E0;
-use crate::u8_with_sign;
 use core::ops;
 
 crate::macros::impl_ops!(P8E0);
@@ -117,7 +116,7 @@ impl P8E0 {
             u_z
         };
 
-        Self::from_bits(u8_with_sign(u_z, sign_z))
+        Self::from_bits(u_z).with_sign(sign_z)
     }
 
     #[inline]
@@ -182,7 +181,7 @@ impl P8E0 {
         }
 
         let u_z = Self::calc_ui(k_a, frac16);
-        Self::from_bits(u8_with_sign(u_z, sign_z))
+        Self::from_bits(u_z).with_sign(sign_z)
     }
 
     #[allow(clippy::manual_swap)]
@@ -218,7 +217,7 @@ impl P8E0 {
         }
 
         let u_z = Self::calc_ui(k_a, frac16_a);
-        Self::from_bits(u8_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[allow(clippy::manual_swap)]
@@ -251,7 +250,7 @@ impl P8E0 {
         let mut frac16_b = (frac_b as u16) << 7;
 
         if shift_right >= 14 {
-            return Self::from_bits(u8_with_sign(ui_a, sign));
+            return Self::from_bits(ui_a).with_sign(sign);
         } else {
             frac16_b >>= shift_right;
         }
@@ -268,7 +267,7 @@ impl P8E0 {
         }
 
         let u_z = Self::calc_ui(k_a, frac16_a);
-        Self::from_bits(u8_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[inline]

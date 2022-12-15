@@ -3,6 +3,7 @@ mod math;
 mod ops;
 crate::macros::impl_num_traits!(P32E2);
 crate::macros::impl_math_consts!(P32E2);
+crate::macros::impl_const_fns!(P32E2);
 
 #[cfg(feature = "approx")]
 mod impl_approx {
@@ -86,11 +87,16 @@ impl P32E2 {
         const PIS_O_180: P32E2 = P32E2::PI.div(P32E2::new(0x_6da0_0000));
         self.mul(PIS_O_180)
     }
-}
 
-crate::macros::impl_const_fns!(P32E2);
+    #[inline]
+    pub(crate) const fn with_sign(self, sign: bool) -> Self {
+        if sign {
+            self.neg()
+        } else {
+            self
+        }
+    }
 
-impl P32E2 {
     /*pub(crate) const fn mask() -> u32 {
         u32::MAX
     }*/

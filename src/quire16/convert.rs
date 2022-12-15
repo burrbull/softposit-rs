@@ -1,5 +1,5 @@
 use super::Q16E1;
-use crate::u16_with_sign;
+use crate::u64_zero_shr;
 use crate::P16E1;
 
 impl From<P16E1> for Q16E1 {
@@ -94,11 +94,7 @@ impl Q16E1 {
             //remove hidden bit
             frac64_a &= 0x7FFF_FFFF_FFFF_FFFF;
             let shift = reg_a + 50; //1 es bit, 1 sign bit and 1 r terminating bit , 16+31+3
-            let mut frac_a = (if let Some(val) = frac64_a.checked_shr(shift as u32) {
-                val
-            } else {
-                0
-            }) as u16;
+            let mut frac_a = u64_zero_shr(frac64_a, shift) as u16;
 
             let mut bit_n_plus_one = false;
             if reg_a != 14 {
@@ -120,6 +116,6 @@ impl Q16E1 {
             u_a
         };
 
-        P16E1::from_bits(u16_with_sign(u_a, sign))
+        P16E1::from_bits(u_a).with_sign(sign)
     }
 }

@@ -206,9 +206,7 @@ impl<const N: u32> PxE2<{ N }> {
                             exp <<= 28 - reg;
                         }
 
-                        let mut u_z = ((regime as u32) << (30 - reg))
-                            + (exp as u32)
-                            + ((frac << (32 - N)) as u32);
+                        let mut u_z = (regime << (30 - reg)) + (exp as u32) + (frac << (32 - N));
                         //minpos
                         if (u_z == 0) && (frac > 0) {
                             u_z = 0x1 << (32 - N);
@@ -286,9 +284,7 @@ impl<const N: u32> PxE2<{ N }> {
                         exp <<= 28 - reg;
                     }
 
-                    let mut u_z = ((regime as u32) << (30 - reg))
-                        + (exp as u32)
-                        + ((frac << (32 - N)) as u32);
+                    let mut u_z = (regime << (30 - reg)) + (exp as u32) + (frac << (32 - N));
                     //minpos
                     if (u_z == 0) && (frac > 0) {
                         u_z = 0x1 << (32 - N);

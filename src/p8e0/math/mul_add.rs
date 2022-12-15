@@ -1,5 +1,5 @@
 use super::P8E0;
-use crate::{u8_with_sign, MulAddType};
+use crate::MulAddType;
 
 impl P8E0 {
     #[inline]
@@ -172,7 +172,7 @@ const fn mul_add(mut ui_a: u8, mut ui_b: u8, mut ui_c: u8, op: MulAddType) -> P8
         }
         u_z
     };
-    P8E0::from_bits(u8_with_sign(u_z, sign_z))
+    P8E0::from_bits(u_z).with_sign(sign_z)
 }
 
 #[test]

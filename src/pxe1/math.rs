@@ -214,7 +214,6 @@ impl<const N: u32> PxE1<{ N }> {
             }
 
             let (mut regime, reg_sz, reg_z) = Self::calculate_regime(k_z);
-            let reg_z = reg_z as u32;
 
             let u_z = if reg_z > (N - 2) {
                 //max or min pos. exp and frac does not matter.

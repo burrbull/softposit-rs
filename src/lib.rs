@@ -55,12 +55,7 @@ macro_rules! with_sign {
     }
 }
 
-with_sign!(
-    u8: u8_with_sign,
-    u16: u16_with_sign,
-    u32: u32_with_sign,
-    u64: u64_with_sign
-);
+with_sign!(u32: u32_with_sign, u64: u64_with_sign);
 
 const fn lldiv(numer: i64, denom: i64) -> (i64, i64) {
     let mut quot = numer / denom;
@@ -245,25 +240,33 @@ impl RawFloat for f64 {
 }
 
 const fn u8_zero_shr(val: u8, rhs: u32) -> u8 {
-    if let Some(val) = val.checked_shr(rhs) {
-        val
-    } else {
+    if rhs > 7 {
         0
+    } else {
+        val.wrapping_shr(rhs)
     }
 }
 
 const fn u16_zero_shr(val: u16, rhs: u32) -> u16 {
-    if let Some(val) = val.checked_shr(rhs) {
-        val
-    } else {
+    if rhs > 15 {
         0
+    } else {
+        val.wrapping_shr(rhs)
     }
 }
 
 const fn u32_zero_shr(val: u32, rhs: u32) -> u32 {
-    if let Some(val) = val.checked_shr(rhs) {
-        val
-    } else {
+    if rhs > 31 {
         0
+    } else {
+        val.wrapping_shr(rhs)
+    }
+}
+
+const fn u64_zero_shr(val: u64, rhs: u32) -> u64 {
+    if rhs > 63 {
+        0
+    } else {
+        val.wrapping_shr(rhs)
     }
 }

@@ -13,8 +13,8 @@ impl P16E1 {
             ui_a
         };
 
-        let mut s: i8;
         let mut f = if f != 0 {
+            let mut s: i8;
             if (f & 0x4000) != 0 {
                 // decode regime
                 s = 16;
@@ -78,8 +78,7 @@ impl P16E1 {
                 f += bit;
             }
         }
-        let ui = (f >> s) as u16;
-        Self::from_bits(if sign != 0 { ui.wrapping_neg() } else { ui })
+        Self::from_bits((f >> s) as u16).with_sign(sign != 0)
     }
 }
 

@@ -1,5 +1,3 @@
-use crate::u16_with_sign;
-
 impl super::P16E1 {
     pub const fn ceil(self) -> Self {
         let mut mask = 0x2000_u16;
@@ -64,6 +62,6 @@ impl super::P16E1 {
             }
             ui_a
         };
-        Self::from_bits(u16_with_sign(u_a, sign))
+        Self::from_bits(u_a).with_sign(sign)
     }
 }

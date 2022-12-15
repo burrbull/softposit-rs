@@ -1,5 +1,5 @@
 use super::P16E1;
-use crate::u16_with_sign;
+use crate::u32_zero_shr;
 use core::ops;
 
 crate::macros::impl_ops!(P16E1);
@@ -71,7 +71,7 @@ impl P16E1 {
 
         if shift_right != 0 {
             if shift_right >= 29 {
-                return Self::from_bits(u16_with_sign(ui_a, sign));
+                return Self::from_bits(ui_a).with_sign(sign);
             } else {
                 frac32_b >>= shift_right;
             }
@@ -110,7 +110,7 @@ impl P16E1 {
                 (frac32 & 0x3FFF_FFFF) >> (reg_len + 1),
             )
         };
-        Self::from_bits(u16_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[allow(clippy::manual_swap)]
@@ -146,11 +146,7 @@ impl P16E1 {
             exp_a ^= 1;
             frac32 >>= 1;
         } else {
-            frac32 += if let Some(val) = frac32_b.checked_shr(shift_right as u32) {
-                val
-            } else {
-                0
-            };
+            frac32 += u32_zero_shr(frac32_b, shift_right as u32);
 
             let rcarry = (frac32 & 0x8000_0000) != 0; //first left bit
             if rcarry {
@@ -180,7 +176,7 @@ impl P16E1 {
                 (frac32 & 0x3FFF_FFFF) >> (reg_len + 1),
             )
         };
-        Self::from_bits(u16_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     pub const fn add(self, other: Self) -> Self {
@@ -284,7 +280,7 @@ impl P16E1 {
             )
         };
 
-        Self::from_bits(u16_with_sign(u_z, sign_z))
+        Self::from_bits(u_z).with_sign(sign_z)
     }
 
     pub const fn div(self, other: Self) -> Self {
@@ -370,7 +366,7 @@ impl P16E1 {
             u_z
         };
 
-        Self::from_bits(u16_with_sign(u_z, sign_z))
+        Self::from_bits(u_z).with_sign(sign_z)
     }
 
     #[inline]

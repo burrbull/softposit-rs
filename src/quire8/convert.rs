@@ -1,5 +1,4 @@
 use super::Q8E0;
-use crate::u8_with_sign;
 use crate::P8E0;
 
 impl From<P8E0> for Q8E0 {
@@ -78,6 +77,6 @@ impl Q8E0 {
             u_a
         };
 
-        P8E0::from_bits(u8_with_sign(u_a, sign))
+        P8E0::from_bits(u_a).with_sign(sign)
     }
 }

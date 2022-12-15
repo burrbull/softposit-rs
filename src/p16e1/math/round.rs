@@ -1,5 +1,4 @@
 use super::P16E1;
-use crate::u16_with_sign;
 
 impl P16E1 {
     pub const fn round(self) -> Self {
@@ -54,16 +53,14 @@ impl P16E1 {
             }
             ui_a
         };
-        Self::from_bits(u16_with_sign(u_a, sign))
+        Self::from_bits(u_a).with_sign(sign)
     }
 }
 
 #[test]
 fn test_round() {
-    use rand::Rng;
-    let mut rng = rand::thread_rng();
-    for _ in 0..crate::NTESTS16 {
-        let p_a: P16E1 = rng.gen();
+    for i in i16::MIN..i16::MAX {
+        let p_a = P16E1::new(i);
         let f_a = f64::from(p_a);
         let p = p_a.round();
         let f = f_a.round();

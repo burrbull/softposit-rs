@@ -1,4 +1,4 @@
-use crate::{u16_with_sign, u32_with_sign, u32_zero_shr, u8_with_sign};
+use crate::{u32_with_sign, u32_zero_shr};
 use crate::{PxE1, PxE2};
 use crate::{P16E1, P32E2, P8E0};
 
@@ -138,7 +138,7 @@ pub(crate) fn convert_fraction_p32(
                 frac_length -= 1;
                 frac = (frac << 1) + 1; //shift in one
                 if float == 0. {
-                    frac <<= frac_length as u16;
+                    frac <<= frac_length;
                     break;
                 }
 
@@ -359,7 +359,7 @@ impl P8E0 {
             u_z += (u_z & 1) | (bits_more as u8);
         }
 
-        Self::from_bits(u8_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[inline]
@@ -385,10 +385,9 @@ impl P8E0 {
             0x1
         } else {
             let (k_a, tmp) = P32E2::separate_bits_tmp(ui_a);
-            let k_a = k_a as i8;
 
             //2nd and 3rd bit exp
-            let mut exp_frac32_a = tmp as u32;
+            let mut exp_frac32_a = tmp;
 
             let mut reg_a: i8;
             let regime = if k_a < 0 {
@@ -424,7 +423,7 @@ impl P8E0 {
             u_z
         };
 
-        Self::from_bits(u8_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[inline]
@@ -494,7 +493,7 @@ impl P8E0 {
             u_z += (u_z & 1) | (bits_more as u8);
         }
 
-        P8E0::from_bits(u8_with_sign(u_z, sign))
+        P8E0::from_bits(u_z).with_sign(sign)
     }
 }
 
@@ -543,7 +542,7 @@ impl P16E1 {
 
         let u_z = regime + exp_frac16_a;
 
-        Self::from_bits(u16_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     pub const fn to_p8e0(self) -> P8E0 {
@@ -614,7 +613,7 @@ impl P16E1 {
             u_z
         };
 
-        Self::from_bits(u16_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[inline]
@@ -659,7 +658,7 @@ impl P16E1 {
             }
             u_z
         };
-        Self::from_bits(u16_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 }
 
@@ -702,7 +701,7 @@ impl P32E2 {
 
         let u_z = regime + exp_frac32_a;
 
-        Self::from_bits(u32_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[inline]
@@ -752,7 +751,7 @@ impl P32E2 {
 
         let u_z = regime + exp_frac32_a;
 
-        Self::from_bits(u32_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 
     #[inline]
@@ -816,7 +815,7 @@ impl P32E2 {
             u_z += (u_z & 1) | (bits_more as u32);
         }
 
-        Self::from_bits(u32_with_sign(u_z, sign))
+        Self::from_bits(u_z).with_sign(sign)
     }
 }
 
@@ -1026,7 +1025,7 @@ impl<const N: u32> PxE2<{ N }> {
             let mut reg_a: u32;
             let (reg_sa, regime) = if k_a < 0 {
                 reg_a = -k_a as u32;
-                exp_frac32_a |= ((reg_a & 0x1) as u32) << 31;
+                exp_frac32_a |= (reg_a & 0x1) << 31;
                 reg_a = (reg_a + 1) >> 1;
                 if reg_a == 0 {
                     reg_a = 1;
@@ -1327,7 +1326,7 @@ impl<const N: u32> PxE1<{ N }> {
                 if u_z == 0 {
                     u_z = 0x1 << (32 - N);
                 } else if bit_n_plus_one {
-                    u_z += (((u_z >> (32 - N)) & 1) | (bits_more as u32)) << (32 - N);
+                    u_z += (((u_z >> (32 - N)) & 1) | bits_more) << (32 - N);
                 }
                 u_z
             }

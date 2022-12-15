@@ -73,10 +73,7 @@ impl P16E1 {
             }
             f >>= s + 16;
         }
-        if sign {
-            f = 0x_0001_0000 - f; // restore sign
-        }
-        Self::from_bits(f as u16)
+        Self::from_bits(f as u16).with_sign(sign)
     }
 }
 
@@ -93,10 +90,8 @@ const fn poly(f: u64) -> u64 {
 
 #[test]
 fn test_log2() {
-    use rand::Rng;
-    let mut rng = rand::thread_rng();
-    for _ in 0..crate::NTESTS16 {
-        let p_a: P16E1 = rng.gen();
+    for i in i16::MIN..i16::MAX {
+        let p_a = P16E1::new(i);
         let f_a = f64::from(p_a);
         let p = p_a.log2();
         let f = f_a.log2();
