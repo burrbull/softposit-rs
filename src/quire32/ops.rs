@@ -231,9 +231,6 @@ fn test_quire_mul_add() {
         q += p_c;
         let p = q.to_posit();
         let f = f_a.mul_add(f_b, f_c);
-        #[cfg(not(feature = "std"))]
-        assert_eq!(p, P32E2::from(f));
-        #[cfg(feature = "std")]
         assert_eq!(
             p,
             P32E2::from(f),

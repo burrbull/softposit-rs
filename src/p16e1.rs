@@ -1,4 +1,4 @@
-use crate::Q16E1;
+use crate::{u16_zero_shr, Q16E1};
 
 mod convert;
 mod math;
@@ -30,9 +30,9 @@ mod impl_simba {
 pub struct P16E1(i16);
 
 impl P16E1 {
-    pub const SIZE: usize = 16;
-    pub const ES: usize = 1;
-    pub const USEED: usize = 4;
+    pub const BITS: u32 = 16;
+    pub const ES: u32 = 1;
+    pub const USEED: u32 = 2u32.pow(2u32.pow(Self::ES));
 
     /// Machine epsilon (2.44140625e-4).
     pub const EPSILON: Self = Self::new(0x_0100);
@@ -93,6 +93,9 @@ impl P16E1 {
 crate::macros::impl_const_fns!(P16E1);
 
 impl P16E1 {
+    /*pub(crate) const fn mask() -> u16 {
+        u16::MAX
+    }*/
     pub const SIGN_MASK: u16 = 0x_8000;
     pub const REGIME_SIGN_MASK: u16 = 0x_4000;
 
@@ -116,7 +119,7 @@ impl P16E1 {
         let (k, tmp) = Self::separate_bits_tmp(bits);
         (
             k,
-            (tmp >> (Self::SIZE - 1 - Self::ES)) as i8,
+            (tmp >> (Self::BITS - 1 - Self::ES)) as i8,
             (tmp | 0x4000),
         )
     }
@@ -162,10 +165,10 @@ impl P16E1 {
         let len;
         if k < 0 {
             len = (-k) as u32;
-            (0x4000_u16.wrapping_shr(len), false, len)
+            (u16_zero_shr(0x4000, len), false, len)
         } else {
             len = (k + 1) as u32;
-            (0x7fff - 0x7fff_u16.wrapping_shr(len), true, len)
+            (0x7fff - u16_zero_shr(0x7fff, len), true, len)
         }
     }
 }
@@ -241,7 +244,7 @@ impl P16E1 {
             frac32 <<= 1;
         }
 
-        let regime = 0x4000_u16.wrapping_shr(reg_len);
+        let regime = 0x4000_u16.checked_shr(reg_len).unwrap_or(0);
 
         let u_z = if reg_len > 14 {
             0x1
@@ -261,11 +264,7 @@ impl P16E1 {
 impl crate::RawPosit for P16E1 {
     type UInt = u16;
     type Int = i16;
-
-    const BITSIZE: u32 = 16;
-
-    const EXPONENT_BITS: u32 = 1;
-    const EXPONENT_MASK: Self::UInt = 0x1;
+    const ES_MASK: Self::UInt = u16::MAX >> (u16::BITS - Self::ES);
 }
 
 #[cfg(test)]
@@ -281,9 +280,6 @@ fn test21_exact(fun: fn(P16E1, P16E1, f64, f64) -> (P16E1, f64)) {
         let f_b = f64::from(p_b);
         let (answer, f) = fun(p_a, p_b, f_a, f_b);
         let expected = P16E1::from_f64(f);
-        #[cfg(not(feature = "std"))]
-        assert_eq!(answer, expected);
-        #[cfg(feature = "std")]
         assert_eq!(
             answer,
             expected,

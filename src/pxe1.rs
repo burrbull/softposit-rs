@@ -1,5 +1,7 @@
 use core::cmp::Ordering;
 
+use crate::u32_zero_shr;
+
 mod convert;
 mod math;
 mod ops;
@@ -9,8 +11,9 @@ mod ops;
 pub struct PxE1<const N: u32>(i32);
 
 impl<const N: u32> PxE1<{ N }> {
-    pub const ES: usize = 1;
-    pub const USEED: usize = 4;
+    pub const BITS: u32 = N;
+    pub const ES: u32 = 1;
+    pub const USEED: u32 = 2u32.pow(2u32.pow(Self::ES));
 
     /// Not a Real (NaR).
     pub const NAR: Self = Self::new(-0x_8000_0000);
@@ -103,7 +106,7 @@ impl<const N: u32> PxE1<{ N }> {
         let (k, tmp) = Self::separate_bits_tmp(bits);
         (
             k,
-            (tmp >> ((N as usize) - 1 - Self::ES)) as i32,
+            (tmp >> (N - 1 - Self::ES)) as i32,
             (tmp | 0x4000_0000) & 0x7FFF_FFFF,
         )
     }
@@ -133,10 +136,16 @@ impl<const N: u32> PxE1<{ N }> {
         let reg;
         if k < 0 {
             reg = (-k) as u32;
-            (0x_4000_0000_u32.wrapping_shr(reg), false, reg)
+            (u32_zero_shr(0x_4000_0000, reg), false, reg)
         } else {
             reg = (k + 1) as u32;
-            (0x_7fff_ffff - 0x_7fff_ffff_u32.wrapping_shr(reg), true, reg)
+            (0x_7fff_ffff - u32_zero_shr(0x_7fff_ffff, reg), true, reg)
         }
     }
+}
+
+impl<const N: u32> crate::RawPosit for PxE1<{ N }> {
+    type UInt = u32;
+    type Int = i32;
+    const ES_MASK: Self::UInt = u32::MAX >> (u32::BITS - Self::ES);
 }

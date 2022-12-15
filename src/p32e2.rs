@@ -28,9 +28,9 @@ mod impl_simba {
 pub struct P32E2(i32);
 
 impl P32E2 {
-    pub const SIZE: usize = 32;
-    pub const ES: usize = 2;
-    pub const USEED: usize = 16;
+    pub const BITS: u32 = 32;
+    pub const ES: u32 = 2;
+    pub const USEED: u32 = 2u32.pow(2u32.pow(Self::ES));
 
     /// Machine epsilon (7.450580596923828e-9).
     pub const EPSILON: Self = Self::new(0x_00a0_0000);
@@ -91,6 +91,9 @@ impl P32E2 {
 crate::macros::impl_const_fns!(P32E2);
 
 impl P32E2 {
+    /*pub(crate) const fn mask() -> u32 {
+        u32::MAX
+    }*/
     pub const SIGN_MASK: u32 = 0x_8000_0000;
     pub const REGIME_SIGN_MASK: u32 = 0x_4000_0000;
 
@@ -114,7 +117,7 @@ impl P32E2 {
         let (k, tmp) = Self::separate_bits_tmp(bits);
         (
             k,
-            (tmp >> (Self::SIZE - 1 - Self::ES)) as i32,
+            (tmp >> (Self::BITS - 1 - Self::ES)) as i32,
             ((tmp << 1) | 0x4000_0000) & 0x7FFF_FFFF,
         )
     }
@@ -162,10 +165,10 @@ impl P32E2 {
         let len;
         if k < 0 {
             len = (-k) as u32;
-            (0x4000_0000_u32.wrapping_shr(len), false, len)
+            (u32_zero_shr(0x4000_0000, len), false, len)
         } else {
             len = (k + 1) as u32;
-            (0x7fff_ffff - 0x7fff_ffff_u32.wrapping_shr(len), true, len)
+            (0x7fff_ffff - u32_zero_shr(0x7fff_ffff, len), true, len)
         }
     }
 }
@@ -179,6 +182,8 @@ impl core::str::FromStr for P32E2 {
 }
 
 use core::{cmp::Ordering, fmt};
+
+use crate::u32_zero_shr;
 impl fmt::Display for P32E2 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", f64::from(*self))
@@ -219,11 +224,7 @@ impl rand::distributions::Distribution<P32E2> for rand::distributions::Standard 
 impl crate::RawPosit for P32E2 {
     type UInt = u32;
     type Int = i32;
-
-    const BITSIZE: u32 = 32;
-
-    const EXPONENT_BITS: u32 = 2;
-    const EXPONENT_MASK: Self::UInt = 0x3;
+    const ES_MASK: Self::UInt = u32::MAX >> (u32::BITS - Self::ES);
 }
 
 #[cfg(test)]
@@ -239,9 +240,6 @@ fn test21_exact(fun: fn(P32E2, P32E2, f64, f64) -> (P32E2, f64)) {
         let f_b = f64::from(p_b);
         let (answer, f) = fun(p_a, p_b, f_a, f_b);
         let expected = P32E2::from_f64(f);
-        #[cfg(not(feature = "std"))]
-        assert_eq!(answer, expected);
-        #[cfg(feature = "std")]
         assert_eq!(
             answer,
             expected,
