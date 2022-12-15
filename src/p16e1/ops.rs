@@ -1,5 +1,5 @@
 use super::P16E1;
-use crate::u16_with_sign;
+use crate::{u16_with_sign, u32_zero_shr};
 use core::ops;
 
 crate::macros::impl_ops!(P16E1);
@@ -146,11 +146,7 @@ impl P16E1 {
             exp_a ^= 1;
             frac32 >>= 1;
         } else {
-            frac32 += if let Some(val) = frac32_b.checked_shr(shift_right as u32) {
-                val
-            } else {
-                0
-            };
+            frac32 += u32_zero_shr(frac32_b, shift_right as u32);
 
             let rcarry = (frac32 & 0x8000_0000) != 0; //first left bit
             if rcarry {

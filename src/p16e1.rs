@@ -244,7 +244,7 @@ impl P16E1 {
             frac32 <<= 1;
         }
 
-        let regime = 0x4000_u16.checked_shr(reg_len).unwrap_or(0);
+        let regime = u16_zero_shr(0x4000, reg_len);
 
         let u_z = if reg_len > 14 {
             0x1

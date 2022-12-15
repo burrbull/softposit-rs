@@ -1,5 +1,5 @@
 use super::P32E2;
-use crate::u32_with_sign;
+use crate::{u32_with_sign, u64_zero_shr};
 use core::ops;
 
 crate::macros::impl_ops!(P32E2);
@@ -274,11 +274,7 @@ impl P32E2 {
         //This is 4kZ + expZ; (where kZ=k_a-kB and expZ=exp_a-expB)
         shift_right = (shift_right << 2) + (exp_a as i16) - (exp_b as i16);
 
-        frac64 += if let Some(val) = ((frac_b as u64) << 32).checked_shr(shift_right as u32) {
-            val
-        } else {
-            0
-        };
+        frac64 += u64_zero_shr((frac_b as u64) << 32, shift_right as u32);
 
         let rcarry = (0x8000_0000_0000_0000 & frac64) != 0; //first left bit
         if rcarry {

@@ -1,5 +1,6 @@
 use super::Q32E2;
 use crate::u32_with_sign;
+use crate::u64_zero_shr;
 use crate::PxE2;
 use crate::P32E2;
 
@@ -118,7 +119,7 @@ impl Q32E2 {
 
             let shift = reg_a + 35; //2 es bit, 1 sign bit and 1 r terminating bit , 31+4
 
-            let mut frac_a = frac64_a.checked_shr(shift as u32).unwrap_or(0) as u32;
+            let mut frac_a = u64_zero_shr(frac64_a, shift as u32) as u32;
             let mut bit_n_plus_one = false;
             if reg_a <= 28 {
                 bit_n_plus_one = ((frac64_a >> (shift - 1)) & 0x1) != 0;
