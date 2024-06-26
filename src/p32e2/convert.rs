@@ -41,7 +41,7 @@ impl P32E2 {
                 Self::MIN_POSITIVE.neg()
             }
         } else {
-            Self::from_bits(crate::convert::convert_float!(P32E2, f32, ui, u64, i64))
+            Self::from_bits(crate::convert::convert_float!(P32E2, f32, ui, i64))
         }
     }
 

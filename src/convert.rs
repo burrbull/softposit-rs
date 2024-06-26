@@ -1,48 +1,13 @@
 use crate::{u32_with_sign, u32_zero_shr};
 use crate::{PxE1, PxE2};
 use crate::{P16E1, P32E2, P8E0};
-
-// TODO: remove when const impl trait stabilized
-//pub(crate) trait BitRound {
-//    type Ux;
-//}
-//pub(crate) struct U16;
-//pub(crate) struct U32;
-pub(crate) struct U64;
-
-/// Bitround an unsigned integer `ui` to another bitsize `UIntN1`.
-/// Rounds/downcasts using round to nearest or upcasts (append with zeros).
-macro_rules! impl_bitround {
-    ($Ux:ty, $ux:ty) => {
-        impl $Ux {
-            pub const fn bitround<const BITS: u32>(mut ui: $ux) -> $ux {
-                if <$ux>::BITS == BITS {
-                    return ui;
-                }
-                let d_bits: u32 = <$ux>::BITS - BITS; // difference in bits
-
-                // ROUND TO NEAREST, tie to even: create ulp/2 = ..007ff.. or ..0080..
-                let mut ulp_half = (<$ux>::MAX >> 1) >> BITS; // create ..007ff.. (just smaller than ulp/2)
-                ulp_half += (ui >> d_bits) & 0x1; // turn into ..0080.. for odd (=round up if tie)
-                ui += ulp_half; // +ulp/2 and
-                ui >> d_bits // round down via >> is round nearest
-            }
-        }
-        //impl BitRound for $ux {
-        //    type Ux = $Ux;
-        //}
-    };
-}
-
-//impl_bitround!(U16, u16);
-//impl_bitround!(U32, u32);
-impl_bitround!(U64, u64);
+mod bitround;
+pub(crate) use bitround::U64;
 
 macro_rules! convert_float {
-    ($posit: ty, $float:ty, $x:expr, $buint:ty, $bint:ty) => {{
+    ($posit: ty, $float:ty, $x:expr, $bint:ty) => {{
         use $crate::RawFloat;
         use $crate::RawPosit;
-        //type BUInt = $buint;
         type BInt = $bint;
 
         let ui: <$float as RawFloat>::UInt = $x;
@@ -97,7 +62,6 @@ macro_rules! convert_float {
             $posit,
             $float,
             $x,
-            <$float as $crate::RawFloat>::UInt,
             <$float as $crate::RawFloat>::Int
         )
     };
