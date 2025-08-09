@@ -62,7 +62,7 @@ macro_rules! convert_float {
 
         // combine regime, exponent, mantissa and arithmetic bitshift for 11..110em or 00..001em
         let mut regime_exponent_mantissa = regime_bits | exponent_bits | mantissa;
-        regime_exponent_mantissa >>= ((k + 1).abs() as u32) + signbit_e; // arithmetic bitshift
+        regime_exponent_mantissa >>= ((k + 1).unsigned_abs() as u32) + signbit_e; // arithmetic bitshift
         regime_exponent_mantissa &= (BUInt::MAX >> 1) as BInt; // remove possible sign bit from arith shift
 
         // round to nearest of the result
@@ -122,7 +122,7 @@ pub(crate) fn convert_fraction_p32(
 
     if float == 0. {
         return 0;
-    } else if float == core::f64::INFINITY {
+    } else if float == f64::INFINITY {
         return 0x8000_0000;
     }
 

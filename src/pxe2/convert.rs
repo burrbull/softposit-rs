@@ -445,8 +445,9 @@ const fn convert_u32_to_px2bits<const N: u32>(a: u32) -> u32 {
                 ui_a += 0x_8000_0000_u32 >> (N - 1);
             }
         } else {
-            ui_a = ((0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k)) | (exp_a << (27 - k)) | frac_a >> (k + 4))
-                & PxE2::<{ N }>::mask();
+            ui_a =
+                ((0x_7FFF_FFFF ^ (0x_3FFF_FFFF >> k)) | (exp_a << (27 - k)) | (frac_a >> (k + 4)))
+                    & PxE2::<{ N }>::mask();
             mask = 0x8 << (k - N); //bitNPlusOne
             if ((mask & frac_a) != 0) && ((((mask - 1) & frac_a) | ((mask << 1) & frac_a)) != 0) {
                 ui_a += 0x_8000_0000_u32 >> (N - 1);

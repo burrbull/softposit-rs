@@ -1,7 +1,8 @@
 on:
   push:
-    branches: [ staging, trying, master ]
+    branches: [master]
   pull_request:
+  merge_group:
 
 name: Continuous integration
 
@@ -9,58 +10,51 @@ jobs:
   check-msrv:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use the MSRV release
-        run: rustup update 1.61.0 && rustup default 1.61.0
+        run: rustup update 1.83.0 && rustup default 1.83.0
 
       - name: Cache Dependencies
         uses: Swatinem/rust-cache@v2
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --all-features
+      - name: Run checks
+        run: cargo check --all-features
 
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use the latest stable release
         run: rustup update stable && rustup default stable
 
       - name: Cache Dependencies
         uses: Swatinem/rust-cache@v2
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
+      - name: Run tests
+        run: cargo test
 
   test-linalg:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use the latest stable release
         run: rustup update stable && rustup default stable
 
       - name: Cache Dependencies
         uses: Swatinem/rust-cache@v2
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all-features
+      - name: Run tests
+        run: cargo test --all-features
 
   test-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use the latest stable release
         run: rustup update stable && rustup default stable
 
       - name: Cache Dependencies
         uses: Swatinem/rust-cache@v2
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all-features --release
+      - name: Run tests
+        run: cargo test --all-features --release

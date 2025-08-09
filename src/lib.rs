@@ -192,7 +192,7 @@ trait RawFloat {
     type UInt;
     type Int;
 
-    const BITSIZE: u32;
+    //const BITSIZE: u32;
 
     const EXPONENT_BITS: u32;
     const EXPONENT_MASK: Self::UInt;
@@ -209,7 +209,7 @@ impl RawFloat for f32 {
     type UInt = u32;
     type Int = i32;
 
-    const BITSIZE: u32 = 32;
+    //const BITSIZE: u32 = 32;
 
     const EXPONENT_BITS: u32 = 8;
     const EXPONENT_MASK: Self::UInt = 0x_7f80_0000;
@@ -226,7 +226,7 @@ impl RawFloat for f64 {
     type UInt = u64;
     type Int = i64;
 
-    const BITSIZE: u32 = 64;
+    //const BITSIZE: u32 = 64;
 
     const EXPONENT_BITS: u32 = 11;
     const EXPONENT_MASK: Self::UInt = 0x_7ff0_0000_0000_0000;

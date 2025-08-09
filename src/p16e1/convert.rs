@@ -1,7 +1,6 @@
 use super::P16E1;
 use crate::u32_with_sign;
 use crate::u64_with_sign;
-use core::mem::transmute;
 use core::{f32, f64};
 
 crate::macros::impl_convert!(P16E1);
@@ -144,7 +143,7 @@ const fn convert_u64_to_p16bits(a: u64) -> u16 {
             frac_a <<= 1;
         }
         let k = log2 >> 1;
-        let exp_a = ((log2 & 0x1) << (12 - k)) as u64;
+        let exp_a = ((log2 & 0x1) as u64) << (12 - k);
         frac_a ^= mask;
         let mut ui_a = ((0x7FFF ^ (0x3FFF >> k)) | exp_a | (frac_a >> (k + 13))) as u16;
         mask = 0x1000 << k;
@@ -221,7 +220,7 @@ const fn convert_p16bits_to_u64(ui_a: u16) -> u64 {
 impl P16E1 {
     pub const fn from_f32(float: f32) -> Self {
         use crate::RawFloat;
-        let ui: u32 = unsafe { transmute(float) };
+        let ui: u32 = f32::to_bits(float);
 
         let sign = (ui & f32::SIGN_MASK) != 0;
 
@@ -259,7 +258,7 @@ impl P16E1 {
 
     pub const fn from_f64(float: f64) -> Self {
         use crate::RawFloat;
-        let ui: u64 = unsafe { transmute(float) };
+        let ui: u64 = f64::to_bits(float);
 
         let sign = (ui & f64::SIGN_MASK) != 0;
 
@@ -313,7 +312,7 @@ impl P16E1 {
             let frac_a = ((tmp << 2) as u32) << 7;
             let exp_a = (((k_a as u32) << 1) + ((tmp >> 14) as u32)).wrapping_add(127) << 23;
 
-            unsafe { transmute(exp_a + frac_a + ((sign_a as u32) << 16)) }
+            f32::from_bits(exp_a + frac_a + ((sign_a as u32) << 16))
         }
     }
 }
@@ -337,7 +336,7 @@ impl P16E1 {
             let frac_a = ((tmp << 2) as u64) << 36;
             let exp_a = (((k_a as u64) << 1) + ((tmp >> 14) as u64)).wrapping_add(1023) << 52;
 
-            unsafe { transmute(exp_a + frac_a + ((sign_a as u64) << 48)) }
+            f64::from_bits(exp_a + frac_a + ((sign_a as u64) << 48))
         }
     }
 }
@@ -402,4 +401,44 @@ fn convert_p16_i64() {
         }
         assert_eq!(i64::from(p), f as i64);
     }
+}
+
+#[test]
+fn convert_p16bits_u64() {
+    for n in 0x5401..0x7fffu16 {
+        let u = convert_p16bits_to_u64(n);
+        // range here is huge but honestly it's simple and should work.
+        // would like something more
+        assert!(u > 2);
+        assert!(u < 0x1000_0000);
+    }
+}
+
+#[test]
+fn convert_p16bits_u32() {
+    for n in 0x5401..0x7fffu16 {
+        let u = convert_p16bits_to_u32(n);
+        assert!(u > 2);
+        assert!(u < 0x1000_0000);
+    }
+}
+
+#[test]
+fn convert_u64_p16bits() {
+    assert_eq!(P16E1::ZERO.to_bits(), convert_u64_to_p16bits(0));
+    assert_eq!(P16E1::ONE.to_bits(), convert_u64_to_p16bits(1));
+    assert_eq!(P16E1::MAX.to_bits(), convert_u64_to_p16bits(0x1000_0000));
+    // more rigorous method needed to truly test all possible numbers.
+    // however, this should suffice as a warning.
+    assert_eq!(0b0_1110_1_00_0000_0000u16, convert_u64_to_p16bits(32));
+    assert_eq!(0b0_110_1_111_0000_0000u16, convert_u64_to_p16bits(15));
+}
+
+#[test]
+fn convert_u32_p16bits() {
+    assert_eq!(P16E1::ZERO.to_bits(), convert_u32_to_p16bits(0));
+    assert_eq!(P16E1::ONE.to_bits(), convert_u32_to_p16bits(1));
+    assert_eq!(P16E1::MAX.to_bits(), convert_u32_to_p16bits(0x1000_0000));
+    assert_eq!(0b0_10_1_1000_0000_0000u16, convert_u32_to_p16bits(3));
+    assert_eq!(0b0_11110_1_0_0000_0000u16, convert_u32_to_p16bits(128));
 }
